@@ -1,0 +1,15 @@
+# Federal 2025 standard deductions and limits (IRS Rev. Proc. 2024-40)
+standard_deduction:
+  single: 15000
+  mfj: 30000
+  mfs: 15000
+  hoh: 22500
+  qss: 30000
+
+# Additional standard deduction for age 65+ or blind (per qualifying condition)
+additional_standard_deduction:
+  single: 2000
+  mfj: 1600
+  mfs: 1600
+  hoh: 2000
+  qss: 1600

@@ -1,0 +1,55 @@
+# California 2025 tax brackets (FTB, indexed for inflation)
+single:
+  - {min: 0, max: 10756, rate: 0.01}
+  - {min: 10756, max: 25499, rate: 0.02}
+  - {min: 25499, max: 40245, rate: 0.04}
+  - {min: 40245, max: 55866, rate: 0.06}
+  - {min: 55866, max: 70612, rate: 0.08}
+  - {min: 70612, max: 360659, rate: 0.093}
+  - {min: 360659, max: 432791, rate: 0.103}
+  - {min: 432791, max: 721319, rate: 0.113}
+  - {min: 721319, max: Inf, rate: 0.123}
+
+mfj:
+  - {min: 0, max: 21512, rate: 0.01}
+  - {min: 21512, max: 50998, rate: 0.02}
+  - {min: 50998, max: 80490, rate: 0.04}
+  - {min: 80490, max: 111732, rate: 0.06}
+  - {min: 111732, max: 141224, rate: 0.08}
+  - {min: 141224, max: 721318, rate: 0.093}
+  - {min: 721318, max: 865582, rate: 0.103}
+  - {min: 865582, max: 1442638, rate: 0.113}
+  - {min: 1442638, max: Inf, rate: 0.123}
+
+mfs:
+  - {min: 0, max: 10756, rate: 0.01}
+  - {min: 10756, max: 25499, rate: 0.02}
+  - {min: 25499, max: 40245, rate: 0.04}
+  - {min: 40245, max: 55866, rate: 0.06}
+  - {min: 55866, max: 70612, rate: 0.08}
+  - {min: 70612, max: 360659, rate: 0.093}
+  - {min: 360659, max: 432791, rate: 0.103}
+  - {min: 432791, max: 721319, rate: 0.113}
+  - {min: 721319, max: Inf, rate: 0.123}
+
+hoh:
+  - {min: 0, max: 21512, rate: 0.01}
+  - {min: 21512, max: 50998, rate: 0.02}
+  - {min: 50998, max: 80490, rate: 0.04}
+  - {min: 80490, max: 111732, rate: 0.06}
+  - {min: 111732, max: 141224, rate: 0.08}
+  - {min: 141224, max: 721318, rate: 0.093}
+  - {min: 721318, max: 865582, rate: 0.103}
+  - {min: 865582, max: 1442638, rate: 0.113}
+  - {min: 1442638, max: Inf, rate: 0.123}
+
+qss:
+  - {min: 0, max: 21512, rate: 0.01}
+  - {min: 21512, max: 50998, rate: 0.02}
+  - {min: 50998, max: 80490, rate: 0.04}
+  - {min: 80490, max: 111732, rate: 0.06}
+  - {min: 111732, max: 141224, rate: 0.08}
+  - {min: 141224, max: 721318, rate: 0.093}
+  - {min: 721318, max: 865582, rate: 0.103}
+  - {min: 865582, max: 1442638, rate: 0.113}
+  - {min: 1442638, max: Inf, rate: 0.123}

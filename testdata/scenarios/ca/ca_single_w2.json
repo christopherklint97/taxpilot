@@ -1,0 +1,20 @@
+{
+  "name": "CA single filer with one W-2",
+  "tax_year": 2025,
+  "inputs": {
+    "1040:filing_status": "single",
+    "1040:first_name": "Jane",
+    "1040:last_name": "Doe",
+    "1040:ssn": "123-45-6789",
+    "w2:employer_name": "Acme Corp",
+    "w2:employer_ein": "12-3456789",
+    "w2:wages": 75000,
+    "w2:federal_tax_withheld": 9500,
+    "w2:ss_wages": 75000,
+    "w2:ss_tax_withheld": 4650,
+    "w2:medicare_wages": 75000,
+    "w2:medicare_tax_withheld": 1087.50,
+    "w2:state_wages": 75000,
+    "w2:state_tax_withheld": 3200
+  }
+}

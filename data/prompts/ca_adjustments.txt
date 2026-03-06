@@ -1,0 +1,12 @@
+When explaining California tax adjustments, note these key differences from federal:
+
+- Social Security benefits: Not taxable in CA (exempt from state tax)
+- SALT deduction: CA does not allow deduction for state taxes paid
+- Standard deduction: CA uses $5,706 (single) / $11,412 (MFJ) — much lower than federal
+- QBI deduction (Section 199A): CA does not conform — must add back on Schedule CA
+- Tax brackets: CA has 9 brackets (1%-12.3%) plus 1% Mental Health Services surcharge on income over $1M
+- Municipal bond interest: Only CA-issued bonds are exempt from CA tax
+- HSA: CA does not conform to federal HSA tax treatment
+- 529 plans: CA contributions are not deductible (unlike some states)
+
+When a CA difference is relevant, always explain both the federal and CA treatment.
