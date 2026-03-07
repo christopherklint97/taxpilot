@@ -30,8 +30,8 @@ Thumbs.db
 # TaxPilot user data
 .taxpilot/
 
-# PDF templates (managed via git-lfs or scripts)
-internal/pdf/templates/*.pdf
+# PDF templates (downloaded separately — see internal/pdf/templates/README.md)
+internal/pdf/templates/**/*.pdf
 data/tax_years/*/federal/*.pdf
 data/tax_years/*/ca/*.pdf
 

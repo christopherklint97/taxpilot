@@ -1,0 +1,28 @@
+{
+  "name": "CA single filer itemizing deductions — tests SALT conformity",
+  "tax_year": 2025,
+  "inputs": {
+    "1040:filing_status": "single",
+    "1040:first_name": "Bob",
+    "1040:last_name": "Smith",
+    "1040:ssn": "987-65-4321",
+    "w2:employer_name": "TechCo",
+    "w2:employer_ein": "55-1234567",
+    "w2:wages": 95000,
+    "w2:federal_tax_withheld": 14000,
+    "w2:ss_wages": 95000,
+    "w2:ss_tax_withheld": 5890,
+    "w2:medicare_wages": 95000,
+    "w2:medicare_tax_withheld": 1377.50,
+    "w2:state_wages": 95000,
+    "w2:state_tax_withheld": 5000,
+    "schedule_a:1": 2000,
+    "schedule_a:5a": 8000,
+    "schedule_a:5b": 500,
+    "schedule_a:5c": 4500,
+    "schedule_a:8a": 6000,
+    "schedule_a:12": 3000,
+    "schedule_a:13": 500,
+    "schedule_a:14": 0
+  }
+}

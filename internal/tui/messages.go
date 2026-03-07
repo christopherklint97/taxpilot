@@ -40,3 +40,48 @@ type ExplanationResponseMsg struct {
 	Explanation string
 	Err         error
 }
+
+// RequestWhyAskedMsg triggers a "why am I being asked this?" explanation.
+type RequestWhyAskedMsg struct {
+	FieldKey     string
+	Label        string
+	FilingStatus string
+	AnsweredKeys map[string]string // key -> value for context
+}
+
+// WhyAskedResponseMsg carries the explanation back.
+type WhyAskedResponseMsg struct {
+	Explanation string
+	Err         error
+}
+
+// RequestCADiffMsg triggers a CA vs federal difference explanation.
+type RequestCADiffMsg struct {
+	FieldKey string
+	Label    string
+}
+
+// CADiffResponseMsg carries the CA difference explanation back.
+type CADiffResponseMsg struct {
+	Explanation string
+	Err         error
+}
+
+// ShowReviewMsg tells the App to switch to the review view.
+type ShowReviewMsg struct {
+	Results      map[string]float64
+	StrInputs    map[string]string
+	PriorResults map[string]float64
+	TaxYear      int
+	State        string
+}
+
+// StartEFileMsg tells the App to switch to the e-file view.
+type StartEFileMsg struct {
+	Results     map[string]float64
+	StrInputs   map[string]string
+	TaxYear     int
+	State       string
+	FederalOnly bool
+	StateOnly   bool
+}

@@ -60,7 +60,7 @@ func TestEngineWithPriorYear(t *testing.T) {
 		"test_form:first_name":    "Jane",
 	}
 
-	eng, err := NewEngineWithPriorYear(reg, 2025, priorNumeric, priorStr)
+	eng, err := NewEngineWithPriorYear(reg, 2025, priorNumeric, priorStr, "CA")
 	if err != nil {
 		t.Fatalf("NewEngineWithPriorYear failed: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestAcceptDefault(t *testing.T) {
 		"test_form:first_name":    "Jane",
 	}
 
-	eng, err := NewEngineWithPriorYear(reg, 2025, priorNumeric, priorStr)
+	eng, err := NewEngineWithPriorYear(reg, 2025, priorNumeric, priorStr, "CA")
 	if err != nil {
 		t.Fatalf("NewEngineWithPriorYear failed: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestOverrideDefault(t *testing.T) {
 		"test_form:first_name":    "Jane",
 	}
 
-	eng, err := NewEngineWithPriorYear(reg, 2025, priorNumeric, priorStr)
+	eng, err := NewEngineWithPriorYear(reg, 2025, priorNumeric, priorStr, "CA")
 	if err != nil {
 		t.Fatalf("NewEngineWithPriorYear failed: %v", err)
 	}
@@ -250,7 +250,7 @@ func TestNoPriorYear(t *testing.T) {
 func TestEngineWithPriorYear_EmptyMaps(t *testing.T) {
 	reg := testRegistry()
 
-	eng, err := NewEngineWithPriorYear(reg, 2025, nil, nil)
+	eng, err := NewEngineWithPriorYear(reg, 2025, nil, nil, "")
 	if err != nil {
 		t.Fatalf("NewEngineWithPriorYear with nil maps failed: %v", err)
 	}

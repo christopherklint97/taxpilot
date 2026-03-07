@@ -16,11 +16,22 @@ func ExportReturn(outputDir string, values map[string]float64, strValues map[str
 	filler := NewFiller(outputDir)
 
 	// Register all known form mappings
-	f1040 := Federal1040Mappings()
-	ca540 := CA540Mappings()
-
-	filler.RegisterForm(f1040)
-	filler.RegisterForm(ca540)
+	filler.RegisterForm(Federal1040Mappings())
+	filler.RegisterForm(ScheduleAMappings())
+	filler.RegisterForm(ScheduleBMappings())
+	filler.RegisterForm(ScheduleCMappings())
+	filler.RegisterForm(ScheduleDMappings())
+	filler.RegisterForm(Form8949Mappings())
+	filler.RegisterForm(Schedule1Mappings())
+	filler.RegisterForm(Schedule2Mappings())
+	filler.RegisterForm(Schedule3Mappings())
+	filler.RegisterForm(ScheduleSEMappings())
+	filler.RegisterForm(Form8995Mappings())
+	filler.RegisterForm(Form8889Mappings())
+	filler.RegisterForm(CA540Mappings())
+	filler.RegisterForm(ScheduleCAMappings())
+	filler.RegisterForm(Form3514Mappings())
+	filler.RegisterForm(Form3853Mappings())
 
 	// Fill all registered forms
 	paths, err := filler.FillAll(values, strValues)

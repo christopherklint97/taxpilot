@@ -41,11 +41,20 @@ func (p *Parser) RegisterForm(config *FormPDFConfig) {
 // ParseFile reads a filled PDF and extracts field values.
 // It tries to match the PDF against registered form configs by checking
 // which config's field names are present in the PDF.
+// If the PDF has no AcroForm fields (scanned/printed), it falls back to OCR.
 func (p *Parser) ParseFile(path string) (*ParsedReturn, error) {
 	// Extract form fields from the PDF using pdfcpu.
 	fg, err := exportFormFields(path)
-	if err != nil {
-		return nil, fmt.Errorf("extract form fields from %s: %w", path, err)
+
+	// If AcroForm extraction fails or returns empty fields, try OCR fallback.
+	if err != nil || fg == nil || len(flattenFormGroup(fg)) == 0 {
+		if OCRAvailable() {
+			return p.ParseFileOCR(path)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("extract form fields from %s (no OCR available): %w", path, err)
+		}
+		return nil, fmt.Errorf("no form fields found in %s and OCR is not available", path)
 	}
 
 	// Collect all PDF field values into a flat map: PDF field ID -> string value.
@@ -54,6 +63,10 @@ func (p *Parser) ParseFile(path string) (*ParsedReturn, error) {
 	// Detect which form this PDF is.
 	formID, config := p.detectFormFromFields(pdfFields, fg)
 	if config == nil {
+		// Could not match form fields — try OCR as fallback.
+		if OCRAvailable() {
+			return p.ParseFileOCR(path)
+		}
 		return nil, fmt.Errorf("could not detect form type for %s", path)
 	}
 

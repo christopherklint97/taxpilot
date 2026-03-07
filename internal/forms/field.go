@@ -70,6 +70,58 @@ func (d DepValues) SumAll(pattern string) float64 {
 	return sum
 }
 
+// SumAllWhere sums all float64 values whose keys match valuePattern, but only
+// for instances where the corresponding filterPattern key has the given
+// filterValue as its string value. This enables filtering wildcard sums by
+// a categorical field (e.g., summing proceeds only for short-term transactions).
+//
+// Example: SumAllWhere("1099b:*:proceeds", "1099b:*:term", "short")
+// sums proceeds for all 1099b instances where term == "short".
+func (d DepValues) SumAllWhere(valuePattern, filterPattern, filterValue string) float64 {
+	var sum float64
+	for k, v := range d.values {
+		if !matchWildcard(valuePattern, k) {
+			continue
+		}
+		// Extract the instance segment from the matched key and build
+		// the corresponding filter key.
+		filterKey := buildCorrespondingKey(valuePattern, filterPattern, k)
+		if filterKey == "" {
+			continue
+		}
+		if sv, ok := d.strValues[filterKey]; ok && sv == filterValue {
+			sum += v
+		}
+	}
+	return sum
+}
+
+// buildCorrespondingKey takes a valuePattern, a filterPattern, and a concrete
+// key that matched valuePattern, and returns the concrete key that corresponds
+// to filterPattern with the same wildcard segment.
+//
+// Example: buildCorrespondingKey("1099b:*:proceeds", "1099b:*:term", "1099b:1:proceeds")
+// returns "1099b:1:term"
+func buildCorrespondingKey(valuePattern, filterPattern, concreteKey string) string {
+	// Find the wildcard segment by splitting both pattern and concrete key
+	vParts := strings.Split(valuePattern, "*")
+	if len(vParts) != 2 {
+		return "" // only single-wildcard patterns supported
+	}
+	prefix := vParts[0]
+	suffix := vParts[1]
+
+	if !strings.HasPrefix(concreteKey, prefix) || !strings.HasSuffix(concreteKey, suffix) {
+		return ""
+	}
+
+	// Extract the wildcard segment
+	wildcardSeg := concreteKey[len(prefix) : len(concreteKey)-len(suffix)]
+
+	// Build the filter key by replacing * with the wildcard segment
+	return strings.Replace(filterPattern, "*", wildcardSeg, 1)
+}
+
 // TaxYear returns the tax year for this computation context.
 func (d DepValues) TaxYear() int {
 	return d.taxYear

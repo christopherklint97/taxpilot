@@ -58,6 +58,24 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tui.WhyAskedResponseMsg:
+		m.aiLoading = false
+		if msg.Err != nil {
+			m.aiHelpText = "Error loading explanation: " + msg.Err.Error()
+		} else {
+			m.aiHelpText = msg.Explanation
+		}
+		return m, nil
+
+	case tui.CADiffResponseMsg:
+		m.aiLoading = false
+		if msg.Err != nil {
+			m.aiHelpText = "Error loading explanation: " + msg.Err.Error()
+		} else {
+			m.aiHelpText = msg.Explanation
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC:
@@ -81,6 +99,57 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							FieldKey: q.Key,
 							Label:    q.Prompt,
 							FormName: q.FormName,
+						}
+					}
+				}
+				m.input = ""
+				return m, nil
+			}
+			// Handle "why" command — explain why this question is being asked
+			if m.input == "why" {
+				q := m.engine.Current()
+				if q != nil {
+					m.aiLoading = true
+					m.aiHelpText = ""
+					m.input = ""
+					// Build answered keys from string inputs
+					answeredKeys := make(map[string]string)
+					for k, v := range m.engine.StrInputs() {
+						answeredKeys[k] = v
+					}
+					for k, v := range m.engine.Inputs() {
+						if _, exists := answeredKeys[k]; !exists {
+							answeredKeys[k] = fmt.Sprintf("%v", v)
+						}
+					}
+					// Get filing status
+					filingStatus := ""
+					if fs, ok := m.engine.StrInputs()["1040:filing_status"]; ok {
+						filingStatus = fs
+					}
+					return m, func() tea.Msg {
+						return tui.RequestWhyAskedMsg{
+							FieldKey:     q.Key,
+							Label:        q.Prompt,
+							FilingStatus: filingStatus,
+							AnsweredKeys: answeredKeys,
+						}
+					}
+				}
+				m.input = ""
+				return m, nil
+			}
+			// Handle "ca" command — explain CA vs federal difference
+			if m.input == "ca" && m.stateCode == "CA" {
+				q := m.engine.Current()
+				if q != nil {
+					m.aiLoading = true
+					m.aiHelpText = ""
+					m.input = ""
+					return m, func() tea.Msg {
+						return tui.RequestCADiffMsg{
+							FieldKey: q.Key,
+							Label:    q.Prompt,
 						}
 					}
 				}
@@ -275,6 +344,12 @@ func (m InterviewView) View() string {
 		) + "\n" + tui.HelpStyle.Render(
 			"Press Enter to keep last year's value, or type a new one",
 		)
+		if pyd.CANote != "" {
+			priorYearBlock += "\n" + lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#E5C07B")).
+				Italic(true).
+				Render("CA: "+pyd.CANote)
+		}
 	}
 
 	// Options for enum fields
@@ -303,7 +378,11 @@ func (m InterviewView) View() string {
 	}
 
 	// Help text
-	help := tui.HelpStyle.Render("Enter: submit  |  Backspace: go back  |  ?: help  |  ??: AI explain  |  q: save & quit")
+	helpLine := "Enter: submit  |  Backspace: go back  |  ?: help  |  ??: AI explain  |  why: why asked  |  q: save & quit"
+	if m.stateCode == "CA" {
+		helpLine += "  |  ca: CA diff"
+	}
+	help := tui.HelpStyle.Render(helpLine)
 
 	// Compose layout
 	parts := []string{

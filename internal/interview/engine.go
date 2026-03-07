@@ -18,6 +18,7 @@ type PriorYearDefault struct {
 	PriorValue string  // formatted for display
 	RawValue   float64 // numeric value (0 for strings)
 	StrValue   string  // string value
+	CANote     string  // CA-specific pre-fill message (empty if not filing in CA)
 }
 
 // Engine drives the interactive Q&A flow by walking the dependency graph
@@ -34,6 +35,8 @@ type Engine struct {
 	// prior-year data for pre-fill defaults
 	priorYear    map[string]float64 // prior-year numeric values
 	priorYearStr map[string]string  // prior-year string values
+	// state code for CA-specific pre-fill messages
+	stateCode string
 }
 
 // Question represents a single question to ask the user.
@@ -54,6 +57,14 @@ var stringFields = map[string]bool{
 	"ssn":           true,
 	"employer_name": true,
 	"employer_ein":  true,
+	"payer_name":    true,
+	"payer_tin":     true,
+	"business_name": true,
+	"business_code": true,
+	"description":   true,
+	"date_acquired": true,
+	"date_sold":     true,
+	"6_yctc":        true,
 }
 
 // NewEngine creates a new Engine, registers all forms, builds the dependency
@@ -103,13 +114,15 @@ func NewEngineWithInputs(registry *forms.Registry, taxYear int, numInputs map[st
 
 // NewEngineWithPriorYear creates an Engine with prior-year defaults.
 // Questions that have prior-year values will show "Last year: $X. Same? [Y/n]"
+// If stateCode is "CA", CA-specific pre-fill notes will be included.
 func NewEngineWithPriorYear(registry *forms.Registry, taxYear int,
-	priorNumeric map[string]float64, priorStr map[string]string) (*Engine, error) {
+	priorNumeric map[string]float64, priorStr map[string]string, stateCode string) (*Engine, error) {
 	e, err := NewEngine(registry, taxYear)
 	if err != nil {
 		return nil, err
 	}
 
+	e.stateCode = stateCode
 	e.priorYear = make(map[string]float64)
 	for k, v := range priorNumeric {
 		e.priorYear[k] = v
@@ -132,24 +145,34 @@ func (e *Engine) GetPriorYearDefault() *PriorYearDefault {
 	// Check string prior-year values first (for string/enum fields)
 	if q.IsString || len(q.Options) > 0 {
 		if sv, ok := e.priorYearStr[q.Key]; ok && sv != "" {
+			canote := ""
+			if e.stateCode == "CA" {
+				canote = GetCAPreFillNote(q.Key, e.priorYear, e.priorYearStr)
+			}
 			return &PriorYearDefault{
 				FieldKey:   q.Key,
 				Label:      q.Label,
 				PriorValue: sv,
 				RawValue:   0,
 				StrValue:   sv,
+				CANote:     canote,
 			}
 		}
 	}
 
 	// Check numeric prior-year values
 	if nv, ok := e.priorYear[q.Key]; ok {
+		canote := ""
+		if e.stateCode == "CA" {
+			canote = GetCAPreFillNote(q.Key, e.priorYear, e.priorYearStr)
+		}
 		return &PriorYearDefault{
 			FieldKey:   q.Key,
 			Label:      q.Label,
 			PriorValue: formatCurrency(nv),
 			RawValue:   nv,
 			StrValue:   "",
+			CANote:     canote,
 		}
 	}
 
@@ -228,6 +251,19 @@ func (e *Engine) buildQuestions() {
 	var personalInfo []Question
 	var employerInfo []Question
 	var w2Financial []Question
+	var f1099intInfo []Question
+	var f1099intFinancial []Question
+	var f1099divInfo []Question
+	var f1099divFinancial []Question
+	var f1099necInfo []Question
+	var f1099necFinancial []Question
+	var f1099bInfo []Question
+	var f1099bFinancial []Question
+	var scheduleCQuestions []Question
+	var form8889Questions []Question
+	var scheduleAQuestions []Question
+	var form3514Questions []Question
+	var form3853Questions []Question
 	var remaining []Question
 
 	for _, form := range e.registry.AllForms() {
@@ -258,6 +294,32 @@ func (e *Engine) buildQuestions() {
 				employerInfo = append(employerInfo, q)
 			case form.ID == "w2":
 				w2Financial = append(w2Financial, q)
+			case form.ID == "1099int" && (field.Line == "payer_name" || field.Line == "payer_tin"):
+				f1099intInfo = append(f1099intInfo, q)
+			case form.ID == "1099int":
+				f1099intFinancial = append(f1099intFinancial, q)
+			case form.ID == "1099div" && (field.Line == "payer_name" || field.Line == "payer_tin"):
+				f1099divInfo = append(f1099divInfo, q)
+			case form.ID == "1099div":
+				f1099divFinancial = append(f1099divFinancial, q)
+			case form.ID == "1099nec" && (field.Line == "payer_name" || field.Line == "payer_tin"):
+				f1099necInfo = append(f1099necInfo, q)
+			case form.ID == "1099nec":
+				f1099necFinancial = append(f1099necFinancial, q)
+			case form.ID == "1099b" && (field.Line == "description" || field.Line == "date_acquired" || field.Line == "date_sold"):
+				f1099bInfo = append(f1099bInfo, q)
+			case form.ID == "1099b":
+				f1099bFinancial = append(f1099bFinancial, q)
+			case form.ID == "schedule_c":
+				scheduleCQuestions = append(scheduleCQuestions, q)
+			case form.ID == "form_8889":
+				form8889Questions = append(form8889Questions, q)
+			case form.ID == "schedule_a" || form.ID == "schedule_3":
+				scheduleAQuestions = append(scheduleAQuestions, q)
+			case form.ID == "form_3514":
+				form3514Questions = append(form3514Questions, q)
+			case form.ID == "form_3853":
+				form3853Questions = append(form3853Questions, q)
 			default:
 				remaining = append(remaining, q)
 			}
@@ -266,14 +328,31 @@ func (e *Engine) buildQuestions() {
 
 	// Order personal info: first_name, last_name, ssn
 	personalInfo = sortByLineOrder(personalInfo, []string{"first_name", "last_name", "ssn"})
-	// Order employer info: employer_name, employer_ein
+	// Order employer/payer info
 	employerInfo = sortByLineOrder(employerInfo, []string{"employer_name", "employer_ein"})
+	f1099intInfo = sortByLineOrder(f1099intInfo, []string{"payer_name", "payer_tin"})
+	f1099divInfo = sortByLineOrder(f1099divInfo, []string{"payer_name", "payer_tin"})
 
 	e.questions = nil
 	e.questions = append(e.questions, filingStatus...)
 	e.questions = append(e.questions, personalInfo...)
 	e.questions = append(e.questions, employerInfo...)
 	e.questions = append(e.questions, w2Financial...)
+	e.questions = append(e.questions, f1099intInfo...)
+	e.questions = append(e.questions, f1099intFinancial...)
+	e.questions = append(e.questions, f1099divInfo...)
+	e.questions = append(e.questions, f1099divFinancial...)
+	f1099necInfo = sortByLineOrder(f1099necInfo, []string{"payer_name", "payer_tin"})
+	e.questions = append(e.questions, f1099necInfo...)
+	e.questions = append(e.questions, f1099necFinancial...)
+	f1099bInfo = sortByLineOrder(f1099bInfo, []string{"description", "date_acquired", "date_sold"})
+	e.questions = append(e.questions, f1099bInfo...)
+	e.questions = append(e.questions, f1099bFinancial...)
+	e.questions = append(e.questions, scheduleCQuestions...)
+	e.questions = append(e.questions, form8889Questions...)
+	e.questions = append(e.questions, scheduleAQuestions...)
+	e.questions = append(e.questions, form3514Questions...)
+	e.questions = append(e.questions, form3853Questions...)
 	e.questions = append(e.questions, remaining...)
 	e.current = 0
 }
@@ -480,9 +559,29 @@ func (e *Engine) Progress() (current int, total int) {
 // SetupRegistry creates a Registry with all known forms registered.
 func SetupRegistry() *forms.Registry {
 	reg := forms.NewRegistry()
+	// Input forms
 	reg.Register(inputs.W2())
+	reg.Register(inputs.F1099INT())
+	reg.Register(inputs.F1099DIV())
+	reg.Register(inputs.F1099NEC())
+	reg.Register(inputs.F1099B())
+	// Federal forms
 	reg.Register(federal.F1040())
+	reg.Register(federal.ScheduleA())
+	reg.Register(federal.ScheduleB())
+	reg.Register(federal.ScheduleC())
+	reg.Register(federal.ScheduleD())
+	reg.Register(federal.Form8949())
+	reg.Register(federal.Schedule1())
+	reg.Register(federal.Schedule2())
+	reg.Register(federal.Schedule3())
+	reg.Register(federal.ScheduleSE())
+	reg.Register(federal.Form8995())
+	reg.Register(federal.Form8889())
+	// CA state forms
 	reg.Register(ca.F540())
 	reg.Register(ca.ScheduleCA())
+	reg.Register(ca.Form3514())
+	reg.Register(ca.Form3853())
 	return reg
 }

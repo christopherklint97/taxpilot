@@ -83,15 +83,17 @@ func F540() *forms.FormDef {
 
 			// --- Deductions ---
 
-			// Line 18: CA standard deduction (or itemized — standard for MVP)
+			// Line 18: CA deduction — larger of CA standard deduction or CA itemized
 			{
 				Line:      "18",
 				Type:      forms.Computed,
-				Label:     "California standard deduction",
-				DependsOn: []string{"ca_540:filing_status"},
+				Label:     "California deduction (standard or itemized)",
+				DependsOn: []string{"ca_540:filing_status", "ca_schedule_ca:ca_itemized"},
 				Compute: func(dv forms.DepValues) float64 {
 					fs := taxmath.FilingStatus(dv.GetString("ca_540:filing_status"))
-					return taxmath.GetStandardDeduction(dv.TaxYear(), taxmath.StateCA, fs)
+					standard := taxmath.GetStandardDeduction(dv.TaxYear(), taxmath.StateCA, fs)
+					caItemized := dv.Get("ca_schedule_ca:ca_itemized")
+					return math.Max(standard, caItemized)
 				},
 			},
 			// Line 19: CA taxable income
@@ -157,14 +159,14 @@ func F540() *forms.FormDef {
 					return taxmath.GetCAMentalHealthTax(dv.Get("ca_540:19"))
 				},
 			},
-			// Line 40: Total CA tax
+			// Line 40: Total CA tax (includes health coverage penalty from Form 3853)
 			{
 				Line:      "40",
 				Type:      forms.Computed,
 				Label:     "Total California tax",
-				DependsOn: []string{"ca_540:35", "ca_540:36"},
+				DependsOn: []string{"ca_540:35", "ca_540:36", "form_3853:7"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("ca_540:35") + dv.Get("ca_540:36")
+					return dv.Get("ca_540:35") + dv.Get("ca_540:36") + dv.Get("form_3853:7")
 				},
 			},
 
@@ -180,14 +182,14 @@ func F540() *forms.FormDef {
 					return dv.SumAll("w2:*:state_tax_withheld")
 				},
 			},
-			// Line 74: Total payments
+			// Line 74: Total payments and credits (includes CalEITC from Form 3514)
 			{
 				Line:      "74",
 				Type:      forms.Computed,
 				Label:     "Total payments and credits",
-				DependsOn: []string{"ca_540:71"},
+				DependsOn: []string{"ca_540:71", "form_3514:7"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("ca_540:71")
+					return dv.Get("ca_540:71") + dv.Get("form_3514:7")
 				},
 			},
 
@@ -228,7 +230,7 @@ func (c CAFormSet) Name() string { return "California" }
 
 // RequiredForms returns the form IDs always needed for a CA filing.
 func (c CAFormSet) RequiredForms() []string {
-	return []string{"ca_540", "ca_schedule_ca"}
+	return []string{"ca_540", "ca_schedule_ca", "form_3514", "form_3853"}
 }
 
 // ConditionalForms returns forms that are conditionally required.

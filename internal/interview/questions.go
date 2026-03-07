@@ -5,6 +5,8 @@ type ContextualPrompt struct {
 	Prompt   string // the question to show the user
 	HelpText string // additional context shown below the prompt
 	CANote   string // CA-specific note (shown when filing in CA)
+	IRCRef   string // IRC section reference (e.g., "IRC §61(a)")
+	CARef    string // CA Revenue & Taxation Code reference (e.g., "R&TC §17071")
 }
 
 // contextualPrompts maps field keys to enhanced prompts.
@@ -14,6 +16,8 @@ var contextualPrompts = map[string]ContextualPrompt{
 		Prompt:   "What is your filing status for 2025?",
 		HelpText: "Your filing status affects your tax brackets, standard deduction, and eligibility for certain credits.",
 		CANote:   "California uses the same filing status as your federal return.",
+		IRCRef:   "IRC §1",
+		CARef:    "R&TC §17042",
 	},
 	"1040:first_name": {
 		Prompt:   "What is your first name?",
@@ -39,14 +43,18 @@ var contextualPrompts = map[string]ContextualPrompt{
 		Prompt:   "What were your total wages from this employer?",
 		HelpText: "This is Box 1 on your W-2: Wages, tips, and other compensation. This is your gross pay minus pre-tax deductions (401k, health insurance, etc.).",
 		CANote:   "If your CA wages (Box 16) differ from federal wages (Box 1), we'll ask about that separately.",
+		IRCRef:   "IRC §61(a)",
+		CARef:    "R&TC §17071",
 	},
 	"w2:1:federal_tax_withheld": {
 		Prompt:   "How much federal income tax was withheld?",
 		HelpText: "W-2 Box 2. This is the amount your employer sent to the IRS on your behalf throughout the year.",
+		IRCRef:   "IRC §3402",
 	},
 	"w2:1:ss_wages": {
 		Prompt:   "What were your Social Security wages?",
 		HelpText: "W-2 Box 3. Usually the same as Box 1, but may differ if you have pre-tax deductions that are subject to Social Security tax.",
+		IRCRef:   "IRC §3121",
 	},
 	"w2:1:ss_tax_withheld": {
 		Prompt:   "How much Social Security tax was withheld?",
@@ -55,6 +63,7 @@ var contextualPrompts = map[string]ContextualPrompt{
 	"w2:1:medicare_wages": {
 		Prompt:   "What were your Medicare wages?",
 		HelpText: "W-2 Box 5. Usually the same as Box 1. There is no cap on Medicare wages.",
+		IRCRef:   "IRC §3101",
 	},
 	"w2:1:medicare_tax_withheld": {
 		Prompt:   "How much Medicare tax was withheld?",
@@ -64,10 +73,329 @@ var contextualPrompts = map[string]ContextualPrompt{
 		Prompt:   "What were your state wages?",
 		HelpText: "W-2 Box 16. This is your California taxable wages. Usually the same as Box 1 (federal wages).",
 		CANote:   "If different from federal wages, this is typically due to items taxed differently by California.",
+		CARef:    "R&TC §17071",
 	},
 	"w2:1:state_tax_withheld": {
 		Prompt:   "How much California state tax was withheld?",
 		HelpText: "W-2 Box 17. This is the amount your employer sent to the California FTB on your behalf.",
+	},
+
+	// --- Schedule A fields ---
+	"schedule_a:1": {
+		Prompt:   "What were your total medical and dental expenses?",
+		HelpText: "Include insurance premiums you paid (not employer-paid), doctor visits, prescriptions, etc. Only the amount exceeding 7.5% of your AGI is deductible.",
+		CANote:   "California uses the same 7.5% AGI threshold for medical expense deductions.",
+		IRCRef:   "IRC §213(a)",
+		CARef:    "R&TC §17201",
+	},
+	"schedule_a:5a": {
+		Prompt:   "How much did you pay in state and local income taxes?",
+		HelpText: "Include state income tax payments, estimated tax payments, and any prior-year state tax paid this year. The federal SALT deduction is capped at $10,000 ($5,000 if MFS).",
+		CANote:   "California does NOT allow a deduction for state income taxes on Schedule CA. This amount will be added back.",
+		IRCRef:   "IRC §164",
+		CARef:    "R&TC §17220 (not allowed)",
+	},
+	"schedule_a:5b": {
+		Prompt:   "How much did you pay in personal property taxes?",
+		HelpText: "Taxes on personal property like vehicles, based on the value of the property. Only the ad valorem (value-based) portion is deductible.",
+	},
+	"schedule_a:5c": {
+		Prompt:   "How much did you pay in real estate taxes?",
+		HelpText: "Property taxes paid on your home and other real estate you own. Subject to the $10,000 SALT cap.",
+		IRCRef:   "IRC §164(a)(1)",
+		CARef:    "R&TC §17220",
+	},
+	"schedule_a:8a": {
+		Prompt:   "How much home mortgage interest did you pay?",
+		HelpText: "From Form 1098. Deductible on mortgages up to $750,000 ($375,000 if MFS). Includes points paid.",
+		CANote:   "California generally conforms to federal mortgage interest deduction rules.",
+		IRCRef:   "IRC §163(h)",
+		CARef:    "R&TC §17201",
+	},
+	"schedule_a:12": {
+		Prompt:   "How much did you give to charity (cash or check)?",
+		HelpText: "Contributions to qualified charitable organizations by cash, check, or electronic payment. Keep receipts for all donations.",
+		IRCRef:   "IRC §170",
+		CARef:    "R&TC §17201",
+	},
+	"schedule_a:13": {
+		Prompt:   "Any charitable contributions other than cash?",
+		HelpText: "Donated clothing, household items, vehicles, stocks, etc. Items must be in good condition. Enter fair market value.",
+	},
+	"schedule_a:14": {
+		Prompt:   "Any charitable contribution carryover from last year?",
+		HelpText: "If your charitable deductions exceeded the AGI limitation in a prior year, you may carry the excess forward. Enter 0 if none.",
+	},
+
+	// --- 1099-INT fields ---
+	"1099int:1:payer_name": {
+		Prompt:   "Who is the payer for your 1099-INT?",
+		HelpText: "Enter the name of the bank or institution that paid you interest.",
+	},
+	"1099int:1:payer_tin": {
+		Prompt:   "What is the payer's TIN?",
+		HelpText: "The 9-digit Taxpayer Identification Number from your 1099-INT. Format: XX-XXXXXXX.",
+	},
+	"1099int:1:interest_income": {
+		Prompt:   "What was your interest income?",
+		HelpText: "1099-INT Box 1. This is your total taxable interest earned during the year.",
+		IRCRef:   "IRC §61(a)(4)",
+	},
+	"1099int:1:early_withdrawal_penalty": {
+		Prompt:   "Was there an early withdrawal penalty?",
+		HelpText: "1099-INT Box 2. Penalty for early withdrawal of a time deposit (e.g., CD). Enter 0 if none.",
+	},
+	"1099int:1:us_savings_bond_interest": {
+		Prompt:   "Any interest on U.S. Savings Bonds or Treasury obligations?",
+		HelpText: "1099-INT Box 3. This interest is taxable federally but exempt from state tax in most states.",
+		CANote:   "California does not tax interest on U.S. government obligations. This will be subtracted on Schedule CA.",
+		IRCRef:   "IRC §103",
+		CARef:    "R&TC §17133",
+	},
+	"1099int:1:federal_tax_withheld": {
+		Prompt:   "Was any federal tax withheld on interest?",
+		HelpText: "1099-INT Box 4. Usually $0 unless backup withholding applied.",
+	},
+	"1099int:1:tax_exempt_interest": {
+		Prompt:   "Any tax-exempt interest?",
+		HelpText: "1099-INT Box 8. Interest from municipal bonds. Federally exempt but may be subject to state tax.",
+		CANote:   "Only interest from California municipal bonds is exempt from CA tax. Out-of-state muni interest is taxable in CA.",
+		IRCRef:   "IRC §103",
+		CARef:    "R&TC §17133.5",
+	},
+	"1099int:1:private_activity_bond_interest": {
+		Prompt:   "Any specified private activity bond interest?",
+		HelpText: "1099-INT Box 9. This may be subject to the Alternative Minimum Tax (AMT). Enter 0 if none.",
+	},
+
+	// --- 1099-DIV fields ---
+	"1099div:1:payer_name": {
+		Prompt:   "Who is the payer for your 1099-DIV?",
+		HelpText: "Enter the name of the brokerage or fund company that paid you dividends.",
+	},
+	"1099div:1:payer_tin": {
+		Prompt:   "What is the payer's TIN?",
+		HelpText: "The 9-digit Taxpayer Identification Number from your 1099-DIV. Format: XX-XXXXXXX.",
+	},
+	"1099div:1:ordinary_dividends": {
+		Prompt:   "What were your total ordinary dividends?",
+		HelpText: "1099-DIV Box 1a. This includes both qualified and non-qualified dividends.",
+		IRCRef:   "IRC §61(a)(7)",
+	},
+	"1099div:1:qualified_dividends": {
+		Prompt:   "How much of that was qualified dividends?",
+		HelpText: "1099-DIV Box 1b. Qualified dividends are taxed at lower capital gains rates. This is a subset of Box 1a.",
+		CANote:   "California taxes qualified dividends as ordinary income \u2014 there is no preferential rate.",
+		IRCRef:   "IRC §1(h)(11)",
+		CARef:    "R&TC §17041 (taxed as ordinary)",
+	},
+	"1099div:1:total_capital_gain": {
+		Prompt:   "Any capital gain distributions?",
+		HelpText: "1099-DIV Box 2a. Long-term capital gain distributions from mutual funds. Enter 0 if none.",
+	},
+	"1099div:1:section_1250_gain": {
+		Prompt:   "Any unrecaptured Section 1250 gain?",
+		HelpText: "1099-DIV Box 2b. Gain from depreciation on real property in a fund. Usually 0. Enter 0 if none.",
+	},
+	"1099div:1:section_199a_dividends": {
+		Prompt:   "Any Section 199A dividends?",
+		HelpText: "1099-DIV Box 5. REIT dividends that may qualify for the 20% QBI deduction. Enter 0 if none.",
+		CANote:   "California does not allow the Section 199A (QBI) deduction.",
+		IRCRef:   "IRC §199A",
+		CARef:    "R&TC (not allowed)",
+	},
+	"1099div:1:federal_tax_withheld": {
+		Prompt:   "Was any federal tax withheld on dividends?",
+		HelpText: "1099-DIV Box 4. Usually $0 unless backup withholding applied.",
+	},
+	"1099div:1:exempt_interest_dividends": {
+		Prompt:   "Any exempt-interest dividends?",
+		HelpText: "1099-DIV Box 12. Tax-exempt dividends from a mutual fund holding municipal bonds. Enter 0 if none.",
+		CANote:   "Only the portion from California municipal bonds is exempt from CA tax.",
+	},
+	"1099div:1:private_activity_bond_dividends": {
+		Prompt:   "Any specified private activity bond interest dividends?",
+		HelpText: "1099-DIV Box 13. May be subject to AMT. Enter 0 if none.",
+	},
+
+	// --- Form 8889 (HSA) fields ---
+	"form_8889:1": {
+		Prompt:   "What type of high deductible health plan (HDHP) coverage do you have?",
+		HelpText: "Self-only if you cover just yourself. Family if your HDHP covers you and at least one other person.",
+		CANote:   "California does NOT conform to federal HSA treatment. HSA contributions are not deductible for CA purposes.",
+	},
+	"form_8889:2": {
+		Prompt:   "How much did you contribute to your HSA for 2025?",
+		HelpText: "Enter your personal HSA contributions (not through payroll). 2025 limits: $4,300 self-only, $8,550 family.",
+		CANote:   "This deduction will be added back on Schedule CA \u2014 CA does not allow HSA deductions.",
+		IRCRef:   "IRC §223",
+		CARef:    "R&TC §17215 (not allowed)",
+	},
+	"form_8889:3": {
+		Prompt:   "How much did your employer contribute to your HSA?",
+		HelpText: "W-2 Box 12, code W. Includes both employer contributions and pre-tax payroll deductions. These reduce your available contribution limit.",
+	},
+	"form_8889:5": {
+		Prompt:   "Are you age 55 or older? Enter catch-up contribution ($1,000 max, or 0):",
+		HelpText: "If you're 55 or older by the end of 2025, you can contribute an additional $1,000.",
+	},
+	"form_8889:14a": {
+		Prompt:   "How much did you receive in HSA distributions in 2025?",
+		HelpText: "Total distributions from your HSA during the year. Form 1099-SA, Box 1.",
+	},
+	"form_8889:14c": {
+		Prompt:   "How much of your HSA distributions were for qualified medical expenses?",
+		HelpText: "Qualified expenses include doctor visits, prescriptions, dental, and vision care. Non-qualified distributions are subject to income tax plus a 20% penalty.",
+	},
+
+	// --- Schedule 3 fields ---
+	"schedule_3:10": {
+		Prompt:   "How much did you pay in federal estimated taxes for 2025?",
+		HelpText: "Total of all quarterly estimated tax payments (1040-ES) you sent to the IRS for 2025. Enter 0 if none.",
+		CANote:   "CA estimated payments are entered separately. This is federal only.",
+		IRCRef:   "IRC §6654",
+	},
+
+	// --- 1099-NEC fields ---
+	"1099nec:1:payer_name": {
+		Prompt:   "Who is the payer for your 1099-NEC?",
+		HelpText: "Enter the name of the client or company that paid you as a non-employee (independent contractor).",
+	},
+	"1099nec:1:payer_tin": {
+		Prompt:   "What is the payer's TIN?",
+		HelpText: "The 9-digit Taxpayer Identification Number from your 1099-NEC. Format: XX-XXXXXXX.",
+	},
+	"1099nec:1:nonemployee_compensation": {
+		Prompt:   "How much nonemployee compensation did you receive?",
+		HelpText: "1099-NEC Box 1. This is income for work you performed as an independent contractor. It is subject to self-employment tax.",
+		CANote:   "California generally conforms to federal treatment of self-employment income.",
+		IRCRef:   "IRC §61(a)(1)",
+		CARef:    "R&TC §17071",
+	},
+	"1099nec:1:federal_tax_withheld": {
+		Prompt:   "Was any federal tax withheld on this 1099-NEC?",
+		HelpText: "1099-NEC Box 4. Usually $0 unless backup withholding applied.",
+	},
+
+	// --- Schedule C fields ---
+	"schedule_c:business_name": {
+		Prompt:   "What is your business name?",
+		HelpText: "Enter your business name, or your own name if you are a sole proprietor without a separate business name.",
+	},
+	"schedule_c:business_code": {
+		Prompt:   "What is your principal business activity code?",
+		HelpText: "Enter the 6-digit NAICS code that best describes your business activity. Common codes: 541990 (other professional services), 541611 (management consulting), 541511 (custom computer programming).",
+	},
+	"schedule_c:8": {
+		Prompt:   "How much did you spend on advertising?",
+		HelpText: "Include costs for online ads, print ads, business cards, website hosting, and other promotional materials.",
+		IRCRef:   "IRC §162(a)",
+	},
+	"schedule_c:10": {
+		Prompt:   "What were your car and truck expenses for business?",
+		HelpText: "Business-use portion only. You can use actual expenses or the standard mileage rate (70 cents/mile for 2025). Keep a mileage log.",
+		IRCRef:   "IRC §162(a), §274(d)",
+	},
+	"schedule_c:17": {
+		Prompt:   "How much did you pay for legal and professional services?",
+		HelpText: "Include fees paid to attorneys, accountants, tax preparers, and other professionals for business-related services.",
+		IRCRef:   "IRC §162(a)",
+	},
+	"schedule_c:18": {
+		Prompt:   "What were your office expenses?",
+		HelpText: "Include office supplies, postage, software subscriptions, and other general office costs. Does not include home office deduction (Form 8829).",
+		IRCRef:   "IRC §162(a)",
+	},
+	"schedule_c:22": {
+		Prompt:   "How much did you spend on supplies?",
+		HelpText: "Materials and supplies consumed and used during the year in your business. Does not include items that are inventory.",
+		IRCRef:   "IRC §162(a)",
+	},
+	"schedule_c:25": {
+		Prompt:   "What were your business utility expenses?",
+		HelpText: "Business portion of utilities (electricity, gas, water, internet, phone). If you work from home, enter only the business-use percentage.",
+		IRCRef:   "IRC §162(a)",
+	},
+	"schedule_c:27": {
+		Prompt:   "Any other business expenses not listed above?",
+		HelpText: "Enter the total of any other ordinary and necessary business expenses not covered by the specific expense lines (e.g., professional development, subscriptions, tools).",
+		IRCRef:   "IRC §162(a)",
+	},
+
+	// --- 1099-B fields ---
+	"1099b:1:description": {
+		Prompt:   "Describe the security you sold:",
+		HelpText: "Enter a short description like \"100 sh AAPL\" or \"VTSAX mutual fund.\" This helps identify the transaction on Form 8949.",
+	},
+	"1099b:1:date_acquired": {
+		Prompt:   "When did you acquire this security?",
+		HelpText: "Enter the date in MM/DD/YYYY format, or VARIOUS if acquired over multiple dates. Holdings over 1 year qualify for lower long-term capital gains rates.",
+	},
+	"1099b:1:date_sold": {
+		Prompt:   "When did you sell this security?",
+		HelpText: "Enter the date in MM/DD/YYYY format from your 1099-B.",
+	},
+	"1099b:1:proceeds": {
+		Prompt:   "What were the proceeds from this sale?",
+		HelpText: "1099-B Box 1d. The total amount you received from the sale, before commissions.",
+		IRCRef:   "IRC §1001",
+		CARef:    "R&TC §18031",
+	},
+	"1099b:1:cost_basis": {
+		Prompt:   "What was the cost basis?",
+		HelpText: "1099-B Box 1e. Your original purchase price plus commissions. If basis was not reported to the IRS, check your brokerage statements.",
+		IRCRef:   "IRC §1001",
+		CARef:    "R&TC §18031",
+	},
+	"1099b:1:wash_sale_loss": {
+		Prompt:   "Any wash sale loss disallowed?",
+		HelpText: "1099-B Box 1g. If you bought substantially identical securities within 30 days of selling at a loss, the loss is disallowed. Enter 0 if none.",
+	},
+	"1099b:1:federal_tax_withheld": {
+		Prompt:   "Was any federal tax withheld?",
+		HelpText: "1099-B Box 4. Usually $0 unless backup withholding applied.",
+	},
+	"1099b:1:term": {
+		Prompt:   "Was this a short-term or long-term holding?",
+		HelpText: "Short-term: held 1 year or less (taxed as ordinary income). Long-term: held more than 1 year (taxed at preferential rates of 0%, 15%, or 20%).",
+		CANote:   "California taxes capital gains as ordinary income \u2014 there is no preferential long-term rate.",
+	},
+	"1099b:1:basis_reported": {
+		Prompt:   "Was the cost basis reported to the IRS?",
+		HelpText: "Check Box 12 on your 1099-B. Most brokers report basis for stocks purchased after 2011.",
+	},
+
+	// --- Form 3514 (CalEITC) fields ---
+	"form_3514:3": {
+		Prompt:   "How many qualifying children do you have for the California Earned Income Tax Credit?",
+		HelpText: "A qualifying child must be under age 18 (or under 24 if a student), live with you in California for more than half the year, and have a valid SSN or ITIN.",
+		CANote:   "The CalEITC provides a refundable credit for low-income workers with earned income up to $30,950.",
+		CARef:    "R&TC \u00a718051",
+	},
+	"form_3514:6_yctc": {
+		Prompt:   "Do you have a qualifying child under age 6?",
+		HelpText: "If yes, you may qualify for the Young Child Tax Credit (YCTC), an additional $1,117 credit.",
+		CANote:   "The YCTC is available to CalEITC-eligible filers with a child under age 6 at the end of the tax year.",
+		CARef:    "R&TC \u00a717052.1",
+	},
+
+	// --- Form 3853 (Health Coverage) fields ---
+	"form_3853:1": {
+		Prompt:   "Did you have qualifying health coverage for all 12 months of 2025?",
+		HelpText: "Qualifying coverage includes employer plans, Covered California, Medicare, Medi-Cal, TRICARE, and most other minimum essential coverage.",
+		CANote:   "California requires all residents to have health coverage or pay a penalty (Individual Shared Responsibility).",
+		CARef:    "R&TC \u00a761015",
+	},
+	"form_3853:2": {
+		Prompt:   "How many months were you without qualifying health coverage?",
+		HelpText: "Count only full months without coverage. If you had coverage for any part of a month, that month counts as covered.",
+		CANote:   "The penalty is calculated per month without coverage.",
+	},
+	"form_3853:3": {
+		Prompt:   "Did you have an exemption from the health coverage requirement?",
+		HelpText: "Exemptions include religious conscience, coverage gap of less than 3 months, affordability hardship, and certain other circumstances.",
+		CANote:   "You can apply for exemptions through Covered California or claim them on Form 3853.",
+		CARef:    "R&TC \u00a761030",
 	},
 }
 
@@ -78,10 +406,12 @@ func GetContextualPrompt(fieldKey string, originalPrompt string, stateCode strin
 		result := ContextualPrompt{
 			Prompt:   cp.Prompt,
 			HelpText: cp.HelpText,
+			IRCRef:   cp.IRCRef,
 		}
-		// Only include CANote when filing in California
+		// Only include CANote and CARef when filing in California
 		if stateCode == "CA" {
 			result.CANote = cp.CANote
+			result.CARef = cp.CARef
 		}
 		return result
 	}

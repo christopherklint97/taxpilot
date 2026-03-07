@@ -1,0 +1,12 @@
+{
+  "name": "CA health coverage penalty - 3 months uninsured — expected CA values",
+  "tax_year": 2025,
+  "expected": {
+    "form_3853:4": 80000.00,
+    "form_3853:5": 900.00,
+    "form_3853:6": 2700.00,
+    "form_3853:7": 2700.00,
+    "form_3514:5": 0.00,
+    "form_3514:7": 0.00
+  }
+}

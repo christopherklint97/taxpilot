@@ -263,8 +263,8 @@ func TestExportReturn(t *testing.T) {
 		t.Fatalf("ExportReturn returned error: %v", err)
 	}
 
-	if len(paths) != 2 {
-		t.Fatalf("expected 2 exported files, got %d", len(paths))
+	if len(paths) < 5 {
+		t.Fatalf("expected at least 5 exported files, got %d", len(paths))
 	}
 
 	for _, p := range paths {
