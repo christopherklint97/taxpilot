@@ -54,40 +54,65 @@ are always solved first, then state forms that depend on them.
   vs. which require California adjustments (Schedule CA)
 - Input forms (W-2, 1099s) capture BOTH federal and state boxes
 
-### 4. Test Against Known-Good Returns
+### 4. Expat/Foreign Income Is Fully Supported
+TaxPilot handles Americans living abroad with:
+- Form 2555 (FEIE) with tax stacking via `ComputeTaxWithStacking`
+- Form 1116 (FTC) with credit limitation and carryforward
+- Form 8938 (FATCA) with dual thresholds (abroad vs US)
+- Form 8833 (treaty disclosure)
+- FBAR guidance (detection + instructions, filed separately with FinCEN)
+- CA FEIE non-conformity (automatic add-back on Schedule CA)
+- No double-dipping: FTC only on income NOT excluded by FEIE
+
+### 5. Test Against Known-Good Returns
 Every form module must have table-driven tests using scenarios from
 testdata/scenarios/. Each scenario has inputs and expected outputs.
 CA scenarios must test conformity edge cases (SS benefits, SALT, QBI, etc.)
 When adding or modifying form logic, always run the full test suite.
 
-### 5. Year-Agnostic Form Definitions
+### 6. Year-Agnostic Form Definitions
 Tax years change brackets and limits, but form structure changes less often.
 Keep year-specific data in data/tax_years/YYYY/{federal,ca}/ YAML files.
 Form logic in Go references these via the `taxmath` package.
 
-### 6. E-File XML Must Be Deterministic
+### 7. E-File XML Must Be Deterministic
 The MeF XML generation and CA e-file XML generation must be completely
 deterministic — same inputs always produce identical XML. This makes
 testing and ATS/PATS certification reliable. Never use the LLM for
 anything in the e-file pipeline.
 
+## Supported Forms
+
+### Federal
+Form 1040, Schedules 1-3/A/B/C/D/SE, Forms 8949/8889/8995,
+Form 2555 (FEIE), Form 1116 (FTC), Form 8938 (FATCA), Form 8833 (Treaty)
+
+### Input Forms
+W-2, 1099-INT, 1099-DIV, 1099-NEC, 1099-B
+
+### California
+Form 540, Schedule CA (with FEIE/HSA/SALT/QBI add-backs), Form 3514 (CalEITC), Form 3853 (Health Coverage)
+
 ## Directory Guide
 - `cmd/` — CLI entrypoint only, minimal logic
-- `internal/interview/` — The interactive Q&A engine
+- `internal/interview/` — The interactive Q&A engine, situation detection, FBAR guidance
 - `internal/forms/` — Deterministic form logic (THE CORE)
-- `internal/forms/federal/` — One file per IRS form
-- `internal/forms/state/ca/` — One file per CA FTB form
+- `internal/forms/federal/` — One file per IRS form (16 forms)
+- `internal/forms/state/ca/` — One file per CA FTB form (4 forms + conformity)
 - `internal/forms/state/interface.go` — State form interface (for future states)
 - `internal/forms/inputs/` — Employer/institution provided forms (W-2, 1099s)
-- `internal/knowledge/` — RAG over federal + CA tax code for explanations
+- `internal/knowledge/` — RAG over federal + CA tax code (100+ documents including expat)
 - `internal/pdf/` — PDF parsing and filling
-- `internal/efile/mef/` — IRS MeF e-file transmission
-- `internal/efile/ca/` — CA FTB e-file transmission
+- `internal/efile/` — Pre-submission validation and reasonableness checks
+- `internal/efile/mef/` — IRS MeF XML serialization and SOAP transmission
+- `internal/efile/ca/` — CA FTB XML serialization and REST transmission
+- `internal/errors/` — Typed errors (UnsupportedError, IncompleteError, CPAReferralError, ConformityError)
+- `internal/security/` — AES-256-GCM encryption, Argon2id KDF, audit trail
 - `internal/state/` — JSON state persistence between sessions
 - `internal/tui/` — Bubble Tea views
-- `pkg/taxmath/` — Pure math utilities (brackets, rounding, tables)
+- `pkg/taxmath/` — Pure math utilities (brackets, rounding, tables, expat tax stacking)
 - `data/` — Year-specific tax data, knowledge base, MeF/CA schemas
-- `testdata/` — Test scenarios with known-good inputs/outputs
+- `testdata/` — Test scenarios with known-good inputs/outputs (17 scenarios)
 
 ## Common Tasks
 
