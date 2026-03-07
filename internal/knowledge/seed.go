@@ -267,5 +267,14 @@ func SeedStore() *Store {
 	for _, doc := range SeedCADocuments() {
 		s.Add(doc)
 	}
+	for _, doc := range SeedIRCSections() {
+		s.Add(doc)
+	}
+	for _, doc := range SeedIRSPublications() {
+		s.Add(doc)
+	}
+	for _, doc := range SeedFTBPublications() {
+		s.Add(doc)
+	}
 	return s
 }

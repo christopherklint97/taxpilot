@@ -140,6 +140,12 @@ func (f *Filler) FillFormText(formID string, values map[string]float64, strValue
 		text = render1040Text(config, values, strValues)
 	case "ca_540":
 		text = renderCA540Text(config, values, strValues)
+	case "schedule_b":
+		text = renderScheduleBText(config, values, strValues)
+	case "schedule_d":
+		text = renderScheduleDText(config, values, strValues)
+	case "schedule_1":
+		text = renderSchedule1Text(config, values, strValues)
 	default:
 		text = renderGenericText(config, values, strValues)
 	}
@@ -294,6 +300,24 @@ func render1040Text(config *FormPDFConfig, values map[string]float64, strValues 
 	b.WriteString("------\n")
 	b.WriteString(fmt.Sprintf("1a. Wages, salaries, tips ................ %s\n", FormatCurrency(getVal(values, "1040:1a"))))
 	b.WriteString(fmt.Sprintf("1z. Total from W-2s ..................... %s\n", FormatCurrency(getVal(values, "1040:1z"))))
+	if v := getVal(values, "1040:2a"); v > 0 {
+		b.WriteString(fmt.Sprintf("2a. Tax-exempt interest .................. %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "1040:2b"); v > 0 {
+		b.WriteString(fmt.Sprintf("2b. Taxable interest ..................... %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "1040:3a"); v > 0 {
+		b.WriteString(fmt.Sprintf("3a. Qualified dividends .................. %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "1040:3b"); v > 0 {
+		b.WriteString(fmt.Sprintf("3b. Ordinary dividends ................... %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "1040:7"); v != 0 {
+		b.WriteString(fmt.Sprintf("7.  Capital gain or (loss) ............... %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "1040:8"); v != 0 {
+		b.WriteString(fmt.Sprintf("8.  Other income (Schedule 1) ............ %s\n", FormatCurrency(v)))
+	}
 	b.WriteString(fmt.Sprintf("9.  Total income ........................ %s\n", FormatCurrency(getVal(values, "1040:9"))))
 	b.WriteString("\n")
 
@@ -318,6 +342,9 @@ func render1040Text(config *FormPDFConfig, values map[string]float64, strValues 
 	b.WriteString("PAYMENTS\n")
 	b.WriteString("--------\n")
 	b.WriteString(fmt.Sprintf("25a. Federal tax withheld (W-2) ......... %s\n", FormatCurrency(getVal(values, "1040:25a"))))
+	if v := getVal(values, "1040:25b"); v > 0 {
+		b.WriteString(fmt.Sprintf("25b. Federal tax withheld (1099) ........ %s\n", FormatCurrency(v)))
+	}
 	b.WriteString(fmt.Sprintf("25d. Total federal tax withheld ......... %s\n", FormatCurrency(getVal(values, "1040:25d"))))
 	b.WriteString(fmt.Sprintf("33. Total payments ...................... %s\n", FormatCurrency(getVal(values, "1040:33"))))
 	b.WriteString("\n")
@@ -408,6 +435,112 @@ func renderCA540Text(config *FormPDFConfig, values map[string]float64, strValues
 		b.WriteString("    No refund or amount owed ............ $0.00\n")
 	}
 
+	b.WriteString("\n")
+	b.WriteString(sep + "\n")
+
+	return b.String()
+}
+
+// renderScheduleBText renders Schedule B as formatted text.
+func renderScheduleBText(config *FormPDFConfig, values map[string]float64, strValues map[string]string) string {
+	sep := "============================================================"
+
+	var b strings.Builder
+	b.WriteString(sep + "\n")
+	b.WriteString("   Schedule B — Interest and Ordinary Dividends\n")
+	b.WriteString("                     Tax Year 2025\n")
+	b.WriteString(sep + "\n")
+	b.WriteString("\n")
+
+	b.WriteString("PART I: INTEREST\n")
+	b.WriteString("----------------\n")
+	b.WriteString(fmt.Sprintf("1. Interest income ...................... %s\n", FormatCurrency(getVal(values, "schedule_b:1"))))
+	b.WriteString(fmt.Sprintf("4. Total interest ....................... %s\n", FormatCurrency(getVal(values, "schedule_b:4"))))
+	b.WriteString("\n")
+
+	b.WriteString("PART II: ORDINARY DIVIDENDS\n")
+	b.WriteString("---------------------------\n")
+	b.WriteString(fmt.Sprintf("5. Ordinary dividends ................... %s\n", FormatCurrency(getVal(values, "schedule_b:5"))))
+	b.WriteString(fmt.Sprintf("6. Total ordinary dividends ............. %s\n", FormatCurrency(getVal(values, "schedule_b:6"))))
+	b.WriteString("\n")
+	b.WriteString(sep + "\n")
+
+	return b.String()
+}
+
+// renderSchedule1Text renders Schedule 1 as formatted text.
+func renderSchedule1Text(config *FormPDFConfig, values map[string]float64, strValues map[string]string) string {
+	sep := "============================================================"
+
+	var b strings.Builder
+	b.WriteString(sep + "\n")
+	b.WriteString("  Schedule 1 — Additional Income and Adjustments to Income\n")
+	b.WriteString("                     Tax Year 2025\n")
+	b.WriteString(sep + "\n")
+	b.WriteString("\n")
+
+	b.WriteString("PART I: ADDITIONAL INCOME\n")
+	b.WriteString("-------------------------\n")
+	if v := getVal(values, "schedule_1:1"); v != 0 {
+		b.WriteString(fmt.Sprintf("1.  Taxable refunds ..................... %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "schedule_1:3"); v != 0 {
+		b.WriteString(fmt.Sprintf("3.  Business income ..................... %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "schedule_1:7"); v != 0 {
+		b.WriteString(fmt.Sprintf("7.  Capital gain or (loss) .............. %s\n", FormatCurrency(v)))
+	}
+	b.WriteString(fmt.Sprintf("10. Total additional income ............. %s\n", FormatCurrency(getVal(values, "schedule_1:10"))))
+	b.WriteString("\n")
+
+	b.WriteString("PART II: ADJUSTMENTS TO INCOME\n")
+	b.WriteString("------------------------------\n")
+	if v := getVal(values, "schedule_1:15"); v != 0 {
+		b.WriteString(fmt.Sprintf("15. HSA deduction ....................... %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "schedule_1:24"); v != 0 {
+		b.WriteString(fmt.Sprintf("24. Early withdrawal penalty ............ %s\n", FormatCurrency(v)))
+	}
+	b.WriteString(fmt.Sprintf("26. Total adjustments ................... %s\n", FormatCurrency(getVal(values, "schedule_1:26"))))
+	b.WriteString("\n")
+	b.WriteString(sep + "\n")
+
+	return b.String()
+}
+
+// renderScheduleDText renders Schedule D as formatted text.
+func renderScheduleDText(config *FormPDFConfig, values map[string]float64, strValues map[string]string) string {
+	sep := "============================================================"
+
+	var b strings.Builder
+	b.WriteString(sep + "\n")
+	b.WriteString("        Schedule D — Capital Gains and Losses\n")
+	b.WriteString("                     Tax Year 2025\n")
+	b.WriteString(sep + "\n")
+	b.WriteString("\n")
+
+	b.WriteString("PART I: SHORT-TERM CAPITAL GAINS AND LOSSES\n")
+	b.WriteString("--------------------------------------------\n")
+	if v := getVal(values, "schedule_d:1"); v != 0 {
+		b.WriteString(fmt.Sprintf("1.  Short-term from Form 8949 ........... %s\n", FormatCurrency(v)))
+	}
+	b.WriteString(fmt.Sprintf("7.  Net short-term gain or (loss) ....... %s\n", FormatCurrency(getVal(values, "schedule_d:7"))))
+	b.WriteString("\n")
+
+	b.WriteString("PART II: LONG-TERM CAPITAL GAINS AND LOSSES\n")
+	b.WriteString("--------------------------------------------\n")
+	if v := getVal(values, "schedule_d:8"); v != 0 {
+		b.WriteString(fmt.Sprintf("8.  Long-term from Form 8949 ............ %s\n", FormatCurrency(v)))
+	}
+	if v := getVal(values, "schedule_d:13"); v != 0 {
+		b.WriteString(fmt.Sprintf("13. Capital gain distributions .......... %s\n", FormatCurrency(v)))
+	}
+	b.WriteString(fmt.Sprintf("15. Net long-term gain or (loss) ........ %s\n", FormatCurrency(getVal(values, "schedule_d:15"))))
+	b.WriteString("\n")
+
+	b.WriteString("PART III: SUMMARY\n")
+	b.WriteString("-----------------\n")
+	b.WriteString(fmt.Sprintf("16. Net capital gain or (loss) .......... %s\n", FormatCurrency(getVal(values, "schedule_d:16"))))
 	b.WriteString("\n")
 	b.WriteString(sep + "\n")
 

@@ -1,0 +1,25 @@
+{
+  "name": "CA health coverage penalty - 3 months uninsured",
+  "tax_year": 2025,
+  "inputs": {
+    "1040:filing_status": "single",
+    "1040:first_name": "John",
+    "1040:last_name": "Smith",
+    "1040:ssn": "111-22-3333",
+    "w2:employer_name": "Tech Corp",
+    "w2:employer_ein": "11-2233445",
+    "w2:wages": 80000,
+    "w2:federal_tax_withheld": 12000,
+    "w2:ss_wages": 80000,
+    "w2:ss_tax_withheld": 4960,
+    "w2:medicare_wages": 80000,
+    "w2:medicare_tax_withheld": 1160,
+    "w2:state_wages": 80000,
+    "w2:state_tax_withheld": 3500,
+    "form_3514:3": 0,
+    "form_3514:6_yctc": "no",
+    "form_3853:1": "no",
+    "form_3853:2": 3,
+    "form_3853:3": "no"
+  }
+}

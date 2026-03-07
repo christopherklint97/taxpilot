@@ -1,0 +1,33 @@
+{
+  "name": "Single filer with W-2 and stock sales (1099-B)",
+  "tax_year": 2025,
+  "expected": {
+    "1040:1a": 85000,
+    "1040:1z": 85000,
+    "form_8949:lt_proceeds": 15000,
+    "form_8949:lt_basis": 10000,
+    "form_8949:lt_gain_loss": 5000,
+    "form_8949:st_proceeds": 0,
+    "form_8949:st_basis": 0,
+    "form_8949:st_gain_loss": 0,
+    "schedule_d:1": 0,
+    "schedule_d:7": 0,
+    "schedule_d:8": 5000,
+    "schedule_d:13": 2000,
+    "schedule_d:15": 7000,
+    "schedule_d:16": 7000,
+    "schedule_1:7": 7000,
+    "1040:7": 7000,
+    "1040:9": 92000,
+    "1040:11": 92000,
+    "1040:12": 15000,
+    "1040:15": 77000,
+    "1040:16": 11854,
+    "1040:24": 11854,
+    "1040:25a": 12000,
+    "1040:25d": 12000,
+    "1040:33": 12000,
+    "1040:34": 146,
+    "1040:37": 0
+  }
+}

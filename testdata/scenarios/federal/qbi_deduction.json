@@ -1,0 +1,33 @@
+{
+  "name": "Single self-employed filer with QBI deduction (Form 8995)",
+  "tax_year": 2025,
+  "inputs": {
+    "1040:filing_status": "single",
+    "1040:first_name": "Quinn",
+    "1040:last_name": "Bizowner",
+    "1040:ssn": "333-44-5555",
+    "w2:employer_name": "N/A",
+    "w2:employer_ein": "00-0000000",
+    "w2:wages": 0,
+    "w2:federal_tax_withheld": 0,
+    "w2:ss_wages": 0,
+    "w2:ss_tax_withheld": 0,
+    "w2:medicare_wages": 0,
+    "w2:medicare_tax_withheld": 0,
+    "w2:state_wages": 0,
+    "w2:state_tax_withheld": 0,
+    "1099nec:payer_name": "Consulting Client LLC",
+    "1099nec:payer_tin": "88-7776666",
+    "1099nec:nonemployee_compensation": 100000,
+    "1099nec:federal_tax_withheld": 0,
+    "schedule_c:business_name": "Quinn Consulting",
+    "schedule_c:business_code": "541611",
+    "schedule_c:8": 1000,
+    "schedule_c:10": 3000,
+    "schedule_c:17": 2000,
+    "schedule_c:18": 1500,
+    "schedule_c:22": 500,
+    "schedule_c:25": 1000,
+    "schedule_c:27": 1000
+  }
+}

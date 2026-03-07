@@ -1,0 +1,33 @@
+{
+  "name": "CA single filer with W-2, 1099-INT, and 1099-DIV — expected CA values",
+  "tax_year": 2025,
+  "expected": {
+    "ca_schedule_ca:2_col_a": 2500.00,
+    "ca_schedule_ca:2_col_b": 500.00,
+    "ca_schedule_ca:2_col_c": 0.00,
+    "ca_schedule_ca:3_col_a": 3000.00,
+    "ca_schedule_ca:3_col_b": 0.00,
+    "ca_schedule_ca:3_col_c": 0.00,
+    "ca_schedule_ca:7_col_a": 1500.00,
+    "ca_schedule_ca:7_col_b": 0.00,
+    "ca_schedule_ca:7_col_c": 0.00,
+    "ca_schedule_ca:37_col_a": 82000.00,
+    "ca_schedule_ca:37_col_b": 500.00,
+    "ca_schedule_ca:37_col_c": 0.00,
+    "ca_540:13": 82000.00,
+    "ca_540:14": 500.00,
+    "ca_540:15": 0.00,
+    "ca_540:17": 81500.00,
+    "ca_540:18": 5706.00,
+    "ca_540:19": 75794.00,
+    "ca_540:31": 3591.13,
+    "ca_540:32": 144.00,
+    "ca_540:35": 3447.13,
+    "ca_540:36": 0.00,
+    "ca_540:40": 3447.13,
+    "ca_540:71": 3200.00,
+    "ca_540:74": 3200.00,
+    "ca_540:91": 0.00,
+    "ca_540:93": 247.13
+  }
+}

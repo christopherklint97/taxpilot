@@ -142,8 +142,9 @@ func TestSeedDocuments(t *testing.T) {
 	}
 
 	store := SeedStore()
-	if store.Count() != len(fedDocs)+len(caDocs) {
-		t.Errorf("store count = %d, want %d", store.Count(), len(fedDocs)+len(caDocs))
+	totalExpected := len(fedDocs) + len(caDocs) + len(SeedIRCSections()) + len(SeedIRSPublications()) + len(SeedFTBPublications())
+	if store.Count() != totalExpected {
+		t.Errorf("store count = %d, want %d", store.Count(), totalExpected)
 	}
 }
 

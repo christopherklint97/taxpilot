@@ -1,0 +1,30 @@
+{
+  "name": "Single filer with W-2 and stock sales (1099-B)",
+  "tax_year": 2025,
+  "inputs": {
+    "1040:filing_status": "single",
+    "1040:first_name": "Alex",
+    "1040:last_name": "Trader",
+    "1040:ssn": "111-22-3333",
+    "w2:employer_name": "Tech Corp",
+    "w2:employer_ein": "11-1111111",
+    "w2:wages": 85000,
+    "w2:federal_tax_withheld": 12000,
+    "w2:ss_wages": 85000,
+    "w2:ss_tax_withheld": 5270,
+    "w2:medicare_wages": 85000,
+    "w2:medicare_tax_withheld": 1232.50,
+    "w2:state_wages": 85000,
+    "w2:state_tax_withheld": 4000,
+    "1099b:description": "200 sh AAPL",
+    "1099b:date_acquired": "03/15/2023",
+    "1099b:date_sold": "06/20/2025",
+    "1099b:proceeds": 15000,
+    "1099b:cost_basis": 10000,
+    "1099b:wash_sale_loss": 0,
+    "1099b:federal_tax_withheld": 0,
+    "1099b:term": "long",
+    "1099b:basis_reported": "yes",
+    "1099div:total_capital_gain": 2000
+  }
+}

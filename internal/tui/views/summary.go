@@ -49,6 +49,26 @@ func (m SummaryView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "e":
 			// TODO: export PDFs
 			return m, nil
+		case "f":
+			// Start e-file flow
+			return m, func() tea.Msg {
+				return tui.StartEFileMsg{
+					Results:   m.results,
+					StrInputs: m.strResults,
+					TaxYear:   m.taxYear,
+					State:     m.state,
+				}
+			}
+		case "r":
+			// Open detailed review
+			return m, func() tea.Msg {
+				return tui.ShowReviewMsg{
+					Results:   m.results,
+					StrInputs: m.strResults,
+					TaxYear:   m.taxYear,
+					State:     m.state,
+				}
+			}
 		case "b":
 			// TODO: go back to interview
 			return m, nil
@@ -137,7 +157,7 @@ func (m SummaryView) View() string {
 	// Footer
 	sections = append(sections, "")
 	sections = append(sections, tui.HelpStyle.Render(
-		"e: export PDFs  |  q: quit  |  b: go back",
+		"r: review  |  e: export PDFs  |  f: e-file  |  q: quit  |  b: go back",
 	))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)

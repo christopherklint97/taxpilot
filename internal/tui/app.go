@@ -11,6 +11,7 @@ const (
 	ViewSummary
 	ViewExport
 	ViewEFile
+	ViewReview
 )
 
 // ViewFactory creates tea.Model instances for view transitions.
@@ -28,9 +29,25 @@ type ViewFactory struct {
 	// Called when ImportPriorYearMsg is received.
 	ImportPriorYear func(msg ImportPriorYearMsg) tea.Msg
 
+	// MakeEFile creates the e-file view.
+	// Called when StartEFileMsg is received.
+	MakeEFile func(msg StartEFileMsg) tea.Model
+
+	// MakeReview creates the review view.
+	// Called when ShowReviewMsg is received.
+	MakeReview func(msg ShowReviewMsg) tea.Model
+
 	// Explain triggers a RAG-powered explanation for a form field.
 	// Called when RequestExplanationMsg is received. May be nil if no LLM is configured.
 	Explain func(msg RequestExplanationMsg) tea.Msg
+
+	// ExplainWhy triggers a "why am I being asked this?" explanation.
+	// Called when RequestWhyAskedMsg is received. May be nil if no LLM is configured.
+	ExplainWhy func(msg RequestWhyAskedMsg) tea.Msg
+
+	// ExplainCADiff triggers a CA vs federal difference explanation.
+	// Called when RequestCADiffMsg is received. May be nil if no LLM is configured.
+	ExplainCADiff func(msg RequestCADiffMsg) tea.Msg
 }
 
 // App is the top-level Bubble Tea model that routes between views.
@@ -96,6 +113,18 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case StartEFileMsg:
+		a.currentView = ViewEFile
+		a.active = a.factory.MakeEFile(msg)
+		return a, a.active.Init()
+
+	case ShowReviewMsg:
+		if a.factory.MakeReview != nil {
+			a.currentView = ViewReview
+			a.active = a.factory.MakeReview(msg)
+			return a, a.active.Init()
+		}
+
 	case RequestExplanationMsg:
 		if a.factory.Explain != nil {
 			fn := a.factory.Explain
@@ -106,6 +135,32 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// No LLM configured — return a message indicating that
 		return a, func() tea.Msg {
 			return ExplanationResponseMsg{
+				Explanation: "AI explanations are not available. Set OPENROUTER_API_KEY to enable them.",
+			}
+		}
+
+	case RequestWhyAskedMsg:
+		if a.factory.ExplainWhy != nil {
+			fn := a.factory.ExplainWhy
+			return a, func() tea.Msg {
+				return fn(msg)
+			}
+		}
+		return a, func() tea.Msg {
+			return WhyAskedResponseMsg{
+				Explanation: "AI explanations are not available. Set OPENROUTER_API_KEY to enable them.",
+			}
+		}
+
+	case RequestCADiffMsg:
+		if a.factory.ExplainCADiff != nil {
+			fn := a.factory.ExplainCADiff
+			return a, func() tea.Msg {
+				return fn(msg)
+			}
+		}
+		return a, func() tea.Msg {
+			return CADiffResponseMsg{
 				Explanation: "AI explanations are not available. Set OPENROUTER_API_KEY to enable them.",
 			}
 		}

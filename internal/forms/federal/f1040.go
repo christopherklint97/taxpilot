@@ -67,24 +67,89 @@ func F1040() *forms.FormDef {
 					return dv.Get("1040:1a")
 				},
 			},
+			// Line 2a: Tax-exempt interest (from 1099-INT Box 8)
+			{
+				Line:      "2a",
+				Type:      forms.Computed,
+				Label:     "Tax-exempt interest",
+				DependsOn: []string{"1099int:*:tax_exempt_interest"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.SumAll("1099int:*:tax_exempt_interest")
+				},
+			},
+			// Line 2b: Taxable interest (from Schedule B line 4)
+			{
+				Line:      "2b",
+				Type:      forms.Computed,
+				Label:     "Taxable interest",
+				DependsOn: []string{"schedule_b:4"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("schedule_b:4")
+				},
+			},
+			// Line 3a: Qualified dividends (from 1099-DIV Box 1b)
+			{
+				Line:      "3a",
+				Type:      forms.Computed,
+				Label:     "Qualified dividends",
+				DependsOn: []string{"1099div:*:qualified_dividends"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.SumAll("1099div:*:qualified_dividends")
+				},
+			},
+			// Line 3b: Ordinary dividends (from Schedule B line 6)
+			{
+				Line:      "3b",
+				Type:      forms.Computed,
+				Label:     "Ordinary dividends",
+				DependsOn: []string{"schedule_b:6"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("schedule_b:6")
+				},
+			},
+			// Line 7: Capital gain or (loss) from Schedule 1 line 7
+			{
+				Line:      "7",
+				Type:      forms.Computed,
+				Label:     "Capital gain or (loss)",
+				DependsOn: []string{"schedule_1:7"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("schedule_1:7")
+				},
+			},
+			// Line 8: Other income from Schedule 1 line 10
+			{
+				Line:      "8",
+				Type:      forms.Computed,
+				Label:     "Other income from Schedule 1",
+				DependsOn: []string{"schedule_1:10"},
+				Compute: func(dv forms.DepValues) float64 {
+					// Schedule 1 line 10 minus capital gains (already on line 7)
+					return dv.Get("schedule_1:10") - dv.Get("schedule_1:7")
+				},
+			},
 			// Line 9: Total income
 			{
 				Line:      "9",
 				Type:      forms.Computed,
 				Label:     "Total income",
-				DependsOn: []string{"1040:1z"},
+				DependsOn: []string{"1040:1z", "1040:2b", "1040:3b", "1040:7", "1040:8"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:1z")
+					return dv.Get("1040:1z") +
+						dv.Get("1040:2b") +
+						dv.Get("1040:3b") +
+						dv.Get("1040:7") +
+						dv.Get("1040:8")
 				},
 			},
-			// Line 10: Adjustments to income (0 for MVP)
+			// Line 10: Adjustments to income (from Schedule 1 line 26)
 			{
 				Line:      "10",
 				Type:      forms.Computed,
 				Label:     "Adjustments to income",
-				DependsOn: []string{},
+				DependsOn: []string{"schedule_1:26"},
 				Compute: func(dv forms.DepValues) float64 {
-					return 0
+					return dv.Get("schedule_1:26")
 				},
 			},
 			// Line 11: Adjusted gross income (AGI)
@@ -100,25 +165,27 @@ func F1040() *forms.FormDef {
 
 			// --- Deductions ---
 
-			// Line 12: Standard deduction (or itemized — standard for MVP)
+			// Line 12: Deduction — larger of standard deduction or itemized (Schedule A)
 			{
 				Line:      "12",
 				Type:      forms.Computed,
-				Label:     "Standard deduction",
-				DependsOn: []string{"1040:filing_status"},
+				Label:     "Standard deduction or itemized deductions",
+				DependsOn: []string{"1040:filing_status", "schedule_a:17"},
 				Compute: func(dv forms.DepValues) float64 {
 					fs := taxmath.FilingStatus(dv.GetString("1040:filing_status"))
-					return taxmath.GetStandardDeduction(dv.TaxYear(), taxmath.Federal, fs)
+					standard := taxmath.GetStandardDeduction(dv.TaxYear(), taxmath.Federal, fs)
+					itemized := dv.Get("schedule_a:17")
+					return math.Max(standard, itemized)
 				},
 			},
-			// Line 13: Qualified business income deduction (0 for MVP)
+			// Line 13: Qualified business income deduction (from Form 8995)
 			{
 				Line:      "13",
 				Type:      forms.Computed,
 				Label:     "Qualified business income deduction",
-				DependsOn: []string{},
+				DependsOn: []string{"form_8995:10"},
 				Compute: func(dv forms.DepValues) float64 {
-					return 0
+					return dv.Get("form_8995:10")
 				},
 			},
 			// Line 14: Total deductions
@@ -156,14 +223,54 @@ func F1040() *forms.FormDef {
 					return taxmath.ComputeTax(taxableIncome, fs, dv.TaxYear(), taxmath.Federal)
 				},
 			},
-			// Line 24: Total tax (for MVP, same as line 16 — no additional taxes)
+			// Line 17: Amount from Schedule 2 Part I (AMT, etc.)
+			{
+				Line:      "17",
+				Type:      forms.Computed,
+				Label:     "Amount from Schedule 2, Part I",
+				DependsOn: []string{"schedule_2:3"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("schedule_2:3")
+				},
+			},
+			// Line 20: Amount from Schedule 3 Part I (nonrefundable credits)
+			{
+				Line:      "20",
+				Type:      forms.Computed,
+				Label:     "Amount from Schedule 3, Part I",
+				DependsOn: []string{"schedule_3:8"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("schedule_3:8")
+				},
+			},
+			// Line 22: Tax after credits (line 16 + 17 - 20, but not less than 0)
+			{
+				Line:      "22",
+				Type:      forms.Computed,
+				Label:     "Tax after credits",
+				DependsOn: []string{"1040:16", "1040:17", "1040:20"},
+				Compute: func(dv forms.DepValues) float64 {
+					return math.Max(0, dv.Get("1040:16")+dv.Get("1040:17")-dv.Get("1040:20"))
+				},
+			},
+			// Line 23: Other taxes from Schedule 2 Part II
+			{
+				Line:      "23",
+				Type:      forms.Computed,
+				Label:     "Other taxes from Schedule 2",
+				DependsOn: []string{"schedule_2:21"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("schedule_2:21")
+				},
+			},
+			// Line 24: Total tax (line 22 + line 23)
 			{
 				Line:      "24",
 				Type:      forms.Computed,
 				Label:     "Total tax",
-				DependsOn: []string{"1040:16"},
+				DependsOn: []string{"1040:22", "1040:23"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:16")
+					return dv.Get("1040:22") + dv.Get("1040:23")
 				},
 			},
 
@@ -179,14 +286,37 @@ func F1040() *forms.FormDef {
 					return dv.SumAll("w2:*:federal_tax_withheld")
 				},
 			},
+			// Line 25b: Federal income tax withheld from 1099s
+			{
+				Line:      "25b",
+				Type:      forms.Computed,
+				Label:     "Federal income tax withheld from 1099s",
+				DependsOn: []string{"1099int:*:federal_tax_withheld", "1099div:*:federal_tax_withheld", "1099nec:*:federal_tax_withheld", "1099b:*:federal_tax_withheld"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.SumAll("1099int:*:federal_tax_withheld") +
+						dv.SumAll("1099div:*:federal_tax_withheld") +
+						dv.SumAll("1099nec:*:federal_tax_withheld") +
+						dv.SumAll("1099b:*:federal_tax_withheld")
+				},
+			},
 			// Line 25d: Total federal tax withheld
 			{
 				Line:      "25d",
 				Type:      forms.Computed,
 				Label:     "Total federal tax withheld",
-				DependsOn: []string{"1040:25a"},
+				DependsOn: []string{"1040:25a", "1040:25b"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:25a")
+					return dv.Get("1040:25a") + dv.Get("1040:25b")
+				},
+			},
+			// Line 31: Other payments from Schedule 3 (estimated tax, etc.)
+			{
+				Line:      "31",
+				Type:      forms.Computed,
+				Label:     "Other payments from Schedule 3",
+				DependsOn: []string{"schedule_3:15"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("schedule_3:15")
 				},
 			},
 			// Line 33: Total payments
@@ -194,9 +324,9 @@ func F1040() *forms.FormDef {
 				Line:      "33",
 				Type:      forms.Computed,
 				Label:     "Total payments",
-				DependsOn: []string{"1040:25d"},
+				DependsOn: []string{"1040:25d", "1040:31"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:25d")
+					return dv.Get("1040:25d") + dv.Get("1040:31")
 				},
 			},
 

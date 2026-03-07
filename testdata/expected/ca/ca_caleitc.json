@@ -1,0 +1,13 @@
+{
+  "name": "CA CalEITC - single filer with 1 child, low income — expected CA values",
+  "tax_year": 2025,
+  "expected": {
+    "form_3514:1": 20000.00,
+    "form_3514:2": 1.00,
+    "form_3514:4": 1.00,
+    "form_3514:5": 1011.57,
+    "form_3514:6": 1117.00,
+    "form_3514:7": 2128.57,
+    "form_3853:7": 0.00
+  }
+}

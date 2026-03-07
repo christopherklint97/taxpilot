@@ -1,0 +1,25 @@
+{
+  "name": "CA CalEITC - single filer with 1 child, low income",
+  "tax_year": 2025,
+  "inputs": {
+    "1040:filing_status": "single",
+    "1040:first_name": "Maria",
+    "1040:last_name": "Garcia",
+    "1040:ssn": "987-65-4321",
+    "w2:employer_name": "Local Restaurant",
+    "w2:employer_ein": "98-7654321",
+    "w2:wages": 20000,
+    "w2:federal_tax_withheld": 800,
+    "w2:ss_wages": 20000,
+    "w2:ss_tax_withheld": 1240,
+    "w2:medicare_wages": 20000,
+    "w2:medicare_tax_withheld": 290,
+    "w2:state_wages": 20000,
+    "w2:state_tax_withheld": 200,
+    "form_3514:3": 1,
+    "form_3514:6_yctc": "yes",
+    "form_3853:1": "yes",
+    "form_3853:2": 0,
+    "form_3853:3": "no"
+  }
+}
