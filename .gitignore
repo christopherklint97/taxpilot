@@ -1,5 +1,5 @@
 # Binaries
-taxpilot
+/taxpilot
 *.exe
 *.dll
 *.so
