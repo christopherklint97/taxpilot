@@ -64,7 +64,29 @@ var stringFields = map[string]bool{
 	"description":   true,
 	"date_acquired": true,
 	"date_sold":     true,
-	"6_yctc":        true,
+	"6_yctc":                true,
+	"foreign_country":       true,
+	"foreign_address":       true,
+	"employer_name_2555":    true,
+	"employer_foreign":      true,
+	"self_employed_abroad":  true,
+	"qualifying_test":       true,
+	"bfrt_start_date":       true,
+	"bfrt_end_date":         true,
+	"bfrt_full_year":        true,
+	"ppt_period_start":      true,
+	"ppt_period_end":        true,
+	"currency_code":         true,
+	"accrued_or_paid":       true,
+	"7b":                            true,
+	"lives_abroad":                  true,
+	"account_country":               true,
+	"account_institution":           true,
+	"account_type":                  true,
+	"treaty_country":                true,
+	"treaty_article":                true,
+	"irc_provision":                 true,
+	"treaty_position_explanation":   true,
 }
 
 // NewEngine creates a new Engine, registers all forms, builds the dependency
@@ -260,6 +282,10 @@ func (e *Engine) buildQuestions() {
 	var f1099bInfo []Question
 	var f1099bFinancial []Question
 	var scheduleCQuestions []Question
+	var form2555Questions []Question
+	var form1116Questions []Question
+	var form8938Questions []Question
+	var form8833Questions []Question
 	var form8889Questions []Question
 	var scheduleAQuestions []Question
 	var form3514Questions []Question
@@ -312,6 +338,14 @@ func (e *Engine) buildQuestions() {
 				f1099bFinancial = append(f1099bFinancial, q)
 			case form.ID == "schedule_c":
 				scheduleCQuestions = append(scheduleCQuestions, q)
+			case form.ID == "form_2555":
+				form2555Questions = append(form2555Questions, q)
+			case form.ID == "form_1116":
+				form1116Questions = append(form1116Questions, q)
+			case form.ID == "form_8938":
+				form8938Questions = append(form8938Questions, q)
+			case form.ID == "form_8833":
+				form8833Questions = append(form8833Questions, q)
 			case form.ID == "form_8889":
 				form8889Questions = append(form8889Questions, q)
 			case form.ID == "schedule_a" || form.ID == "schedule_3":
@@ -348,6 +382,10 @@ func (e *Engine) buildQuestions() {
 	f1099bInfo = sortByLineOrder(f1099bInfo, []string{"description", "date_acquired", "date_sold"})
 	e.questions = append(e.questions, f1099bInfo...)
 	e.questions = append(e.questions, f1099bFinancial...)
+	e.questions = append(e.questions, form2555Questions...)
+	e.questions = append(e.questions, form1116Questions...)
+	e.questions = append(e.questions, form8938Questions...)
+	e.questions = append(e.questions, form8833Questions...)
 	e.questions = append(e.questions, scheduleCQuestions...)
 	e.questions = append(e.questions, form8889Questions...)
 	e.questions = append(e.questions, scheduleAQuestions...)
@@ -578,6 +616,10 @@ func SetupRegistry() *forms.Registry {
 	reg.Register(federal.ScheduleSE())
 	reg.Register(federal.Form8995())
 	reg.Register(federal.Form8889())
+	reg.Register(federal.Form2555())
+	reg.Register(federal.Form1116())
+	reg.Register(federal.Form8938())
+	reg.Register(federal.Form8833())
 	// CA state forms
 	reg.Register(ca.F540())
 	reg.Register(ca.ScheduleCA())

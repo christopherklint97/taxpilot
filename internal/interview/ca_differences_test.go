@@ -57,7 +57,7 @@ func TestGetCADifference_NilForUnknownFields(t *testing.T) {
 
 func TestAllCADifferences_Count(t *testing.T) {
 	diffs := AllCADifferences()
-	expected := 11
+	expected := 14
 	if len(diffs) != expected {
 		t.Errorf("AllCADifferences() returned %d differences, want %d", len(diffs), expected)
 	}

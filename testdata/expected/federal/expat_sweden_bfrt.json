@@ -1,0 +1,29 @@
+{
+  "name": "US expat in Sweden, bona fide residence, full year",
+  "tax_year": 2025,
+  "expected": {
+    "1040:1a": 120000,
+    "1040:9": 0,
+    "1040:11": 0,
+    "1040:12": 15000,
+    "1040:15": 0,
+    "1040:16": 0,
+    "1040:24": 0,
+    "1040:25a": 0,
+    "1040:33": 0,
+    "1040:34": 0,
+    "1040:37": 0,
+    "schedule_1:8d": -120000,
+    "schedule_1:10": -120000,
+    "form_2555:exclusion_limit": 130000,
+    "form_2555:qualifying_days": 365,
+    "form_2555:prorated_exclusion": 130000,
+    "form_2555:foreign_income_exclusion": 120000,
+    "form_2555:housing_base_amount": 20800,
+    "form_2555:housing_max": 39000,
+    "form_2555:housing_qualifying_amount": 3200,
+    "form_2555:housing_exclusion": 0,
+    "form_2555:housing_deduction": 0,
+    "form_2555:total_exclusion": 120000
+  }
+}

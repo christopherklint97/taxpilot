@@ -5,8 +5,8 @@ import (
 )
 
 func TestScreeningDefaultCount(t *testing.T) {
-	// We expect 6 active screening questions (rental income is commented out)
-	expected := 6
+	// We expect 10 active screening questions (rental income is commented out)
+	expected := 10
 	if got := len(DefaultScreeningQuestions); got != expected {
 		t.Errorf("expected %d screening questions, got %d", expected, got)
 	}
@@ -179,5 +179,89 @@ func TestAutoDetectSituationsScheduleA(t *testing.T) {
 	detected := AutoDetectSituations(prior)
 	if !detected["has_itemized_deductions"] {
 		t.Error("expected has_itemized_deductions to be detected")
+	}
+}
+func TestExpatScreeningQuestions(t *testing.T) {
+	expatIDs := map[string]bool{
+		"lives_abroad":        false,
+		"has_foreign_income":  false,
+		"has_foreign_accounts": false,
+		"has_foreign_tax_paid": false,
+	}
+	for _, sq := range DefaultScreeningQuestions {
+		if _, ok := expatIDs[sq.ID]; ok {
+			expatIDs[sq.ID] = true
+		}
+	}
+	for id, found := range expatIDs {
+		if !found {
+			t.Errorf("expat screening question %q not found", id)
+		}
+	}
+}
+
+func TestExpatScreeningLivesAbroadHasCANote(t *testing.T) {
+	for _, sq := range DefaultScreeningQuestions {
+		if sq.ID == "lives_abroad" {
+			if sq.CANote == "" {
+				t.Error("lives_abroad screening question should have a CA note about FEIE non-conformity")
+			}
+			return
+		}
+	}
+	t.Error("lives_abroad screening question not found")
+}
+
+func TestAutoDetectFromPriorYearForm2555(t *testing.T) {
+	prior := PriorYearData{
+		FormsPresent: []string{"form_2555", "form_1116", "form_8938"},
+	}
+	detected := AutoDetectSituations(prior)
+
+	for _, key := range []string{"lives_abroad", "has_foreign_income", "has_foreign_tax_paid", "has_foreign_accounts"} {
+		if !detected[key] {
+			t.Errorf("expected %q to be detected from prior year expat forms", key)
+		}
+	}
+}
+
+func TestAutoDetectExpatFromNumericValues(t *testing.T) {
+	prior := PriorYearData{
+		FormsPresent: []string{},
+		NumericValues: map[string]float64{
+			"form_2555:foreign_earned_income":    120000,
+			"form_1116:foreign_tax_paid_income":  15000,
+			"form_8938:max_value_accounts":       50000,
+		},
+	}
+	detected := AutoDetectSituations(prior)
+
+	for _, key := range []string{"lives_abroad", "has_foreign_income", "has_foreign_tax_paid", "has_foreign_accounts"} {
+		if !detected[key] {
+			t.Errorf("expected %q to be detected from prior year numeric values", key)
+		}
+	}
+}
+
+func TestExpatScreeningEvaluation(t *testing.T) {
+	answers := map[string]bool{
+		"lives_abroad":         true,
+		"has_foreign_income":   true,
+		"has_foreign_accounts": true,
+		"has_foreign_tax_paid": true,
+	}
+	situations := EvaluateScreening(answers)
+
+	formSet := make(map[string]bool)
+	for _, s := range situations {
+		for _, f := range s.FormsNeeded {
+			formSet[f] = true
+		}
+	}
+
+	for _, form := range []string{"form_2555", "form_8938", "form_1116"} {
+		if !formSet[form] {
+			t.Errorf("expected %q in forms needed for expat screening", form)
+		}
 	}
 }

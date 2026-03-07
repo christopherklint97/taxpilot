@@ -95,7 +95,6 @@ func hasKeyPrefix(m map[string]float64, prefix string) bool {
 // CheckUnsupported examines inputs and returns any UnsupportedErrors.
 // Checks for:
 //   - MFS with complex situations (marriage CPA referral)
-//   - Foreign income (if 1099 type not supported)
 //   - AMT triggers (very high income with specific deductions)
 //   - Multiple states (only CA supported)
 func CheckUnsupported(results map[string]float64, strInputs map[string]string) []error {
@@ -112,16 +111,6 @@ func CheckUnsupported(results map[string]float64, strInputs map[string]string) [
 				Suggestion: "Consider filing jointly, or consult a CPA for MFS with itemized deductions",
 			})
 		}
-	}
-
-	// Foreign income indicators
-	foreignIncome := getNum(results, "schedule_1:8_foreign_income")
-	if foreignIncome > 0 {
-		errs = append(errs, &UnsupportedError{
-			Situation:  "Foreign earned income",
-			Reason:     "TaxPilot does not support Form 2555 (Foreign Earned Income Exclusion)",
-			Suggestion: "Use a tax professional experienced with foreign income or Form 2555",
-		})
 	}
 
 	// AMT trigger — very high income with large SALT or other preferences
@@ -258,7 +247,6 @@ func CheckCAConformity(results map[string]float64) []ConformityError {
 // Triggers:
 //   - AMT (if AGI > $500k with itemized deductions)
 //   - Estate/trust income
-//   - Foreign tax credit situations
 //   - Partnership/S-Corp (K-1)
 func CheckComplexity(results map[string]float64, strInputs map[string]string) *CPAReferralError {
 	agi := getNum(results, "1040:11")
@@ -277,16 +265,6 @@ func CheckComplexity(results map[string]float64, strInputs map[string]string) *C
 		return &CPAReferralError{
 			Situation:  "Estate or trust income",
 			Reason:     "Estate and trust income has complex distribution rules and separate tax brackets that TaxPilot cannot handle",
-			Complexity: "high",
-		}
-	}
-
-	// Foreign tax credit
-	foreignTaxPaid := getNum(results, "schedule_3:1_foreign_tax")
-	if foreignTaxPaid > 300 {
-		return &CPAReferralError{
-			Situation:  "Foreign tax credit",
-			Reason:     "Foreign tax credits above $300 require Form 1116 with complex sourcing rules",
 			Complexity: "high",
 		}
 	}

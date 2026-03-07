@@ -107,13 +107,6 @@ func TestCheckUnsupported(t *testing.T) {
 			wantSit:   "Married Filing Separately",
 		},
 		{
-			name:      "foreign earned income",
-			results:   map[string]float64{"schedule_1:8_foreign_income": 50000},
-			strInputs: map[string]string{"1040:filing_status": "single"},
-			wantCount: 1,
-			wantSit:   "Foreign earned income",
-		},
-		{
 			name:      "high income AMT risk",
 			results:   map[string]float64{"1040:11": 600000, "schedule_a:5d": 10000},
 			strInputs: map[string]string{"1040:filing_status": "single"},
@@ -136,12 +129,11 @@ func TestCheckUnsupported(t *testing.T) {
 		{
 			name: "multiple unsupported situations",
 			results: map[string]float64{
-				"schedule_1:8_foreign_income": 30000,
-				"1040:11":                     700000,
-				"schedule_a:5d":               10000,
+				"1040:11":       700000,
+				"schedule_a:5d": 10000,
 			},
 			strInputs: map[string]string{"1040:filing_status": "single", "1040:state": "TX"},
-			wantCount: 3,
+			wantCount: 2,
 		},
 		{
 			name:      "nil inputs",
@@ -390,20 +382,6 @@ func TestCheckComplexity(t *testing.T) {
 			wantNil:        false,
 			wantComplexity: "high",
 			wantSit:        "Estate",
-		},
-		{
-			name:           "foreign tax credit over 300",
-			results:        map[string]float64{"schedule_3:1_foreign_tax": 500},
-			strInputs:      map[string]string{},
-			wantNil:        false,
-			wantComplexity: "high",
-			wantSit:        "Foreign tax credit",
-		},
-		{
-			name:      "foreign tax credit under 300",
-			results:   map[string]float64{"schedule_3:1_foreign_tax": 200},
-			strInputs: map[string]string{},
-			wantNil:   true,
 		},
 		{
 			name:           "high income with itemized deductions",

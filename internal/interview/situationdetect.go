@@ -97,6 +97,56 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 		},
 	},
 	{
+		ID:       "lives_abroad",
+		Question: "Do you currently live outside the United States?",
+		HelpText: "If you live in a foreign country, you may qualify for the Foreign Earned Income Exclusion (Form 2555) and may need to report foreign financial accounts.",
+		CANote:   "California does NOT allow the federal Foreign Earned Income Exclusion — the excluded amount must be added back on Schedule CA.",
+		OnYes: Situation{
+			ID:          "expat",
+			Label:       "US Citizen Abroad",
+			Description: "You live outside the United States",
+			FormsNeeded: []string{"form_2555", "form_8938"},
+			Screening:   "lives_abroad",
+		},
+	},
+	{
+		ID:       "has_foreign_income",
+		Question: "Did you earn income from a foreign employer or foreign self-employment in 2025?",
+		HelpText: "This includes wages, salary, or self-employment income earned while living and working abroad.",
+		CANote:   "California taxes all worldwide income regardless of where earned.",
+		OnYes: Situation{
+			ID:          "foreign_income",
+			Label:       "Foreign Earned Income",
+			Description: "You earned income from a foreign source",
+			FormsNeeded: []string{"form_2555"},
+			Screening:   "has_foreign_income",
+		},
+	},
+	{
+		ID:       "has_foreign_accounts",
+		Question: "Do you have financial accounts in a foreign country (bank, brokerage, pension)?",
+		HelpText: "If the aggregate value of all foreign accounts exceeded $10,000 at any time during the year, you must file an FBAR (FinCEN 114). Higher thresholds trigger FATCA reporting (Form 8938).",
+		OnYes: Situation{
+			ID:          "foreign_accounts",
+			Label:       "Foreign Financial Accounts",
+			Description: "You have financial accounts in a foreign country",
+			FormsNeeded: []string{"form_8938"},
+			Screening:   "has_foreign_accounts",
+		},
+	},
+	{
+		ID:       "has_foreign_tax_paid",
+		Question: "Did you pay income taxes to a foreign government in 2025?",
+		HelpText: "If you paid foreign income taxes, you may be able to claim a Foreign Tax Credit (Form 1116) to reduce your US tax and avoid double taxation.",
+		OnYes: Situation{
+			ID:          "foreign_tax_credit",
+			Label:       "Foreign Tax Credit",
+			Description: "You paid income taxes to a foreign government",
+			FormsNeeded: []string{"form_1116"},
+			Screening:   "has_foreign_tax_paid",
+		},
+	},
+	{
 		ID:       "has_itemized_deductions",
 		Question: "Do you want to itemize deductions instead of taking the standard deduction?",
 		HelpText: "The 2025 standard deduction is $15,000 for single filers and $30,000 for married filing jointly. Itemize only if your deductions exceed these amounts.",
@@ -167,6 +217,22 @@ func AutoDetectSituations(prior PriorYearData) map[string]bool {
 		detected["has_hsa"] = true
 	}
 
+	// Expat: had Form 2555 (FEIE)
+	if formSet["form_2555"] {
+		detected["lives_abroad"] = true
+		detected["has_foreign_income"] = true
+	}
+
+	// Foreign tax credit: had Form 1116
+	if formSet["form_1116"] {
+		detected["has_foreign_tax_paid"] = true
+	}
+
+	// Foreign accounts: had Form 8938 (FATCA)
+	if formSet["form_8938"] {
+		detected["has_foreign_accounts"] = true
+	}
+
 	// Itemized deductions: had Schedule A
 	if formSet["schedule_a"] {
 		detected["has_itemized_deductions"] = true
@@ -185,6 +251,19 @@ func AutoDetectSituations(prior PriorYearData) map[string]bool {
 		// If they had self-employment income
 		if prior.NumericValues["schedule_c:31"] > 0 || prior.NumericValues["schedule_se:4"] > 0 {
 			detected["has_self_employment"] = true
+		}
+		// If they had foreign earned income
+		if prior.NumericValues["form_2555:foreign_earned_income"] > 0 {
+			detected["lives_abroad"] = true
+			detected["has_foreign_income"] = true
+		}
+		// If they had foreign tax credit
+		if prior.NumericValues["form_1116:foreign_tax_paid_income"] > 0 {
+			detected["has_foreign_tax_paid"] = true
+		}
+		// If they had foreign accounts
+		if prior.NumericValues["form_8938:max_value_accounts"] > 0 {
+			detected["has_foreign_accounts"] = true
 		}
 	}
 

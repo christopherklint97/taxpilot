@@ -70,6 +70,10 @@ type ReturnData struct {
 	IRS8889             *IRS8889             `xml:"IRS8889,omitempty"`
 	IRS8949             *IRS8949             `xml:"IRS8949,omitempty"`
 	IRS8995             *IRS8995             `xml:"IRS8995,omitempty"`
+	IRS2555             *IRS2555             `xml:"IRS2555,omitempty"`
+	IRS1116             *IRS1116             `xml:"IRS1116,omitempty"`
+	IRS8938             *IRS8938             `xml:"IRS8938,omitempty"`
+	IRS8833             *IRS8833             `xml:"IRS8833,omitempty"`
 	IRSW2               []IRSW2              `xml:"IRSW2,omitempty"`
 }
 
@@ -219,6 +223,49 @@ type IRS8995 struct {
 	QBIDeductionAmt        int `xml:"QBIDeductionAmt"`
 }
 
+// IRS2555 represents Form 2555 — Foreign Earned Income.
+type IRS2555 struct {
+	ForeignCountry          string `xml:"ForeignCountry"`
+	QualifyingTest          string `xml:"QualifyingTest"`
+	QualifyingDays          int    `xml:"QualifyingDays"`
+	ForeignEarnedIncomeAmt  int    `xml:"ForeignEarnedIncomeAmt"`
+	ExclusionLimitAmt       int    `xml:"ExclusionLimitAmt"`
+	ForeignIncomeExclAmt    int    `xml:"ForeignIncomeExclAmt"`
+	HousingExclusionAmt     int    `xml:"HousingExclusionAmt,omitempty"`
+	HousingDeductionAmt     int    `xml:"HousingDeductionAmt,omitempty"`
+	TotalExclusionAmt       int    `xml:"TotalExclusionAmt"`
+}
+
+// IRS1116 represents Form 1116 — Foreign Tax Credit.
+type IRS1116 struct {
+	ForeignCountry         string `xml:"ForeignCountry"`
+	Category               string `xml:"Category"`
+	ForeignSourceIncomeAmt int    `xml:"ForeignSourceIncomeAmt"`
+	ForeignTaxPaidAmt      int    `xml:"ForeignTaxPaidAmt"`
+	CreditLimitationAmt    int    `xml:"CreditLimitationAmt"`
+	AllowedCreditAmt       int    `xml:"AllowedCreditAmt"`
+	CarryforwardAmt        int    `xml:"CarryforwardAmt,omitempty"`
+}
+
+// IRS8938 represents Form 8938 — Statement of Specified Foreign Financial Assets.
+type IRS8938 struct {
+	LivesAbroad             string `xml:"LivesAbroad"`
+	MaxValueAccountsAmt     int    `xml:"MaxValueAccountsAmt"`
+	YearEndValueAccountsAmt int    `xml:"YearEndValueAccountsAmt"`
+	TotalMaxValueAmt        int    `xml:"TotalMaxValueAmt"`
+	TotalYearEndValueAmt    int    `xml:"TotalYearEndValueAmt"`
+	FilingRequired          int    `xml:"FilingRequired"`
+}
+
+// IRS8833 represents Form 8833 — Treaty-Based Return Position Disclosure.
+type IRS8833 struct {
+	TreatyCountry     string `xml:"TreatyCountry"`
+	TreatyArticle     string `xml:"TreatyArticle"`
+	IRCProvision      string `xml:"IRCProvision"`
+	TreatyAmountAmt   int    `xml:"TreatyAmountAmt,omitempty"`
+	TreatyClaimed     int    `xml:"TreatyClaimed"`
+}
+
 // IRSW2 represents a W-2 Wage and Tax Statement.
 type IRSW2 struct {
 	EmployerName   string `xml:"EmployerName"`
@@ -312,6 +359,30 @@ func GenerateReturn(results map[string]float64, strInputs map[string]string, tax
 	// --- Form 8995 ---
 	if isScheduleNeeded(results, "form_8995:") {
 		data.IRS8995 = buildForm8995(results)
+		docCount++
+	}
+
+	// --- Form 2555 ---
+	if isScheduleNeeded(results, "form_2555:") {
+		data.IRS2555 = buildForm2555(results, strInputs)
+		docCount++
+	}
+
+	// --- Form 1116 ---
+	if isScheduleNeeded(results, "form_1116:") {
+		data.IRS1116 = buildForm1116(results, strInputs)
+		docCount++
+	}
+
+	// --- Form 8938 ---
+	if isScheduleNeeded(results, "form_8938:") {
+		data.IRS8938 = buildForm8938(results, strInputs)
+		docCount++
+	}
+
+	// --- Form 8833 ---
+	if isScheduleNeeded(results, "form_8833:") {
+		data.IRS8833 = buildForm8833(results, strInputs)
 		docCount++
 	}
 
@@ -586,6 +657,61 @@ func buildW2s(r map[string]float64, s map[string]string) []IRSW2 {
 		w2s = append(w2s, w2)
 	}
 	return w2s
+}
+
+func buildForm2555(r map[string]float64, s map[string]string) *IRS2555 {
+	return &IRS2555{
+		ForeignCountry:         getStrVal(s, "form_2555:foreign_country"),
+		QualifyingTest:         getStrVal(s, "form_2555:qualifying_test"),
+		QualifyingDays:         roundToInt(r["form_2555:qualifying_days"]),
+		ForeignEarnedIncomeAmt: roundToInt(r["form_2555:foreign_earned_income"]),
+		ExclusionLimitAmt:      roundToInt(r["form_2555:exclusion_limit"]),
+		ForeignIncomeExclAmt:   roundToInt(r["form_2555:foreign_income_exclusion"]),
+		HousingExclusionAmt:    roundToInt(r["form_2555:housing_exclusion"]),
+		HousingDeductionAmt:    roundToInt(r["form_2555:housing_deduction"]),
+		TotalExclusionAmt:      roundToInt(r["form_2555:total_exclusion"]),
+	}
+}
+
+func buildForm1116(r map[string]float64, s map[string]string) *IRS1116 {
+	return &IRS1116{
+		ForeignCountry:         getStrVal(s, "form_1116:foreign_country"),
+		Category:               getStrVal(s, "form_1116:category"),
+		ForeignSourceIncomeAmt: roundToInt(r["form_1116:7"]),
+		ForeignTaxPaidAmt:      roundToInt(r["form_1116:15"]),
+		CreditLimitationAmt:    roundToInt(r["form_1116:21"]),
+		AllowedCreditAmt:       roundToInt(r["form_1116:22"]),
+		CarryforwardAmt:        roundToInt(r["form_1116:carryforward"]),
+	}
+}
+
+func buildForm8938(r map[string]float64, s map[string]string) *IRS8938 {
+	return &IRS8938{
+		LivesAbroad:             getStrVal(s, "form_8938:lives_abroad"),
+		MaxValueAccountsAmt:     roundToInt(r["form_8938:max_value_accounts"]),
+		YearEndValueAccountsAmt: roundToInt(r["form_8938:yearend_value_accounts"]),
+		TotalMaxValueAmt:        roundToInt(r["form_8938:total_max_value"]),
+		TotalYearEndValueAmt:    roundToInt(r["form_8938:total_yearend_value"]),
+		FilingRequired:          roundToInt(r["form_8938:filing_required"]),
+	}
+}
+
+func buildForm8833(r map[string]float64, s map[string]string) *IRS8833 {
+	return &IRS8833{
+		TreatyCountry:   getStrVal(s, "form_8833:treaty_country"),
+		TreatyArticle:   getStrVal(s, "form_8833:treaty_article"),
+		IRCProvision:    getStrVal(s, "form_8833:irc_provision"),
+		TreatyAmountAmt: roundToInt(r["form_8833:treaty_amount"]),
+		TreatyClaimed:   roundToInt(r["form_8833:treaty_claimed"]),
+	}
+}
+
+// getStrVal safely retrieves a string value from the map.
+func getStrVal(s map[string]string, key string) string {
+	if s == nil {
+		return ""
+	}
+	return s[key]
 }
 
 // sortedKeys returns the keys of a map[string]bool in sorted order.

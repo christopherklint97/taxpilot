@@ -49,6 +49,17 @@ func DetectCAScheduleCANeeded(inputs map[string]float64, strInputs map[string]st
 		reasons = append(reasons, "State wage adjustment")
 	}
 
+	// Foreign earned income exclusion: CA does not conform to FEIE.
+	// The entire exclusion must be added back on Schedule CA.
+	if inputs["form_2555:total_exclusion"] > 0 || inputs["form_2555:foreign_earned_income"] > 0 {
+		reasons = append(reasons, "Foreign earned income exclusion add-back (CA does not allow FEIE)")
+	}
+
+	// Foreign housing exclusion/deduction: CA does not conform
+	if inputs["form_2555:housing_exclusion"] > 0 || inputs["form_2555:housing_deduction"] > 0 {
+		reasons = append(reasons, "Foreign housing exclusion/deduction add-back")
+	}
+
 	needed := len(reasons) > 0
 	return needed, reasons
 }

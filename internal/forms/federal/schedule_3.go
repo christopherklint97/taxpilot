@@ -19,14 +19,14 @@ func Schedule3() *forms.FormDef {
 		Fields: []forms.FieldDef{
 			// --- Part I: Nonrefundable Credits ---
 
-			// Line 1: Foreign tax credit (deferred)
+			// Line 1: Foreign tax credit (from Form 1116 line 22)
 			{
 				Line:      "1",
 				Type:      forms.Computed,
 				Label:     "Foreign tax credit",
-				DependsOn: []string{},
+				DependsOn: []string{"form_1116:22"},
 				Compute: func(dv forms.DepValues) float64 {
-					return 0
+					return dv.Get("form_1116:22")
 				},
 			},
 			// Line 2: Child and dependent care credit (deferred)

@@ -146,12 +146,54 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 			"Refund and amount owed cannot both be positive")
 	}
 
-	// R0010: Must have some income source
+	// R0010: Must have some income source (W-2, Schedule C, or Form 2555 foreign income)
 	hasW2 := hasW2Wages(results)
 	hasScheduleC := getNum(results, "schedule_c:31") > 0
-	if !hasW2 && !hasScheduleC {
+	hasForeignIncome := getNum(results, "form_2555:foreign_earned_income") > 0
+	if !hasW2 && !hasScheduleC && !hasForeignIncome {
 		report.addResult("R0010", SeverityError, "w2:1:wages",
-			"At least one W-2 with wages or Schedule C net profit is required")
+			"At least one W-2 with wages, Schedule C net profit, or foreign earned income is required")
+	}
+
+	// R0011: Form 2555 requires qualifying test
+	if hasForeignIncome {
+		qt := getStr(strInputs, "form_2555:qualifying_test")
+		if qt != "bona_fide_residence" && qt != "physical_presence" {
+			report.addResult("R0011", SeverityError, "form_2555:qualifying_test",
+				"Form 2555 requires a qualifying test (bona_fide_residence or physical_presence)")
+		}
+	}
+
+	// R0012: Physical presence test requires >= 330 days
+	if getStr(strInputs, "form_2555:qualifying_test") == "physical_presence" {
+		days := getNum(results, "form_2555:qualifying_days")
+		if days < 330 {
+			report.addResult("R0012", SeverityError, "form_2555:ppt_days_present",
+				"Physical presence test requires at least 330 days in a foreign country")
+		}
+	}
+
+	// R0013: FEIE cannot exceed the limit
+	exclusion := getNum(results, "form_2555:total_exclusion")
+	limit := getNum(results, "form_2555:exclusion_limit")
+	if exclusion > 0 && limit > 0 && exclusion > limit+1 {
+		report.addResult("R0013", SeverityError, "form_2555:total_exclusion",
+			"FEIE exclusion exceeds the annual limit")
+	}
+
+	// R0014: Form 8938 required if threshold met but not filed
+	if numExists(results, "form_8938:filing_required") && getNum(results, "form_8938:filing_required") == 1 {
+		totalMax := getNum(results, "form_8938:total_max_value")
+		if totalMax == 0 {
+			report.addResult("R0014", SeverityError, "form_8938:total_max_value",
+				"Form 8938 filing is required but foreign asset values appear incomplete")
+		}
+	}
+
+	// W0005: FBAR reminder if foreign accounts > $10,000
+	if getStr(strInputs, "schedule_b:7a") == "yes" {
+		report.addResult("W0005", SeverityInfo, "schedule_b:7a",
+			"You indicated foreign accounts — remember to file FBAR (FinCEN 114) separately at bsaefiling.fincen.treas.gov if aggregate value exceeded $10,000")
 	}
 
 	// W0001: Charitable donations > 60% of AGI
@@ -225,6 +267,14 @@ func ValidateCAReturn(results map[string]float64, strInputs map[string]string, t
 			report.addResult("W1001", SeverityWarning, "ca_540:17",
 				"California AGI differs from federal AGI by more than $100,000")
 		}
+	}
+
+	// R1004: CA Schedule CA must include FEIE add-back when FEIE is claimed
+	feieExclusion := getNum(results, "form_2555:total_exclusion")
+	feieAddBack := getNum(results, "ca_schedule_ca:8d_col_c")
+	if feieExclusion > 0 && math.Abs(feieAddBack-feieExclusion) > 1.0 {
+		report.addResult("R1004", SeverityError, "ca_schedule_ca:8d_col_c",
+			"CA Schedule CA FEIE add-back must equal the federal FEIE exclusion amount")
 	}
 
 	// W1002: CA effective tax rate > 13.3%
