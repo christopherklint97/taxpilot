@@ -59,17 +59,28 @@ func Schedule1() *forms.FormDef {
 					return dv.Get("schedule_d:16")
 				},
 			},
+			// Line 8d: Foreign earned income exclusion (from Form 2555)
+			{
+				Line:      "8d",
+				Type:      forms.Computed,
+				Label:     "Foreign earned income exclusion (Form 2555)",
+				DependsOn: []string{"form_2555:total_exclusion"},
+				Compute: func(dv forms.DepValues) float64 {
+					return -dv.Get("form_2555:total_exclusion")
+				},
+			},
 			// Line 10: Total additional income (sum of Part I lines)
 			{
 				Line:      "10",
 				Type:      forms.Computed,
 				Label:     "Total additional income",
-				DependsOn: []string{"schedule_1:1", "schedule_1:2a", "schedule_1:3", "schedule_1:7"},
+				DependsOn: []string{"schedule_1:1", "schedule_1:2a", "schedule_1:3", "schedule_1:7", "schedule_1:8d"},
 				Compute: func(dv forms.DepValues) float64 {
 					return dv.Get("schedule_1:1") +
 						dv.Get("schedule_1:2a") +
 						dv.Get("schedule_1:3") +
-						dv.Get("schedule_1:7")
+						dv.Get("schedule_1:7") +
+						dv.Get("schedule_1:8d")
 				},
 			},
 

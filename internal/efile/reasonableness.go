@@ -205,6 +205,59 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 		}
 	}
 
+	// --- Expat reasonableness checks ---
+
+	// RC015: FEIE claimed but low qualifying days
+	if numExists(results, "form_2555:total_exclusion") && getNum(results, "form_2555:total_exclusion") > 0 {
+		days := getNum(results, "form_2555:qualifying_days")
+		if days > 0 && days < 330 {
+			report.addResult("RC015", SeverityWarning, "form_2555:qualifying_days",
+				fmt.Sprintf("FEIE claimed with only %d qualifying days; full exclusion requires 365 days (BFRT) or 330 days (PPT)", int(days)))
+		}
+	}
+
+	// RC016: FTC exceeds 50% of foreign income
+	if numExists(results, "form_1116:22") && numExists(results, "form_1116:7") {
+		ftc := getNum(results, "form_1116:22")
+		foreignIncome := getNum(results, "form_1116:7")
+		if foreignIncome > 0 && ftc > 0.5*foreignIncome {
+			report.addResult("RC016", SeverityWarning, "form_1116:22",
+				"Foreign tax credit exceeds 50% of foreign source income; verify foreign taxes paid")
+		}
+	}
+
+	// RC017: FEIE + FTC no double benefit check
+	if numExists(results, "form_2555:total_exclusion") && numExists(results, "form_1116:22") {
+		feie := getNum(results, "form_2555:total_exclusion")
+		ftc := getNum(results, "form_1116:22")
+		if feie > 0 && ftc > 0 {
+			report.addResult("RC017", SeverityInfo, "form_1116:22",
+				"Both FEIE and FTC claimed — verify FTC applies only to income NOT excluded by FEIE")
+		}
+	}
+
+	// RC018: FATCA value fluctuation (max value >> year-end value)
+	if numExists(results, "form_8938:total_max_value") && numExists(results, "form_8938:total_yearend_value") {
+		maxVal := getNum(results, "form_8938:total_max_value")
+		yearEnd := getNum(results, "form_8938:total_yearend_value")
+		if yearEnd > 0 && maxVal > 3*yearEnd {
+			report.addResult("RC018", SeverityInfo, "form_8938:total_max_value",
+				fmt.Sprintf("Peak foreign asset value ($%.0f) is more than 3x year-end value ($%.0f); verify values", maxVal, yearEnd))
+		}
+	}
+
+	if includeCA {
+		// RC019: CA FEIE add-back equals federal FEIE
+		if numExists(results, "form_2555:total_exclusion") && getNum(results, "form_2555:total_exclusion") > 0 {
+			feie := getNum(results, "form_2555:total_exclusion")
+			addBack := getNum(results, "ca_schedule_ca:8d_col_c")
+			if math.Abs(addBack-feie) > 1.0 {
+				report.addResult("RC019", SeverityWarning, "ca_schedule_ca:8d_col_c",
+					fmt.Sprintf("CA FEIE add-back ($%.0f) does not match federal FEIE ($%.0f)", addBack, feie))
+			}
+		}
+	}
+
 	report.computeValidity()
 	return report
 }

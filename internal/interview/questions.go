@@ -397,6 +397,100 @@ var contextualPrompts = map[string]ContextualPrompt{
 		CANote:   "You can apply for exemptions through Covered California or claim them on Form 3853.",
 		CARef:    "R&TC \u00a761030",
 	},
+
+	// --- Form 2555 (Foreign Earned Income Exclusion) fields ---
+	"form_2555:foreign_country": {
+		Prompt:   "In which country do you live and work?",
+		HelpText: "Enter the country where you have established your tax home (principal place of business or employment).",
+		CANote:   "California does NOT allow the FEIE — your excluded income will be added back for CA tax purposes.",
+		IRCRef:   "IRC §911(d)(3)",
+	},
+	"form_2555:foreign_earned_income": {
+		Prompt:   "What was your total foreign earned income in 2025 (in USD)?",
+		HelpText: "Include wages, salary, professional fees, and self-employment income earned while living abroad. Convert to USD using the yearly average exchange rate.",
+		CANote:   "California taxes all worldwide income — this full amount will be taxed by CA even if excluded federally.",
+		IRCRef:   "IRC §911(b)",
+	},
+	"form_2555:qualifying_test": {
+		Prompt:   "Which qualifying test do you meet for the FEIE?",
+		HelpText: "Bona Fide Residence: You established residence in a foreign country for a full tax year. Physical Presence: You were in a foreign country for 330+ days in a 12-month period.",
+		IRCRef:   "IRC §911(d)(1)",
+	},
+	"form_2555:bfrt_full_year": {
+		Prompt:   "Were you a bona fide resident of a foreign country for the entire 2025 tax year?",
+		HelpText: "If yes, you qualify for the full exclusion. If you established or ended your foreign residence during 2025, the exclusion will be prorated.",
+		IRCRef:   "IRC §911(d)(1)(A)",
+	},
+	"form_2555:ppt_days_present": {
+		Prompt:   "How many full days were you physically present in a foreign country?",
+		HelpText: "Count only complete days (midnight to midnight) in a foreign country during a qualifying 12-month period. You need at least 330 days to qualify.",
+		IRCRef:   "IRC §911(d)(1)(B)",
+	},
+	"form_2555:housing_expenses": {
+		Prompt:   "What were your total housing expenses abroad in 2025 (in USD)?",
+		HelpText: "Include rent, utilities (not phone), insurance, parking, furniture rental, and repairs. Do not include mortgage payments, purchased furniture, or domestic labor.",
+		IRCRef:   "IRC §911(c)(3)",
+	},
+	"form_2555:foreign_tax_paid": {
+		Prompt:   "How much foreign income tax did you pay in 2025 (in USD)?",
+		HelpText: "Enter the total income taxes paid to your country of residence. You may be able to claim a Foreign Tax Credit on the income not excluded by the FEIE.",
+		IRCRef:   "IRC §901",
+	},
+
+	// --- Form 1116 (Foreign Tax Credit) fields ---
+	"form_1116:foreign_source_income": {
+		Prompt:   "What was your foreign source taxable income (not excluded by FEIE) in USD?",
+		HelpText: "This is income from foreign sources that was NOT excluded by the FEIE. You cannot claim both the FEIE and FTC on the same income.",
+		IRCRef:   "IRC §901(a)",
+	},
+	"form_1116:foreign_tax_paid_income": {
+		Prompt:   "How much foreign income tax did you pay on non-excluded income (in USD)?",
+		HelpText: "Enter foreign taxes paid on income that was NOT excluded by the FEIE. Taxes on FEIE-excluded income cannot be credited.",
+		IRCRef:   "IRC §911(d)(6)",
+	},
+	"form_1116:foreign_country": {
+		Prompt:   "Which country did you pay foreign taxes to?",
+		HelpText: "Enter the primary country where you paid foreign income taxes.",
+	},
+
+	// --- Form 8938 (FATCA) fields ---
+	"form_8938:lives_abroad": {
+		Prompt:   "Do you meet the bona fide residence or physical presence test for living abroad?",
+		HelpText: "If yes, higher FATCA reporting thresholds apply ($200,000/$300,000 single vs $50,000/$75,000 for US residents).",
+		IRCRef:   "IRC §6038D(b)",
+	},
+	"form_8938:max_value_accounts": {
+		Prompt:   "What was the maximum aggregate value of all your foreign financial accounts at any time during 2025 (in USD)?",
+		HelpText: "Include bank accounts, brokerage accounts, and pension accounts. Use the highest combined value at any point during the year.",
+		IRCRef:   "IRC §6038D",
+	},
+	"form_8938:yearend_value_accounts": {
+		Prompt:   "What was the total value of all your foreign financial accounts on December 31, 2025 (in USD)?",
+		HelpText: "Report the combined balance of all foreign accounts as of year-end.",
+	},
+
+	// --- Form 8833 (Treaty Disclosure) fields ---
+	"form_8833:treaty_country": {
+		Prompt:   "Which country's tax treaty are you relying on?",
+		HelpText: "Enter the country whose tax treaty with the US you are using to take a treaty-based return position.",
+		IRCRef:   "IRC §6114",
+	},
+	"form_8833:treaty_article": {
+		Prompt:   "Which article of the tax treaty applies?",
+		HelpText: "For example, 'Article 18 — Pensions' for the US-Sweden treaty. Failure to disclose carries a $1,000 penalty per position.",
+		IRCRef:   "IRC §6114/7701(b)",
+	},
+
+	// --- Schedule B Part III (Foreign Accounts) ---
+	"schedule_b:7a": {
+		Prompt:   "Did you have a financial interest in or signature authority over any foreign financial account?",
+		HelpText: "This includes bank accounts, securities accounts, and other financial accounts in a foreign country. If yes and the aggregate value exceeded $10,000, you must file an FBAR (FinCEN 114).",
+		IRCRef:   "31 USC §5314",
+	},
+	"schedule_b:7b": {
+		Prompt:   "In which countries are your foreign financial accounts located?",
+		HelpText: "List all countries where you have foreign financial accounts.",
+	},
 }
 
 // GetContextualPrompt returns the enhanced prompt for a field key, falling back

@@ -52,8 +52,10 @@ type CAScheduleCA struct {
 	DividendAddAmt    int `xml:"DividendAddAmt"`
 	CapGainSubAmt     int `xml:"CapGainSubAmt"`
 	CapGainAddAmt     int `xml:"CapGainAddAmt"`
-	HSAAddBackAmt     int `xml:"HSAAddBackAmt"`
-	SALTSubAmt        int `xml:"SALTSubAmt"`
+	HSAAddBackAmt        int `xml:"HSAAddBackAmt"`
+	FEIEAddBackAmt       int `xml:"FEIEAddBackAmt,omitempty"`
+	HousingAddBackAmt    int `xml:"HousingAddBackAmt,omitempty"`
+	SALTSubAmt           int `xml:"SALTSubAmt"`
 	PropertyTaxAddAmt int `xml:"PropertyTaxAddAmt"`
 	CAItemizedAmt     int `xml:"CAItemizedAmt"`
 	TotalSubAmt       int `xml:"TotalSubAmt"`
@@ -109,8 +111,10 @@ func GenerateReturn(results map[string]float64, strInputs map[string]string, tax
 		DividendAddAmt:    roundToInt(results["ca_schedule_ca:3_col_c"]),
 		CapGainSubAmt:     roundToInt(results["ca_schedule_ca:7_col_b"]),
 		CapGainAddAmt:     roundToInt(results["ca_schedule_ca:7_col_c"]),
-		HSAAddBackAmt:     roundToInt(results["ca_schedule_ca:15_col_c"]),
-		SALTSubAmt:        roundToInt(results["ca_schedule_ca:5e_col_b"]),
+		HSAAddBackAmt:        roundToInt(results["ca_schedule_ca:15_col_c"]),
+		FEIEAddBackAmt:      roundToInt(results["ca_schedule_ca:8d_col_c"]),
+		HousingAddBackAmt:   roundToInt(results["ca_schedule_ca:8d_col_c_housing"]),
+		SALTSubAmt:          roundToInt(results["ca_schedule_ca:5e_col_b"]),
 		PropertyTaxAddAmt: roundToInt(results["ca_schedule_ca:5e_col_c"]),
 		CAItemizedAmt:     roundToInt(results["ca_schedule_ca:ca_itemized"]),
 		TotalSubAmt:       roundToInt(results["ca_schedule_ca:37_col_b"]),

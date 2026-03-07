@@ -7,7 +7,8 @@ import (
 // ScheduleB returns the FormDef for Schedule B — Interest and Ordinary Dividends.
 // Part I totals interest income from all 1099-INT forms.
 // Part II totals ordinary dividends from all 1099-DIV forms.
-// Part III (Foreign Accounts) is a yes/no question deferred to a later phase.
+// Part III: Foreign Accounts and Trusts — required disclosures for
+// taxpayers with foreign financial accounts or foreign trust interests.
 func ScheduleB() *forms.FormDef {
 	return &forms.FormDef{
 		ID:           "schedule_b",
@@ -68,6 +69,45 @@ func ScheduleB() *forms.FormDef {
 				DependsOn: []string{"schedule_b:5"},
 				Compute: func(dv forms.DepValues) float64 {
 					return dv.Get("schedule_b:5")
+				},
+			},
+
+			// --- Part III: Foreign Accounts and Trusts ---
+
+			// Line 7a: Foreign financial accounts
+			{
+				Line:    "7a",
+				Type:    forms.UserInput,
+				Label:   "Foreign financial accounts",
+				Prompt:  "At any time during 2025, did you have a financial interest in or signature authority over a financial account in a foreign country (e.g., bank account, securities account)?" ,
+				Options: []string{"yes", "no"},
+			},
+			// Line 7b: Country of foreign accounts
+			{
+				Line:   "7b",
+				Type:   forms.UserInput,
+				Label:  "Country of foreign accounts",
+				Prompt: "In which country or countries are the foreign accounts located?",
+			},
+			// Line 8: Foreign trusts
+			{
+				Line:    "8",
+				Type:    forms.UserInput,
+				Label:   "Foreign trust",
+				Prompt:  "Did you receive a distribution from, or were you a grantor of, or transferor to, a foreign trust?",
+				Options: []string{"yes", "no"},
+			},
+			// FBAR required flag (computed from 7a)
+			{
+				Line:      "fbar_required",
+				Type:      forms.Computed,
+				Label:     "FBAR filing required",
+				DependsOn: []string{"schedule_b:7a"},
+				Compute: func(dv forms.DepValues) float64 {
+					if dv.GetString("schedule_b:7a") == "yes" {
+						return 1
+					}
+					return 0
 				},
 			},
 		},

@@ -167,6 +167,34 @@ func ScheduleCA() *forms.FormDef {
 				},
 			},
 
+			// Line 8d, Column C: Foreign earned income exclusion add-back
+			// CA does NOT conform to the federal FEIE (IRC §911).
+			// The entire federal exclusion must be added back.
+			{
+				Line:      "8d_col_c",
+				Type:      forms.Computed,
+				Label:     "Foreign earned income exclusion add-back (CA does not allow FEIE)",
+				DependsOn: []string{"form_2555:total_exclusion"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("form_2555:total_exclusion")
+				},
+			},
+			// Line 8d, Column B: Foreign housing deduction subtraction
+			// If a self-employed expat claims a housing deduction on Form 2555,
+			// CA also does not conform to this. However the housing deduction
+			// is part of Schedule 1 adjustments and flows through differently.
+			// The housing deduction is NOT included in total_exclusion, so we
+			// add it back separately.
+			{
+				Line:      "8d_col_c_housing",
+				Type:      forms.Computed,
+				Label:     "Foreign housing deduction add-back (CA does not allow)",
+				DependsOn: []string{"form_2555:housing_deduction"},
+				Compute: func(dv forms.DepValues) float64 {
+					return dv.Get("form_2555:housing_deduction")
+				},
+			},
+
 			// Line 16: Self-employment tax deduction — CA conforms to federal
 			// treatment. No adjustment needed.
 			{
@@ -309,6 +337,8 @@ func ScheduleCA() *forms.FormDef {
 					"ca_schedule_ca:2_col_c",
 					"ca_schedule_ca:3_col_c",
 					"ca_schedule_ca:7_col_c",
+					"ca_schedule_ca:8d_col_c",
+					"ca_schedule_ca:8d_col_c_housing",
 					"ca_schedule_ca:12_col_c",
 					"ca_schedule_ca:15_col_c",
 				},
@@ -316,6 +346,8 @@ func ScheduleCA() *forms.FormDef {
 					return dv.Get("ca_schedule_ca:2_col_c") +
 						dv.Get("ca_schedule_ca:3_col_c") +
 						dv.Get("ca_schedule_ca:7_col_c") +
+						dv.Get("ca_schedule_ca:8d_col_c") +
+						dv.Get("ca_schedule_ca:8d_col_c_housing") +
 						dv.Get("ca_schedule_ca:12_col_c") +
 						dv.Get("ca_schedule_ca:15_col_c")
 				},

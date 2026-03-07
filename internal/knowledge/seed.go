@@ -276,5 +276,8 @@ func SeedStore() *Store {
 	for _, doc := range SeedFTBPublications() {
 		s.Add(doc)
 	}
+	for _, doc := range SeedExpatDocuments() {
+		s.Add(doc)
+	}
 	return s
 }

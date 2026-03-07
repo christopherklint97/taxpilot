@@ -11,15 +11,16 @@ func TestSeedStoreCount(t *testing.T) {
 	ircCount := len(SeedIRCSections())
 	pubCount := len(SeedIRSPublications())
 	ftbCount := len(SeedFTBPublications())
-	expected := fedCount + caCount + ircCount + pubCount + ftbCount
+	expatCount := len(SeedExpatDocuments())
+	expected := fedCount + caCount + ircCount + pubCount + ftbCount + expatCount
 
 	if store.Count() != expected {
-		t.Errorf("SeedStore() count = %d, want %d (fed=%d, ca=%d, irc=%d, pub=%d, ftb=%d)",
-			store.Count(), expected, fedCount, caCount, ircCount, pubCount, ftbCount)
+		t.Errorf("SeedStore() count = %d, want %d (fed=%d, ca=%d, irc=%d, pub=%d, ftb=%d, expat=%d)",
+			store.Count(), expected, fedCount, caCount, ircCount, pubCount, ftbCount, expatCount)
 	}
-	// Verify minimum total (original 41 + new 53 = 94)
-	if store.Count() < 94 {
-		t.Errorf("SeedStore() count = %d, want at least 94", store.Count())
+	// Verify minimum total (original 94 + 11 expat = 105)
+	if store.Count() < 105 {
+		t.Errorf("SeedStore() count = %d, want at least 105", store.Count())
 	}
 }
 
@@ -162,6 +163,53 @@ func TestNewDocumentsAreSearchable(t *testing.T) {
 	}
 }
 
+func TestExpatDocumentsSearchable(t *testing.T) {
+	store := SeedStore()
+
+	tests := []struct {
+		query    string
+		expectID string
+		desc     string
+	}{
+		{"foreign earned income exclusion expat abroad", "irc_911", "FEIE search"},
+		{"foreign tax credit taxes paid", "irc_901", "FTC search"},
+		{"FBAR foreign bank accounts FinCEN", "fbar_fincen", "FBAR search"},
+		{"California FEIE non-conformity add back", "ca_feie_nonconformity", "CA FEIE search"},
+		{"Sweden tax treaty pension", "us_sweden_treaty", "Sweden treaty search"},
+		{"FATCA form 8938 foreign assets", "irc_6038d", "FATCA search"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			results := store.Search(tt.query, "", 10)
+			if len(results) == 0 {
+				t.Fatalf("no results for query %q", tt.query)
+			}
+			found := false
+			for _, r := range results {
+				if r.Document.ID == tt.expectID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				ids := make([]string, len(results))
+				for i, r := range results {
+					ids[i] = r.Document.ID
+				}
+				t.Errorf("expected %q in results for %q, got: %v", tt.expectID, tt.query, ids)
+			}
+		})
+	}
+}
+
+func TestExpatDocumentCount(t *testing.T) {
+	docs := SeedExpatDocuments()
+	if len(docs) < 11 {
+		t.Errorf("SeedExpatDocuments() returned %d documents, want at least 11", len(docs))
+	}
+}
+
 func TestIRCSectionCount(t *testing.T) {
 	docs := SeedIRCSections()
 	if len(docs) < 18 {
@@ -191,5 +239,6 @@ func collectAllDocuments() []Document {
 	all = append(all, SeedIRCSections()...)
 	all = append(all, SeedIRSPublications()...)
 	all = append(all, SeedFTBPublications()...)
+	all = append(all, SeedExpatDocuments()...)
 	return all
 }

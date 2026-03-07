@@ -212,14 +212,21 @@ func F1040() *forms.FormDef {
 			// --- Tax computation ---
 
 			// Line 16: Tax
+			// When FEIE (Form 2555) is claimed, uses the "stacking" method:
+			// tax is computed at the rate that would apply if the excluded
+			// income were still included, preventing bracket manipulation.
 			{
 				Line:      "16",
 				Type:      forms.Computed,
 				Label:     "Tax",
-				DependsOn: []string{"1040:15", "1040:filing_status"},
+				DependsOn: []string{"1040:15", "1040:filing_status", "form_2555:total_exclusion"},
 				Compute: func(dv forms.DepValues) float64 {
 					fs := taxmath.FilingStatus(dv.GetString("1040:filing_status"))
 					taxableIncome := dv.Get("1040:15")
+					excludedIncome := dv.Get("form_2555:total_exclusion")
+					if excludedIncome > 0 {
+						return taxmath.ComputeTaxWithStacking(taxableIncome, excludedIncome, fs, dv.TaxYear(), taxmath.Federal)
+					}
 					return taxmath.ComputeTax(taxableIncome, fs, dv.TaxYear(), taxmath.Federal)
 				},
 			},

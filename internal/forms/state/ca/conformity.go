@@ -69,6 +69,24 @@ var CAConformityDifferences = []ConformityDifference{
 		ScheduleCALine: "",
 	},
 	{
+		Area:           "Foreign Earned Income Exclusion",
+		Federal:        "Up to $130,000 of foreign earned income excluded (2025) via Form 2555",
+		CA:             "Not allowed — CA taxes worldwide income regardless of FEIE",
+		ScheduleCALine: "8d",
+	},
+	{
+		Area:           "Foreign Housing Exclusion/Deduction",
+		Federal:        "Additional exclusion for qualifying housing expenses abroad (Form 2555)",
+		CA:             "Not allowed — add back on Schedule CA",
+		ScheduleCALine: "8d",
+	},
+	{
+		Area:           "Foreign Tax Credit",
+		Federal:        "Credit for taxes paid to foreign governments (Form 1116)",
+		CA:             "CA allows a credit for taxes paid to other states and foreign countries",
+		ScheduleCALine: "",
+	},
+	{
 		Area:           "Mental Health Services Tax",
 		Federal:        "N/A",
 		CA:             "Additional 1% on taxable income over $1,000,000",
