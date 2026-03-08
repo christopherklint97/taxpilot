@@ -11,7 +11,7 @@ import (
 // taxpayers with foreign financial accounts or foreign trust interests.
 func ScheduleB() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_b",
+		ID:           forms.FormScheduleB,
 		Name:         "Schedule B — Interest and Ordinary Dividends",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

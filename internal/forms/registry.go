@@ -7,13 +7,13 @@ import (
 
 // Registry holds all registered forms and provides lookup.
 type Registry struct {
-	forms map[string]*FormDef
+	forms map[FormID]*FormDef
 }
 
 // NewRegistry creates an empty Registry.
 func NewRegistry() *Registry {
 	return &Registry{
-		forms: make(map[string]*FormDef),
+		forms: make(map[FormID]*FormDef),
 	}
 }
 
@@ -23,7 +23,7 @@ func (r *Registry) Register(form *FormDef) {
 }
 
 // Get returns the form with the given ID, or false if not found.
-func (r *Registry) Get(formID string) (*FormDef, bool) {
+func (r *Registry) Get(formID FormID) (*FormDef, bool) {
 	f, ok := r.forms[formID]
 	return f, ok
 }
@@ -35,7 +35,7 @@ func (r *Registry) GetField(key string) (*FormDef, *FieldDef, error) {
 	if len(parts) != 2 {
 		return nil, nil, fmt.Errorf("invalid field key %q: expected form_id:line", key)
 	}
-	formID, line := parts[0], parts[1]
+	formID, line := FormID(parts[0]), parts[1]
 
 	form, ok := r.forms[formID]
 	if !ok {

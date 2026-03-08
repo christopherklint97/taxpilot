@@ -5,7 +5,7 @@ import "taxpilot/internal/forms"
 // F1099DIV returns the FormDef for a 1099-DIV Dividends and Distributions.
 func F1099DIV() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "1099div",
+		ID:           forms.Form1099DIV,
 		Name:         "1099-DIV Dividends and Distributions",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

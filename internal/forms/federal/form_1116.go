@@ -20,7 +20,7 @@ import (
 // computation for any amount.
 func Form1116() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_1116",
+		ID:           forms.FormF1116,
 		Name:         "Form 1116 — Foreign Tax Credit",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

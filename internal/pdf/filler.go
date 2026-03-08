@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"taxpilot/internal/forms"
+
 	pdfcpuapi "github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
 )
@@ -21,7 +23,7 @@ type FieldMapping struct {
 
 // FormPDFConfig holds the PDF template path and field mappings for a form.
 type FormPDFConfig struct {
-	FormID       string
+	FormID       forms.FormID
 	FormName     string
 	TemplatePath string // path to blank PDF template
 	Mappings     []FieldMapping
@@ -29,14 +31,14 @@ type FormPDFConfig struct {
 
 // Filler fills PDF forms with computed values.
 type Filler struct {
-	configs   map[string]*FormPDFConfig
+	configs   map[forms.FormID]*FormPDFConfig
 	outputDir string
 }
 
 // NewFiller creates a new Filler that writes output to the given directory.
 func NewFiller(outputDir string) *Filler {
 	return &Filler{
-		configs:   make(map[string]*FormPDFConfig),
+		configs:   make(map[forms.FormID]*FormPDFConfig),
 		outputDir: outputDir,
 	}
 }
@@ -48,7 +50,7 @@ func (f *Filler) RegisterForm(config *FormPDFConfig) {
 
 // FillForm fills a single PDF form with values using pdfcpu.
 // Returns the output file path.
-func (f *Filler) FillForm(formID string, values map[string]float64, strValues map[string]string) (string, error) {
+func (f *Filler) FillForm(formID forms.FormID, values map[string]float64, strValues map[string]string) (string, error) {
 	config, ok := f.configs[formID]
 	if !ok {
 		return "", fmt.Errorf("no PDF config registered for form %q", formID)
@@ -122,7 +124,7 @@ func (f *Filler) FillForm(formID string, values map[string]float64, strValues ma
 }
 
 // FillFormText generates a text representation of the filled form (fallback when no PDF template).
-func (f *Filler) FillFormText(formID string, values map[string]float64, strValues map[string]string) (string, error) {
+func (f *Filler) FillFormText(formID forms.FormID, values map[string]float64, strValues map[string]string) (string, error) {
 	config, ok := f.configs[formID]
 	if !ok {
 		return "", fmt.Errorf("no PDF config registered for form %q", formID)
@@ -136,15 +138,15 @@ func (f *Filler) FillFormText(formID string, values map[string]float64, strValue
 
 	var text string
 	switch formID {
-	case "1040":
+	case forms.FormF1040:
 		text = render1040Text(config, values, strValues)
-	case "ca_540":
+	case forms.FormCA540:
 		text = renderCA540Text(config, values, strValues)
-	case "schedule_b":
+	case forms.FormScheduleB:
 		text = renderScheduleBText(config, values, strValues)
-	case "schedule_d":
+	case forms.FormScheduleD:
 		text = renderScheduleDText(config, values, strValues)
-	case "schedule_1":
+	case forms.FormSchedule1:
 		text = renderSchedule1Text(config, values, strValues)
 	default:
 		text = renderGenericText(config, values, strValues)

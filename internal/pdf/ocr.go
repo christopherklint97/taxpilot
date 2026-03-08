@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"taxpilot/internal/forms"
 )
 
 // OCRAvailable checks if tesseract is installed and accessible.
@@ -115,11 +117,11 @@ func runTesseract(imagePath string) (string, error) {
 
 // extractFieldsFromText parses OCR text to find tax form line values.
 // Routes to the appropriate form-specific detector based on formType.
-func extractFieldsFromText(text string, formType string) (map[string]float64, map[string]string) {
+func extractFieldsFromText(text string, formType forms.FormID) (map[string]float64, map[string]string) {
 	switch formType {
-	case "ca_540":
+	case forms.FormCA540:
 		return detect540Fields(text)
-	case "1040":
+	case forms.FormF1040:
 		return detect1040Fields(text)
 	default:
 		// Try 1040 as default.
@@ -128,21 +130,21 @@ func extractFieldsFromText(text string, formType string) (map[string]float64, ma
 }
 
 // detectFormTypeFromText determines the form type from OCR text content.
-func detectFormTypeFromText(text string) string {
+func detectFormTypeFromText(text string) forms.FormID {
 	lower := strings.ToLower(text)
 
 	// Check for CA 540 indicators.
 	if strings.Contains(lower, "california resident income tax") ||
 		strings.Contains(lower, "form 540") ||
 		strings.Contains(lower, "franchise tax board") {
-		return "ca_540"
+		return forms.FormCA540
 	}
 
 	// Check for 1040 indicators.
 	if strings.Contains(lower, "form 1040") ||
 		strings.Contains(lower, "u.s. individual income tax return") ||
 		strings.Contains(lower, "department of the treasury") {
-		return "1040"
+		return forms.FormF1040
 	}
 
 	return "unknown"

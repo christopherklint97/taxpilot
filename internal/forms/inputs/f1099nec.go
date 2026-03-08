@@ -5,7 +5,7 @@ import "taxpilot/internal/forms"
 // F1099NEC returns the FormDef for a 1099-NEC Nonemployee Compensation.
 func F1099NEC() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "1099nec",
+		ID:           forms.Form1099NEC,
 		Name:         "1099-NEC Nonemployee Compensation",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

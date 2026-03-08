@@ -1,5 +1,7 @@
 package interview
 
+import "taxpilot/internal/forms"
+
 // DetectCAScheduleCANeeded examines the taxpayer's inputs and determines whether
 // Schedule CA (California Adjustments) is needed, and returns the reasons why.
 // This helps the interview engine decide whether to include Schedule CA questions.
@@ -8,19 +10,19 @@ func DetectCAScheduleCANeeded(inputs map[string]float64, strInputs map[string]st
 
 	// HSA contributions: CA does not conform to federal HSA treatment.
 	// Any HSA deduction must be added back on Schedule CA.
-	if inputs["form_8889:2"] > 0 {
+	if inputs[forms.F8889Line2] > 0 {
 		reasons = append(reasons, "HSA deduction add-back")
 	}
 
 	// SALT deduction: CA does not allow deduction of state/local income taxes.
 	// Schedule A line 5a (state and local income taxes) must be removed.
-	if inputs["schedule_a:5a"] > 0 {
+	if inputs[forms.SchedALine5a] > 0 {
 		reasons = append(reasons, "State income tax deduction removal")
 	}
 
 	// QBI deduction: CA does not conform to the federal Section 199A QBI deduction.
 	// Detect via presence of business income on Schedule C.
-	if inputs["schedule_c:31"] > 0 || inputs["schedule_c:7"] > 0 {
+	if inputs[forms.SchedCLine31] > 0 || inputs[forms.SchedCLine7] > 0 {
 		reasons = append(reasons, "QBI deduction add-back")
 	}
 
@@ -51,12 +53,12 @@ func DetectCAScheduleCANeeded(inputs map[string]float64, strInputs map[string]st
 
 	// Foreign earned income exclusion: CA does not conform to FEIE.
 	// The entire exclusion must be added back on Schedule CA.
-	if inputs["form_2555:total_exclusion"] > 0 || inputs["form_2555:foreign_earned_income"] > 0 {
+	if inputs[forms.F2555TotalExclusion] > 0 || inputs[forms.F2555ForeignEarnedIncome] > 0 {
 		reasons = append(reasons, "Foreign earned income exclusion add-back (CA does not allow FEIE)")
 	}
 
 	// Foreign housing exclusion/deduction: CA does not conform
-	if inputs["form_2555:housing_exclusion"] > 0 || inputs["form_2555:housing_deduction"] > 0 {
+	if inputs[forms.F2555HousingExclusion] > 0 || inputs[forms.F2555HousingDeduction] > 0 {
 		reasons = append(reasons, "Foreign housing exclusion/deduction add-back")
 	}
 

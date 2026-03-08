@@ -21,7 +21,7 @@ import (
 // long-term totals. The user indicates term and basis reporting on each 1099-B.
 func Form8949() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_8949",
+		ID:           forms.FormF8949,
 		Name:         "Form 8949 — Sales and Other Dispositions of Capital Assets",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

@@ -5,7 +5,7 @@ import "taxpilot/internal/forms"
 // F1099INT returns the FormDef for a 1099-INT Interest Income.
 func F1099INT() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "1099int",
+		ID:           forms.Form1099INT,
 		Name:         "1099-INT Interest Income",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

@@ -12,7 +12,7 @@ import (
 // standard deduction and no dependents.
 func F540() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "ca_540",
+		ID:           forms.FormCA540,
 		Name:         "California Resident Income Tax Return",
 		Jurisdiction: forms.StateCA,
 		TaxYears:     []int{2025},

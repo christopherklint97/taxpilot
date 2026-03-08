@@ -3,6 +3,8 @@ package pdf
 import (
 	"math"
 	"testing"
+
+	"taxpilot/internal/forms"
 )
 
 func TestParseCurrency(t *testing.T) {
@@ -97,7 +99,7 @@ func indexOf(s, substr string) int {
 
 func TestReverseMapping(t *testing.T) {
 	config := &FormPDFConfig{
-		FormID:   "1040",
+		FormID:   forms.FormF1040,
 		FormName: "Form 1040",
 		Mappings: []FieldMapping{
 			{FieldKey: "1040:first_name", PDFField: "f1_02", Format: "string"},
@@ -168,7 +170,7 @@ func TestExtractYear(t *testing.T) {
 func TestDetectFormFromFields(t *testing.T) {
 	p := NewParser()
 	p.RegisterForm(&FormPDFConfig{
-		FormID:   "1040",
+		FormID:   forms.FormF1040,
 		FormName: "Form 1040",
 		Mappings: []FieldMapping{
 			{FieldKey: "1040:1a", PDFField: "f1_07", Format: "currency"},
@@ -177,7 +179,7 @@ func TestDetectFormFromFields(t *testing.T) {
 		},
 	})
 	p.RegisterForm(&FormPDFConfig{
-		FormID:   "ca_540",
+		FormID:   forms.FormCA540,
 		FormName: "Form 540",
 		Mappings: []FieldMapping{
 			{FieldKey: "ca_540:7", PDFField: "Line_7", Format: "currency"},

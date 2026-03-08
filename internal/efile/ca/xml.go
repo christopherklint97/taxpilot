@@ -4,6 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"math"
+
+	"taxpilot/internal/forms"
 )
 
 // CAReturn is the root element for a California FTB e-file XML return.
@@ -79,27 +81,27 @@ func GenerateReturn(results map[string]float64, strInputs map[string]string, tax
 		Version: fmt.Sprintf("%d.1", taxYear),
 		Header: CAReturnHeader{
 			TaxYear:        taxYear,
-			PrimarySSN:     strInputs["1040:ssn"],
-			FirstName:      strInputs["1040:first_name"],
-			LastName:       strInputs["1040:last_name"],
-			FilingStatusCd: filingStatusCode(strInputs["1040:filing_status"]),
+			PrimarySSN:     strInputs[forms.F1040SSN],
+			FirstName:      strInputs[forms.F1040FirstName],
+			LastName:       strInputs[forms.F1040LastName],
+			FilingStatusCd: filingStatusCode(strInputs[forms.F1040FilingStatus]),
 		},
 		CA540: CA540{
-			FederalAGIAmt:      roundToInt(results["ca_540:13"]),
-			CASubtractionsAmt:  roundToInt(results["ca_540:14"]),
-			CAAdditionsAmt:     roundToInt(results["ca_540:15"]),
-			CAAGIAmt:           roundToInt(results["ca_540:17"]),
-			CADeductionAmt:     roundToInt(results["ca_540:18"]),
-			CATaxableIncomeAmt: roundToInt(results["ca_540:19"]),
-			CATaxAmt:           roundToInt(results["ca_540:31"]),
-			ExemptionCreditAmt: roundToInt(results["ca_540:32"]),
-			NetTaxAmt:          roundToInt(results["ca_540:35"]),
-			MentalHealthTaxAmt: roundToInt(results["ca_540:36"]),
-			TotalTaxAmt:        roundToInt(results["ca_540:40"]),
-			WithholdingAmt:     roundToInt(results["ca_540:71"]),
-			TotalPaymentsAmt:   roundToInt(results["ca_540:74"]),
-			OverpaidAmt:        roundToInt(results["ca_540:91"]),
-			OwedAmt:            roundToInt(results["ca_540:93"]),
+			FederalAGIAmt:      roundToInt(results[forms.CA540Line13]),
+			CASubtractionsAmt:  roundToInt(results[forms.CA540Line14]),
+			CAAdditionsAmt:     roundToInt(results[forms.CA540Line15]),
+			CAAGIAmt:           roundToInt(results[forms.CA540Line17]),
+			CADeductionAmt:     roundToInt(results[forms.CA540Line18]),
+			CATaxableIncomeAmt: roundToInt(results[forms.CA540Line19]),
+			CATaxAmt:           roundToInt(results[forms.CA540Line31]),
+			ExemptionCreditAmt: roundToInt(results[forms.CA540Line32]),
+			NetTaxAmt:          roundToInt(results[forms.CA540Line35]),
+			MentalHealthTaxAmt: roundToInt(results[forms.CA540Line36]),
+			TotalTaxAmt:        roundToInt(results[forms.CA540Line40]),
+			WithholdingAmt:     roundToInt(results[forms.CA540Line71]),
+			TotalPaymentsAmt:   roundToInt(results[forms.CA540Line74]),
+			OverpaidAmt:        roundToInt(results[forms.CA540Line91]),
+			OwedAmt:            roundToInt(results[forms.CA540Line93]),
 		},
 	}
 
@@ -112,13 +114,13 @@ func GenerateReturn(results map[string]float64, strInputs map[string]string, tax
 		CapGainSubAmt:     roundToInt(results["ca_schedule_ca:7_col_b"]),
 		CapGainAddAmt:     roundToInt(results["ca_schedule_ca:7_col_c"]),
 		HSAAddBackAmt:        roundToInt(results["ca_schedule_ca:15_col_c"]),
-		FEIEAddBackAmt:      roundToInt(results["ca_schedule_ca:8d_col_c"]),
-		HousingAddBackAmt:   roundToInt(results["ca_schedule_ca:8d_col_c_housing"]),
+		FEIEAddBackAmt:      roundToInt(results[forms.SchedCALine8dColC]),
+		HousingAddBackAmt:   roundToInt(results[forms.SchedCALine8dColCHousing]),
 		SALTSubAmt:          roundToInt(results["ca_schedule_ca:5e_col_b"]),
 		PropertyTaxAddAmt: roundToInt(results["ca_schedule_ca:5e_col_c"]),
 		CAItemizedAmt:     roundToInt(results["ca_schedule_ca:ca_itemized"]),
 		TotalSubAmt:       roundToInt(results["ca_schedule_ca:37_col_b"]),
-		TotalAddAmt:       roundToInt(results["ca_schedule_ca:37_col_c"]),
+		TotalAddAmt:       roundToInt(results[forms.SchedCALine37ColC]),
 	}
 
 	if hasNonZeroAdjustments(sca) {

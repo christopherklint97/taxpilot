@@ -13,7 +13,7 @@ import (
 // be added in future iterations.
 func F1040() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "1040",
+		ID:           forms.FormF1040,
 		Name:         "U.S. Individual Income Tax Return",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

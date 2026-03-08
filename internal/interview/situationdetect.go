@@ -1,11 +1,13 @@
 package interview
 
+import "taxpilot/internal/forms"
+
 // Situation represents a detected tax situation that requires additional forms.
 type Situation struct {
 	ID          string   // e.g., "self_employed", "capital_gains"
 	Label       string   // "Self-Employment Income"
 	Description string   // "You had freelance or business income"
-	FormsNeeded []string // form IDs that need to be added
+	FormsNeeded []forms.FormID // form IDs that need to be added
 	Screening   string   // the screening question that triggered this
 }
 
@@ -29,7 +31,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "self_employed",
 			Label:       "Self-Employment Income",
 			Description: "You had freelance or business income",
-			FormsNeeded: []string{"schedule_c", "schedule_se"},
+			FormsNeeded: []forms.FormID{forms.FormScheduleC, forms.FormScheduleSE},
 			Screening:   "has_self_employment",
 		},
 	},
@@ -42,7 +44,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "capital_gains",
 			Label:       "Capital Gains/Losses",
 			Description: "You sold investments during the year",
-			FormsNeeded: []string{"schedule_d", "f8949"},
+			FormsNeeded: []forms.FormID{forms.FormScheduleD, forms.FormF8949},
 			Screening:   "has_capital_gains",
 		},
 	},
@@ -67,7 +69,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "interest_income",
 			Label:       "Interest Income",
 			Description: "You received interest income",
-			FormsNeeded: []string{"1099int"},
+			FormsNeeded: []forms.FormID{forms.Form1099INT},
 			Screening:   "has_interest_income",
 		},
 	},
@@ -79,7 +81,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "dividend_income",
 			Label:       "Dividend Income",
 			Description: "You received dividend income",
-			FormsNeeded: []string{"1099div"},
+			FormsNeeded: []forms.FormID{forms.Form1099DIV},
 			Screening:   "has_dividend_income",
 		},
 	},
@@ -92,7 +94,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "hsa",
 			Label:       "Health Savings Account",
 			Description: "You have a Health Savings Account (HSA)",
-			FormsNeeded: []string{"form_8889"},
+			FormsNeeded: []forms.FormID{forms.FormF8889},
 			Screening:   "has_hsa",
 		},
 	},
@@ -105,7 +107,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "expat",
 			Label:       "US Citizen Abroad",
 			Description: "You live outside the United States",
-			FormsNeeded: []string{"form_2555", "form_8938"},
+			FormsNeeded: []forms.FormID{forms.FormF2555, forms.FormF8938},
 			Screening:   "lives_abroad",
 		},
 	},
@@ -118,7 +120,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "foreign_income",
 			Label:       "Foreign Earned Income",
 			Description: "You earned income from a foreign source",
-			FormsNeeded: []string{"form_2555"},
+			FormsNeeded: []forms.FormID{forms.FormF2555},
 			Screening:   "has_foreign_income",
 		},
 	},
@@ -130,7 +132,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "foreign_accounts",
 			Label:       "Foreign Financial Accounts",
 			Description: "You have financial accounts in a foreign country",
-			FormsNeeded: []string{"form_8938"},
+			FormsNeeded: []forms.FormID{forms.FormF8938},
 			Screening:   "has_foreign_accounts",
 		},
 	},
@@ -142,7 +144,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "foreign_tax_credit",
 			Label:       "Foreign Tax Credit",
 			Description: "You paid income taxes to a foreign government",
-			FormsNeeded: []string{"form_1116"},
+			FormsNeeded: []forms.FormID{forms.FormF1116},
 			Screening:   "has_foreign_tax_paid",
 		},
 	},
@@ -155,7 +157,7 @@ var DefaultScreeningQuestions = []ScreeningQuestion{
 			ID:          "itemized_deductions",
 			Label:       "Itemized Deductions",
 			Description: "You want to itemize deductions on Schedule A",
-			FormsNeeded: []string{"schedule_a"},
+			FormsNeeded: []forms.FormID{forms.FormScheduleA},
 			Screening:   "has_itemized_deductions",
 		},
 	},
@@ -176,7 +178,7 @@ func EvaluateScreening(answers map[string]bool) []Situation {
 // PriorYearData holds data from a prior-year return used for auto-detection.
 type PriorYearData struct {
 	// FormsPresent lists form IDs that were in the prior-year return.
-	FormsPresent []string
+	FormsPresent []forms.FormID
 	// NumericValues holds numeric field values from the prior year.
 	NumericValues map[string]float64
 }
@@ -187,54 +189,54 @@ type PriorYearData struct {
 func AutoDetectSituations(prior PriorYearData) map[string]bool {
 	detected := make(map[string]bool)
 
-	formSet := make(map[string]bool, len(prior.FormsPresent))
+	formSet := make(map[forms.FormID]bool, len(prior.FormsPresent))
 	for _, f := range prior.FormsPresent {
 		formSet[f] = true
 	}
 
 	// Self-employment: had Schedule C or Schedule SE
-	if formSet["schedule_c"] || formSet["schedule_se"] {
+	if formSet[forms.FormScheduleC] || formSet[forms.FormScheduleSE] {
 		detected["has_self_employment"] = true
 	}
 
 	// Capital gains: had Schedule D or Form 8949
-	if formSet["schedule_d"] || formSet["f8949"] {
+	if formSet[forms.FormScheduleD] || formSet[forms.FormF8949] {
 		detected["has_capital_gains"] = true
 	}
 
 	// Interest income: had 1099-INT or Schedule B with interest
-	if formSet["1099int"] || formSet["schedule_b"] {
+	if formSet[forms.Form1099INT] || formSet[forms.FormScheduleB] {
 		detected["has_interest_income"] = true
 	}
 
 	// Dividend income: had 1099-DIV
-	if formSet["1099div"] {
+	if formSet[forms.Form1099DIV] {
 		detected["has_dividend_income"] = true
 	}
 
 	// HSA: had Form 8889
-	if formSet["form_8889"] {
+	if formSet[forms.FormF8889] {
 		detected["has_hsa"] = true
 	}
 
 	// Expat: had Form 2555 (FEIE)
-	if formSet["form_2555"] {
+	if formSet[forms.FormF2555] {
 		detected["lives_abroad"] = true
 		detected["has_foreign_income"] = true
 	}
 
 	// Foreign tax credit: had Form 1116
-	if formSet["form_1116"] {
+	if formSet[forms.FormF1116] {
 		detected["has_foreign_tax_paid"] = true
 	}
 
 	// Foreign accounts: had Form 8938 (FATCA)
-	if formSet["form_8938"] {
+	if formSet[forms.FormF8938] {
 		detected["has_foreign_accounts"] = true
 	}
 
 	// Itemized deductions: had Schedule A
-	if formSet["schedule_a"] {
+	if formSet[forms.FormScheduleA] {
 		detected["has_itemized_deductions"] = true
 	}
 

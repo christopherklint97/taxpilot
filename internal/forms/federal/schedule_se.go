@@ -21,7 +21,7 @@ const (
 // net earnings from self-employment (Schedule C line 31).
 func ScheduleSE() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_se",
+		ID:           forms.FormScheduleSE,
 		Name:         "Schedule SE — Self-Employment Tax",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

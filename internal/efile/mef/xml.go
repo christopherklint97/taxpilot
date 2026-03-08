@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"taxpilot/internal/forms"
 )
 
 // MeF XML namespace and version constants.
@@ -297,91 +299,91 @@ func GenerateReturn(results map[string]float64, strInputs map[string]string, tax
 	docCount++
 
 	// --- Schedule A ---
-	if isScheduleNeeded(results, "schedule_a:") {
+	if isScheduleNeeded(results, string(forms.FormScheduleA)+":") {
 		data.IRS1040ScheduleA = buildScheduleA(results)
 		docCount++
 	}
 
 	// --- Schedule 1 ---
-	if isScheduleNeeded(results, "schedule_1:") {
+	if isScheduleNeeded(results, string(forms.FormSchedule1)+":") {
 		data.IRS1040Schedule1 = buildSchedule1(results)
 		docCount++
 	}
 
 	// --- Schedule 2 ---
-	if isScheduleNeeded(results, "schedule_2:") {
+	if isScheduleNeeded(results, string(forms.FormSchedule2)+":") {
 		data.IRS1040Schedule2 = buildSchedule2(results)
 		docCount++
 	}
 
 	// --- Schedule 3 ---
-	if isScheduleNeeded(results, "schedule_3:") {
+	if isScheduleNeeded(results, string(forms.FormSchedule3)+":") {
 		data.IRS1040Schedule3 = buildSchedule3(results)
 		docCount++
 	}
 
 	// --- Schedule B ---
-	if isScheduleNeeded(results, "schedule_b:") {
+	if isScheduleNeeded(results, string(forms.FormScheduleB)+":") {
 		data.IRS1040ScheduleB = buildScheduleB(results)
 		docCount++
 	}
 
 	// --- Schedule C ---
-	if isScheduleNeeded(results, "schedule_c:") {
+	if isScheduleNeeded(results, string(forms.FormScheduleC)+":") {
 		data.IRS1040ScheduleC = buildScheduleC(results, strInputs)
 		docCount++
 	}
 
 	// --- Schedule D ---
-	if isScheduleNeeded(results, "schedule_d:") {
+	if isScheduleNeeded(results, string(forms.FormScheduleD)+":") {
 		data.IRS1040ScheduleD = buildScheduleD(results)
 		docCount++
 	}
 
 	// --- Schedule SE ---
-	if isScheduleNeeded(results, "schedule_se:") {
+	if isScheduleNeeded(results, string(forms.FormScheduleSE)+":") {
 		data.IRS1040ScheduleSE = buildScheduleSE(results)
 		docCount++
 	}
 
 	// --- Form 8889 ---
-	if isScheduleNeeded(results, "form_8889:") {
+	if isScheduleNeeded(results, string(forms.FormF8889)+":") {
 		data.IRS8889 = buildForm8889(results, strInputs)
 		docCount++
 	}
 
 	// --- Form 8949 ---
-	if isScheduleNeeded(results, "form_8949:") {
+	if isScheduleNeeded(results, string(forms.FormF8949)+":") {
 		data.IRS8949 = buildForm8949(results)
 		docCount++
 	}
 
 	// --- Form 8995 ---
-	if isScheduleNeeded(results, "form_8995:") {
+	if isScheduleNeeded(results, string(forms.FormF8995)+":") {
 		data.IRS8995 = buildForm8995(results)
 		docCount++
 	}
 
 	// --- Form 2555 ---
-	if isScheduleNeeded(results, "form_2555:") {
+	if isScheduleNeeded(results, string(forms.FormF2555)+":") {
 		data.IRS2555 = buildForm2555(results, strInputs)
 		docCount++
 	}
 
 	// --- Form 1116 ---
-	if isScheduleNeeded(results, "form_1116:") {
+	if isScheduleNeeded(results, string(forms.FormF1116)+":") {
 		data.IRS1116 = buildForm1116(results, strInputs)
 		docCount++
 	}
 
 	// --- Form 8938 ---
-	if isScheduleNeeded(results, "form_8938:") {
+	if isScheduleNeeded(results, string(forms.FormF8938)+":") {
 		data.IRS8938 = buildForm8938(results, strInputs)
 		docCount++
 	}
 
 	// --- Form 8833 ---
-	if isScheduleNeeded(results, "form_8833:") {
+	if isScheduleNeeded(results, string(forms.FormF8833)+":") {
 		data.IRS8833 = buildForm8833(results, strInputs)
 		docCount++
 	}
@@ -431,7 +433,7 @@ func isScheduleNeeded(results map[string]float64, prefix string) bool {
 // --- Builder functions ---
 
 func buildReturnHeader(results map[string]float64, strInputs map[string]string, taxYear int) ReturnHeader {
-	fsStr := strInputs["1040:filing_status"]
+	fsStr := strInputs[forms.F1040FilingStatus]
 	fsCd := filingStatusCodes[fsStr]
 	if fsCd == 0 {
 		fsCd = 1 // default to single
@@ -443,10 +445,10 @@ func buildReturnHeader(results map[string]float64, strInputs map[string]string, 
 		TaxPeriodBeginDt:    fmt.Sprintf("%d-01-01", taxYear),
 		TaxPeriodEndDt:      fmt.Sprintf("%d-12-31", taxYear),
 		Filer: Filer{
-			PrimarySSN:     formatSSN(strInputs["1040:ssn"]),
+			PrimarySSN:     formatSSN(strInputs[forms.F1040SSN]),
 			Name: FilerName{
-				FirstName: strInputs["1040:first_name"],
-				LastName:  strInputs["1040:last_name"],
+				FirstName: strInputs[forms.F1040FirstName],
+				LastName:  strInputs[forms.F1040LastName],
 			},
 			FilingStatusCd: fsCd,
 		},
@@ -455,159 +457,159 @@ func buildReturnHeader(results map[string]float64, strInputs map[string]string, 
 
 func buildIRS1040(r map[string]float64) *IRS1040 {
 	return &IRS1040{
-		WagesSalariesTips:       roundToInt(r["1040:1a"]),
-		TaxExemptInterestAmt:    roundToInt(r["1040:2a"]),
-		TaxableInterestAmt:      roundToInt(r["1040:2b"]),
-		QualifiedDividendsAmt:   roundToInt(r["1040:3a"]),
-		OrdinaryDividendsAmt:    roundToInt(r["1040:3b"]),
-		CapitalGainLossAmt:      roundToInt(r["1040:7"]),
-		OtherIncomeAmt:          roundToInt(r["1040:8"]),
-		TotalIncomeAmt:          roundToInt(r["1040:9"]),
-		AdjustmentsToIncomeAmt:  roundToInt(r["1040:10"]),
-		AdjustedGrossIncomeAmt:  roundToInt(r["1040:11"]),
-		TotalDeductionsAmt:      roundToInt(r["1040:14"]),
-		TaxableIncomeAmt:        roundToInt(r["1040:15"]),
-		TaxAmt:                  roundToInt(r["1040:16"]),
-		Sch2PartIAmt:            roundToInt(r["1040:17"]),
-		Sch3PartIAmt:            roundToInt(r["1040:20"]),
-		TaxAfterCreditsAmt:      roundToInt(r["1040:22"]),
-		OtherTaxesAmt:           roundToInt(r["1040:23"]),
-		TotalTaxAmt:             roundToInt(r["1040:24"]),
-		WithholdingTaxAmt:       roundToInt(r["1040:25d"]),
-		EstimatedTaxPaymentsAmt: roundToInt(r["1040:31"]),
-		TotalPaymentsAmt:        roundToInt(r["1040:33"]),
-		OverpaidAmt:             roundToInt(r["1040:34"]),
-		OwedAmt:                 roundToInt(r["1040:37"]),
+		WagesSalariesTips:       roundToInt(r[forms.F1040Line1a]),
+		TaxExemptInterestAmt:    roundToInt(r[forms.F1040Line2a]),
+		TaxableInterestAmt:      roundToInt(r[forms.F1040Line2b]),
+		QualifiedDividendsAmt:   roundToInt(r[forms.F1040Line3a]),
+		OrdinaryDividendsAmt:    roundToInt(r[forms.F1040Line3b]),
+		CapitalGainLossAmt:      roundToInt(r[forms.F1040Line7]),
+		OtherIncomeAmt:          roundToInt(r[forms.F1040Line8]),
+		TotalIncomeAmt:          roundToInt(r[forms.F1040Line9]),
+		AdjustmentsToIncomeAmt:  roundToInt(r[forms.F1040Line10]),
+		AdjustedGrossIncomeAmt:  roundToInt(r[forms.F1040Line11]),
+		TotalDeductionsAmt:      roundToInt(r[forms.F1040Line14]),
+		TaxableIncomeAmt:        roundToInt(r[forms.F1040Line15]),
+		TaxAmt:                  roundToInt(r[forms.F1040Line16]),
+		Sch2PartIAmt:            roundToInt(r[forms.F1040Line17]),
+		Sch3PartIAmt:            roundToInt(r[forms.F1040Line20]),
+		TaxAfterCreditsAmt:      roundToInt(r[forms.F1040Line22]),
+		OtherTaxesAmt:           roundToInt(r[forms.F1040Line23]),
+		TotalTaxAmt:             roundToInt(r[forms.F1040Line24]),
+		WithholdingTaxAmt:       roundToInt(r[forms.F1040Line25d]),
+		EstimatedTaxPaymentsAmt: roundToInt(r[forms.F1040Line31]),
+		TotalPaymentsAmt:        roundToInt(r[forms.F1040Line33]),
+		OverpaidAmt:             roundToInt(r[forms.F1040Line34]),
+		OwedAmt:                 roundToInt(r[forms.F1040Line37]),
 	}
 }
 
 func buildScheduleA(r map[string]float64) *IRS1040ScheduleA {
 	return &IRS1040ScheduleA{
-		MedicalAndDentalExpAmt:    roundToInt(r["schedule_a:1"]),
-		AGIAmt:                    roundToInt(r["schedule_a:2"]),
-		MedicalFloorAmt:           roundToInt(r["schedule_a:3"]),
-		DeductibleMedicalAmt:      roundToInt(r["schedule_a:4"]),
-		StateLocalIncomeTaxAmt:    roundToInt(r["schedule_a:5a"]),
-		PropertyTaxAmt:            roundToInt(r["schedule_a:5b"]),
-		RealEstateTaxAmt:          roundToInt(r["schedule_a:5c"]),
-		TotalSALTAmt:              roundToInt(r["schedule_a:5d"]),
-		SALTDeductionAmt:          roundToInt(r["schedule_a:5e"]),
-		MortgageInterestAmt:       roundToInt(r["schedule_a:8a"]),
-		TotalInterestDeductionAmt: roundToInt(r["schedule_a:11"]),
-		CashCharityAmt:            roundToInt(r["schedule_a:12"]),
-		NonCashCharityAmt:         roundToInt(r["schedule_a:13"]),
-		CharityCarryoverAmt:       roundToInt(r["schedule_a:14"]),
-		TotalCharityAmt:           roundToInt(r["schedule_a:15"]),
-		TotalItemizedDeductAmt:    roundToInt(r["schedule_a:17"]),
+		MedicalAndDentalExpAmt:    roundToInt(r[forms.SchedALine1]),
+		AGIAmt:                    roundToInt(r[forms.SchedALine2]),
+		MedicalFloorAmt:           roundToInt(r[forms.SchedALine3]),
+		DeductibleMedicalAmt:      roundToInt(r[forms.SchedALine4]),
+		StateLocalIncomeTaxAmt:    roundToInt(r[forms.SchedALine5a]),
+		PropertyTaxAmt:            roundToInt(r[forms.SchedALine5b]),
+		RealEstateTaxAmt:          roundToInt(r[forms.SchedALine5c]),
+		TotalSALTAmt:              roundToInt(r[forms.SchedALine5d]),
+		SALTDeductionAmt:          roundToInt(r[forms.SchedALine5e]),
+		MortgageInterestAmt:       roundToInt(r[forms.SchedALine8a]),
+		TotalInterestDeductionAmt: roundToInt(r[forms.SchedALine11]),
+		CashCharityAmt:            roundToInt(r[forms.SchedALine12]),
+		NonCashCharityAmt:         roundToInt(r[forms.SchedALine13]),
+		CharityCarryoverAmt:       roundToInt(r[forms.SchedALine14]),
+		TotalCharityAmt:           roundToInt(r[forms.SchedALine15]),
+		TotalItemizedDeductAmt:    roundToInt(r[forms.SchedALine17]),
 	}
 }
 
 func buildSchedule1(r map[string]float64) *IRS1040Schedule1 {
 	return &IRS1040Schedule1{
-		BusinessIncomeLossAmt:     roundToInt(r["schedule_1:3"]),
-		CapitalGainLossAmt:        roundToInt(r["schedule_1:7"]),
-		TotalAdditionalIncomeAmt:  roundToInt(r["schedule_1:10"]),
-		HSADeductionAmt:           roundToInt(r["schedule_1:15"]),
-		SETaxDeductionAmt:         roundToInt(r["schedule_1:16"]),
-		EarlyWithdrawalPenaltyAmt: roundToInt(r["schedule_1:24"]),
-		TotalAdjustmentsAmt:       roundToInt(r["schedule_1:26"]),
+		BusinessIncomeLossAmt:     roundToInt(r[forms.Sched1Line3]),
+		CapitalGainLossAmt:        roundToInt(r[forms.Sched1Line7]),
+		TotalAdditionalIncomeAmt:  roundToInt(r[forms.Sched1Line10]),
+		HSADeductionAmt:           roundToInt(r[forms.Sched1Line15]),
+		SETaxDeductionAmt:         roundToInt(r[forms.Sched1Line16]),
+		EarlyWithdrawalPenaltyAmt: roundToInt(r[forms.Sched1Line24]),
+		TotalAdjustmentsAmt:       roundToInt(r[forms.Sched1Line26]),
 	}
 }
 
 func buildSchedule2(r map[string]float64) *IRS1040Schedule2 {
 	return &IRS1040Schedule2{
-		AMTAmt:                   roundToInt(r["schedule_2:1"]),
-		TotalPartIAmt:            roundToInt(r["schedule_2:3"]),
-		SelfEmploymentTaxAmt:     roundToInt(r["schedule_2:6"]),
-		AdditionalMedicareTaxAmt: roundToInt(r["schedule_2:12"]),
-		HSAPenaltyAmt:            roundToInt(r["schedule_2:17c"]),
-		NIITAmt:                  roundToInt(r["schedule_2:18"]),
-		TotalOtherTaxesAmt:       roundToInt(r["schedule_2:21"]),
+		AMTAmt:                   roundToInt(r[forms.Sched2Line1]),
+		TotalPartIAmt:            roundToInt(r[forms.Sched2Line3]),
+		SelfEmploymentTaxAmt:     roundToInt(r[forms.Sched2Line6]),
+		AdditionalMedicareTaxAmt: roundToInt(r[forms.Sched2Line12]),
+		HSAPenaltyAmt:            roundToInt(r[forms.Sched2Line17c]),
+		NIITAmt:                  roundToInt(r[forms.Sched2Line18]),
+		TotalOtherTaxesAmt:       roundToInt(r[forms.Sched2Line21]),
 	}
 }
 
 func buildSchedule3(r map[string]float64) *IRS1040Schedule3 {
 	return &IRS1040Schedule3{
-		TotalNonrefundableCreditsAmt: roundToInt(r["schedule_3:8"]),
-		EstimatedTaxPaymentsAmt:      roundToInt(r["schedule_3:10"]),
-		TotalOtherPaymentsAmt:        roundToInt(r["schedule_3:15"]),
+		TotalNonrefundableCreditsAmt: roundToInt(r[forms.Sched3Line8]),
+		EstimatedTaxPaymentsAmt:      roundToInt(r[forms.Sched3Line10]),
+		TotalOtherPaymentsAmt:        roundToInt(r[forms.Sched3Line15]),
 	}
 }
 
 func buildScheduleB(r map[string]float64) *IRS1040ScheduleB {
 	return &IRS1040ScheduleB{
-		TotalInterestAmt:  roundToInt(r["schedule_b:4"]),
-		TotalDividendsAmt: roundToInt(r["schedule_b:6"]),
+		TotalInterestAmt:  roundToInt(r[forms.SchedBLine4]),
+		TotalDividendsAmt: roundToInt(r[forms.SchedBLine6]),
 	}
 }
 
 func buildScheduleC(r map[string]float64, s map[string]string) *IRS1040ScheduleC {
 	return &IRS1040ScheduleC{
-		BusinessName:     s["schedule_c:business_name"],
-		BusinessCode:     s["schedule_c:business_code"],
-		GrossReceiptsAmt: roundToInt(r["schedule_c:1"]),
-		GrossProfitAmt:   roundToInt(r["schedule_c:5"]),
-		TotalExpensesAmt: roundToInt(r["schedule_c:28"]),
-		NetProfitLossAmt: roundToInt(r["schedule_c:31"]),
+		BusinessName:     s[forms.SchedCBusinessName],
+		BusinessCode:     s[forms.SchedCBusinessCode],
+		GrossReceiptsAmt: roundToInt(r[forms.SchedCLine1]),
+		GrossProfitAmt:   roundToInt(r[forms.SchedCLine5]),
+		TotalExpensesAmt: roundToInt(r[forms.SchedCLine28]),
+		NetProfitLossAmt: roundToInt(r[forms.SchedCLine31]),
 	}
 }
 
 func buildScheduleD(r map[string]float64) *IRS1040ScheduleD {
 	return &IRS1040ScheduleD{
-		STGainLossAmt:           roundToInt(r["schedule_d:1"]),
-		NetSTGainLossAmt:        roundToInt(r["schedule_d:7"]),
-		LTGainLossAmt:           roundToInt(r["schedule_d:8"]),
-		CapGainDistributionsAmt: roundToInt(r["schedule_d:13"]),
-		NetLTGainLossAmt:        roundToInt(r["schedule_d:15"]),
-		NetCapitalGainLossAmt:   roundToInt(r["schedule_d:16"]),
+		STGainLossAmt:           roundToInt(r[forms.SchedDLine1]),
+		NetSTGainLossAmt:        roundToInt(r[forms.SchedDLine7]),
+		LTGainLossAmt:           roundToInt(r[forms.SchedDLine8]),
+		CapGainDistributionsAmt: roundToInt(r[forms.SchedDLine13]),
+		NetLTGainLossAmt:        roundToInt(r[forms.SchedDLine15]),
+		NetCapitalGainLossAmt:   roundToInt(r[forms.SchedDLine16]),
 	}
 }
 
 func buildScheduleSE(r map[string]float64) *IRS1040ScheduleSE {
 	return &IRS1040ScheduleSE{
-		NetSEEarningsAmt:     roundToInt(r["schedule_se:2"]),
-		TaxableEarningsAmt:   roundToInt(r["schedule_se:3"]),
-		SSTaxAmt:             roundToInt(r["schedule_se:4"]),
-		MedicareTaxAmt:       roundToInt(r["schedule_se:5"]),
-		SelfEmploymentTaxAmt: roundToInt(r["schedule_se:6"]),
-		DeductibleSETaxAmt:   roundToInt(r["schedule_se:7"]),
+		NetSEEarningsAmt:     roundToInt(r[forms.SchedSELine2]),
+		TaxableEarningsAmt:   roundToInt(r[forms.SchedSELine3]),
+		SSTaxAmt:             roundToInt(r[forms.SchedSELine4]),
+		MedicareTaxAmt:       roundToInt(r[forms.SchedSELine5]),
+		SelfEmploymentTaxAmt: roundToInt(r[forms.SchedSELine6]),
+		DeductibleSETaxAmt:   roundToInt(r[forms.SchedSELine7]),
 	}
 }
 
 func buildForm8889(r map[string]float64, s map[string]string) *IRS8889 {
 	return &IRS8889{
-		CoverageType:         s["form_8889:1"],
-		ContributionsAmt:     roundToInt(r["form_8889:2"]),
-		EmployerContribAmt:   roundToInt(r["form_8889:3"]),
-		ContributionLimitAmt: roundToInt(r["form_8889:6"]),
-		HSADeductionAmt:      roundToInt(r["form_8889:9"]),
-		DistributionsAmt:     roundToInt(r["form_8889:14a"]),
-		QualifiedExpensesAmt: roundToInt(r["form_8889:14c"]),
-		TaxableDistribAmt:    roundToInt(r["form_8889:15"]),
-		PenaltyAmt:           roundToInt(r["form_8889:17b"]),
+		CoverageType:         s[forms.F8889Line1],
+		ContributionsAmt:     roundToInt(r[forms.F8889Line2]),
+		EmployerContribAmt:   roundToInt(r[forms.F8889Line3]),
+		ContributionLimitAmt: roundToInt(r[forms.F8889Line6]),
+		HSADeductionAmt:      roundToInt(r[forms.F8889Line9]),
+		DistributionsAmt:     roundToInt(r[forms.F8889Line14a]),
+		QualifiedExpensesAmt: roundToInt(r[forms.F8889Line14c]),
+		TaxableDistribAmt:    roundToInt(r[forms.F8889Line15]),
+		PenaltyAmt:           roundToInt(r[forms.F8889Line17b]),
 	}
 }
 
 func buildForm8949(r map[string]float64) *IRS8949 {
 	return &IRS8949{
-		STProceedsAmt: roundToInt(r["form_8949:st_proceeds"]),
-		STBasisAmt:    roundToInt(r["form_8949:st_basis"]),
-		STWashSaleAmt: roundToInt(r["form_8949:st_wash"]),
-		STGainLossAmt: roundToInt(r["form_8949:st_gain_loss"]),
-		LTProceedsAmt: roundToInt(r["form_8949:lt_proceeds"]),
-		LTBasisAmt:    roundToInt(r["form_8949:lt_basis"]),
-		LTWashSaleAmt: roundToInt(r["form_8949:lt_wash"]),
-		LTGainLossAmt: roundToInt(r["form_8949:lt_gain_loss"]),
+		STProceedsAmt: roundToInt(r[forms.F8949STProceedsKey]),
+		STBasisAmt:    roundToInt(r[forms.F8949STBasisKey]),
+		STWashSaleAmt: roundToInt(r[forms.F8949STWashKey]),
+		STGainLossAmt: roundToInt(r[forms.F8949STGainLossKey]),
+		LTProceedsAmt: roundToInt(r[forms.F8949LTProceedsKey]),
+		LTBasisAmt:    roundToInt(r[forms.F8949LTBasisKey]),
+		LTWashSaleAmt: roundToInt(r[forms.F8949LTWashKey]),
+		LTGainLossAmt: roundToInt(r[forms.F8949LTGainLossKey]),
 	}
 }
 
 func buildForm8995(r map[string]float64) *IRS8995 {
 	return &IRS8995{
-		TotalQBIAmt:            roundToInt(r["form_8995:3"]),
-		QBIComponentAmt:        roundToInt(r["form_8995:4"]),
-		TaxableIncBeforeQBIAmt: roundToInt(r["form_8995:5"]),
-		IncomeLimitationAmt:    roundToInt(r["form_8995:8"]),
-		QBIDeductionAmt:        roundToInt(r["form_8995:10"]),
+		TotalQBIAmt:            roundToInt(r[forms.F8995Line3]),
+		QBIComponentAmt:        roundToInt(r[forms.F8995Line4]),
+		TaxableIncBeforeQBIAmt: roundToInt(r[forms.F8995Line5]),
+		IncomeLimitationAmt:    roundToInt(r[forms.F8995Line8]),
+		QBIDeductionAmt:        roundToInt(r[forms.F8995Line10]),
 	}
 }
 
@@ -617,7 +619,7 @@ func buildW2s(r map[string]float64, s map[string]string) []IRSW2 {
 	// Discover W-2 instances by scanning for w2:N:wages keys
 	instances := make(map[string]bool)
 	for k := range r {
-		if strings.HasPrefix(k, "w2:") && strings.HasSuffix(k, ":wages") {
+		if strings.HasPrefix(k, "w2:") && strings.HasSuffix(k, ":"+forms.W2Wages) {
 			parts := strings.SplitN(k, ":", 3)
 			if len(parts) == 3 {
 				instances[parts[1]] = true
@@ -626,7 +628,7 @@ func buildW2s(r map[string]float64, s map[string]string) []IRSW2 {
 	}
 	// Also check string inputs for employer_name
 	for k := range s {
-		if strings.HasPrefix(k, "w2:") && strings.HasSuffix(k, ":employer_name") {
+		if strings.HasPrefix(k, "w2:") && strings.HasSuffix(k, ":"+forms.W2EmployerName) {
 			parts := strings.SplitN(k, ":", 3)
 			if len(parts) == 3 {
 				instances[parts[1]] = true
@@ -661,48 +663,48 @@ func buildW2s(r map[string]float64, s map[string]string) []IRSW2 {
 
 func buildForm2555(r map[string]float64, s map[string]string) *IRS2555 {
 	return &IRS2555{
-		ForeignCountry:         getStrVal(s, "form_2555:foreign_country"),
-		QualifyingTest:         getStrVal(s, "form_2555:qualifying_test"),
-		QualifyingDays:         roundToInt(r["form_2555:qualifying_days"]),
-		ForeignEarnedIncomeAmt: roundToInt(r["form_2555:foreign_earned_income"]),
-		ExclusionLimitAmt:      roundToInt(r["form_2555:exclusion_limit"]),
-		ForeignIncomeExclAmt:   roundToInt(r["form_2555:foreign_income_exclusion"]),
-		HousingExclusionAmt:    roundToInt(r["form_2555:housing_exclusion"]),
-		HousingDeductionAmt:    roundToInt(r["form_2555:housing_deduction"]),
-		TotalExclusionAmt:      roundToInt(r["form_2555:total_exclusion"]),
+		ForeignCountry:         getStrVal(s, forms.F2555ForeignCountry),
+		QualifyingTest:         getStrVal(s, forms.F2555QualifyingTest),
+		QualifyingDays:         roundToInt(r[forms.F2555QualifyingDays]),
+		ForeignEarnedIncomeAmt: roundToInt(r[forms.F2555ForeignEarnedIncome]),
+		ExclusionLimitAmt:      roundToInt(r[forms.F2555ExclusionLimit]),
+		ForeignIncomeExclAmt:   roundToInt(r[forms.F2555ForeignIncomeExcl]),
+		HousingExclusionAmt:    roundToInt(r[forms.F2555HousingExclusion]),
+		HousingDeductionAmt:    roundToInt(r[forms.F2555HousingDeduction]),
+		TotalExclusionAmt:      roundToInt(r[forms.F2555TotalExclusion]),
 	}
 }
 
 func buildForm1116(r map[string]float64, s map[string]string) *IRS1116 {
 	return &IRS1116{
-		ForeignCountry:         getStrVal(s, "form_1116:foreign_country"),
-		Category:               getStrVal(s, "form_1116:category"),
-		ForeignSourceIncomeAmt: roundToInt(r["form_1116:7"]),
-		ForeignTaxPaidAmt:      roundToInt(r["form_1116:15"]),
-		CreditLimitationAmt:    roundToInt(r["form_1116:21"]),
-		AllowedCreditAmt:       roundToInt(r["form_1116:22"]),
-		CarryforwardAmt:        roundToInt(r["form_1116:carryforward"]),
+		ForeignCountry:         getStrVal(s, forms.F1116ForeignCountry),
+		Category:               getStrVal(s, forms.F1116Category),
+		ForeignSourceIncomeAmt: roundToInt(r[forms.F1116Line7]),
+		ForeignTaxPaidAmt:      roundToInt(r[forms.F1116Line15]),
+		CreditLimitationAmt:    roundToInt(r[forms.F1116Line21]),
+		AllowedCreditAmt:       roundToInt(r[forms.F1116Line22]),
+		CarryforwardAmt:        roundToInt(r[forms.F1116Carryforward]),
 	}
 }
 
 func buildForm8938(r map[string]float64, s map[string]string) *IRS8938 {
 	return &IRS8938{
-		LivesAbroad:             getStrVal(s, "form_8938:lives_abroad"),
-		MaxValueAccountsAmt:     roundToInt(r["form_8938:max_value_accounts"]),
-		YearEndValueAccountsAmt: roundToInt(r["form_8938:yearend_value_accounts"]),
-		TotalMaxValueAmt:        roundToInt(r["form_8938:total_max_value"]),
-		TotalYearEndValueAmt:    roundToInt(r["form_8938:total_yearend_value"]),
-		FilingRequired:          roundToInt(r["form_8938:filing_required"]),
+		LivesAbroad:             getStrVal(s, forms.F8938LivesAbroad),
+		MaxValueAccountsAmt:     roundToInt(r[forms.F8938MaxValueAccounts]),
+		YearEndValueAccountsAmt: roundToInt(r[forms.F8938YearEndAccounts]),
+		TotalMaxValueAmt:        roundToInt(r[forms.F8938TotalMaxValue]),
+		TotalYearEndValueAmt:    roundToInt(r[forms.F8938TotalYearEndValue]),
+		FilingRequired:          roundToInt(r[forms.F8938FilingRequired]),
 	}
 }
 
 func buildForm8833(r map[string]float64, s map[string]string) *IRS8833 {
 	return &IRS8833{
-		TreatyCountry:   getStrVal(s, "form_8833:treaty_country"),
-		TreatyArticle:   getStrVal(s, "form_8833:treaty_article"),
-		IRCProvision:    getStrVal(s, "form_8833:irc_provision"),
-		TreatyAmountAmt: roundToInt(r["form_8833:treaty_amount"]),
-		TreatyClaimed:   roundToInt(r["form_8833:treaty_claimed"]),
+		TreatyCountry:   getStrVal(s, forms.F8833TreatyCountry),
+		TreatyArticle:   getStrVal(s, forms.F8833TreatyArticle),
+		IRCProvision:    getStrVal(s, forms.F8833IRCProvision),
+		TreatyAmountAmt: roundToInt(r[forms.F8833TreatyAmount]),
+		TreatyClaimed:   roundToInt(r[forms.F8833TreatyClaimed]),
 	}
 }
 

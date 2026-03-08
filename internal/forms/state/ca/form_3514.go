@@ -11,7 +11,7 @@ import (
 // Child Tax Credit (YCTC) for low-income California filers.
 func Form3514() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_3514",
+		ID:           forms.FormF3514,
 		Name:         "Form 3514 — California Earned Income Tax Credit",
 		Jurisdiction: forms.StateCA,
 		TaxYears:     []int{2025},

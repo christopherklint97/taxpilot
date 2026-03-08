@@ -6,13 +6,15 @@ import (
 	"strconv"
 	"strings"
 
+	"taxpilot/internal/forms"
+
 	pdfcpuapi "github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
 )
 
 // ParsedReturn holds field values extracted from a filled PDF return.
 type ParsedReturn struct {
-	FormID    string             // detected form (e.g., "1040", "ca_540")
+	FormID    forms.FormID       // detected form (e.g., FormF1040, FormCA540)
 	TaxYear   int                // detected or inferred tax year
 	Fields    map[string]float64 // numeric field values keyed by internal field key
 	StrFields map[string]string  // string field values
@@ -21,13 +23,13 @@ type ParsedReturn struct {
 
 // Parser extracts field values from filled tax return PDFs.
 type Parser struct {
-	configs map[string]*FormPDFConfig // reuse existing FormPDFConfig from mappings
+	configs map[forms.FormID]*FormPDFConfig // reuse existing FormPDFConfig from mappings
 }
 
 // NewParser creates a new Parser.
 func NewParser() *Parser {
 	return &Parser{
-		configs: make(map[string]*FormPDFConfig),
+		configs: make(map[forms.FormID]*FormPDFConfig),
 	}
 }
 
@@ -118,7 +120,7 @@ func (p *Parser) ParseFile(path string) (*ParsedReturn, error) {
 
 // DetectForm examines the PDF's form fields and metadata to determine
 // which tax form it is. Returns the form ID or an error.
-func (p *Parser) DetectForm(path string) (string, error) {
+func (p *Parser) DetectForm(path string) (forms.FormID, error) {
 	fg, err := exportFormFields(path)
 	if err != nil {
 		return "", fmt.Errorf("extract form fields from %s: %w", path, err)
@@ -189,7 +191,7 @@ func flattenFormGroup(fg *form.FormGroup) map[string]string {
 // detectFormFromFields determines which registered form config best matches
 // the PDF's field names. Returns the form ID and config, or ("", nil) if
 // no match is found.
-func (p *Parser) detectFormFromFields(pdfFields map[string]string, fg *form.FormGroup) (string, *FormPDFConfig) {
+func (p *Parser) detectFormFromFields(pdfFields map[string]string, fg *form.FormGroup) (forms.FormID, *FormPDFConfig) {
 	// First, try metadata-based detection from the source/title.
 	if fg != nil {
 		source := strings.ToLower(fg.Header.Source)
@@ -197,11 +199,11 @@ func (p *Parser) detectFormFromFields(pdfFields map[string]string, fg *form.Form
 		combined := source + " " + title
 		for formID, config := range p.configs {
 			switch formID {
-			case "1040":
+			case forms.FormF1040:
 				if strings.Contains(combined, "1040") && !strings.Contains(combined, "540") {
 					return formID, config
 				}
-			case "ca_540":
+			case forms.FormCA540:
 				if strings.Contains(combined, "540") {
 					return formID, config
 				}
@@ -210,7 +212,7 @@ func (p *Parser) detectFormFromFields(pdfFields map[string]string, fg *form.Form
 	}
 
 	// Fall back to field-name matching: pick the config with the most matching fields.
-	var bestID string
+	var bestID forms.FormID
 	var bestConfig *FormPDFConfig
 	bestScore := 0
 

@@ -7,7 +7,7 @@ import "taxpilot/internal/forms"
 // Multiple sales are handled via instance prefixes (e.g., 1099b:1:, 1099b:2:).
 func F1099B() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "1099b",
+		ID:           forms.Form1099B,
 		Name:         "1099-B Proceeds From Broker Transactions",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

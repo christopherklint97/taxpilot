@@ -12,7 +12,7 @@ import (
 //   - Line 15: Total other payments -> flows to 1040 line 31
 func Schedule3() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_3",
+		ID:           forms.FormSchedule3,
 		Name:         "Schedule 3 — Additional Credits and Payments",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

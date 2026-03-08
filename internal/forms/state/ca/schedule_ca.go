@@ -22,7 +22,7 @@ import "taxpilot/internal/forms"
 // Line 37: Totals flow to Form 540 lines 14 and 15
 func ScheduleCA() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "ca_schedule_ca",
+		ID:           forms.FormScheduleCA,
 		Name:         "Schedule CA (540) — California Adjustments",
 		Jurisdiction: forms.StateCA,
 		TaxYears:     []int{2025},

@@ -30,7 +30,7 @@ const (
 // failure to file carries significant penalties ($10,000+ per year).
 func Form8938() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_8938",
+		ID:           forms.FormF8938,
 		Name:         "Form 8938 — Statement of Specified Foreign Financial Assets",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

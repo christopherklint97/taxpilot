@@ -22,7 +22,7 @@ const (
 // deductible for CA, requiring an add-back on Schedule CA.
 func Form8889() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_8889",
+		ID:           forms.FormF8889,
 		Name:         "Form 8889 — Health Savings Accounts",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

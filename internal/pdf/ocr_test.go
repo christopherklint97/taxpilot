@@ -2,6 +2,8 @@ package pdf
 
 import (
 	"testing"
+
+	"taxpilot/internal/forms"
 )
 
 func TestOCRAvailable(t *testing.T) {
@@ -14,27 +16,27 @@ func TestDetectFormTypeFromText(t *testing.T) {
 	tests := []struct {
 		name     string
 		text     string
-		expected string
+		expected forms.FormID
 	}{
 		{
 			name:     "1040 from title",
 			text:     "Form 1040 U.S. Individual Income Tax Return 2025",
-			expected: "1040",
+			expected: forms.FormF1040,
 		},
 		{
 			name:     "1040 from department",
 			text:     "Department of the Treasury\nInternal Revenue Service\nIncome Tax Return",
-			expected: "1040",
+			expected: forms.FormF1040,
 		},
 		{
 			name:     "CA 540 from title",
 			text:     "Form 540 California Resident Income Tax Return 2025",
-			expected: "ca_540",
+			expected: forms.FormCA540,
 		},
 		{
 			name:     "CA 540 from FTB",
 			text:     "Franchise Tax Board\nForm 540\nCalifornia Resident",
-			expected: "ca_540",
+			expected: forms.FormCA540,
 		},
 		{
 			name:     "unknown form",
@@ -44,12 +46,12 @@ func TestDetectFormTypeFromText(t *testing.T) {
 		{
 			name:     "case insensitive 1040",
 			text:     "FORM 1040 u.s. individual income tax return",
-			expected: "1040",
+			expected: forms.FormF1040,
 		},
 		{
 			name:     "case insensitive CA 540",
 			text:     "CALIFORNIA RESIDENT INCOME TAX RETURN",
-			expected: "ca_540",
+			expected: forms.FormCA540,
 		},
 	}
 
@@ -189,19 +191,19 @@ func TestDetect540Fields_NoData(t *testing.T) {
 func TestExtractFieldsFromText(t *testing.T) {
 	tests := []struct {
 		name     string
-		formType string
+		formType forms.FormID
 		text     string
 		wantKey  string // a key we expect to find
 	}{
 		{
 			name:     "routes to 1040",
-			formType: "1040",
+			formType: forms.FormF1040,
 			text:     "Adjusted gross income .... $50,000",
 			wantKey:  "1040:11",
 		},
 		{
 			name:     "routes to ca_540",
-			formType: "ca_540",
+			formType: forms.FormCA540,
 			text:     "California adjusted gross income .... $50,000",
 			wantKey:  "ca_540:17",
 		},

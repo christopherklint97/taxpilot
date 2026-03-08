@@ -13,7 +13,7 @@ import (
 // which then flows to Form 1040 line 7.
 func ScheduleD() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_d",
+		ID:           forms.FormScheduleD,
 		Name:         "Schedule D — Capital Gains and Losses",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

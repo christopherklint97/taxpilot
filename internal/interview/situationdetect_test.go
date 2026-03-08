@@ -1,6 +1,7 @@
 package interview
 
 import (
+	"taxpilot/internal/forms"
 	"testing"
 )
 
@@ -109,7 +110,7 @@ func TestScreeningHSAHasCANote(t *testing.T) {
 
 func TestAutoDetectSituationsEmpty(t *testing.T) {
 	prior := PriorYearData{
-		FormsPresent:  []string{},
+		FormsPresent:  []forms.FormID{},
 		NumericValues: map[string]float64{},
 	}
 	detected := AutoDetectSituations(prior)
@@ -120,7 +121,7 @@ func TestAutoDetectSituationsEmpty(t *testing.T) {
 
 func TestAutoDetectSituationsFromForms(t *testing.T) {
 	prior := PriorYearData{
-		FormsPresent: []string{"schedule_c", "schedule_d", "1099int", "form_8889"},
+		FormsPresent: []forms.FormID{forms.FormScheduleC, forms.FormScheduleD, forms.Form1099INT, forms.FormF8889},
 	}
 	detected := AutoDetectSituations(prior)
 
@@ -146,7 +147,7 @@ func TestAutoDetectSituationsFromForms(t *testing.T) {
 
 func TestAutoDetectSituationsFromNumericValues(t *testing.T) {
 	prior := PriorYearData{
-		FormsPresent: []string{},
+		FormsPresent: []forms.FormID{},
 		NumericValues: map[string]float64{
 			"form_8889:2":  3500,
 			"schedule_a:17": 25000,
@@ -164,7 +165,7 @@ func TestAutoDetectSituationsFromNumericValues(t *testing.T) {
 
 func TestAutoDetectSituationsDividends(t *testing.T) {
 	prior := PriorYearData{
-		FormsPresent: []string{"1099div"},
+		FormsPresent: []forms.FormID{forms.Form1099DIV},
 	}
 	detected := AutoDetectSituations(prior)
 	if !detected["has_dividend_income"] {
@@ -174,7 +175,7 @@ func TestAutoDetectSituationsDividends(t *testing.T) {
 
 func TestAutoDetectSituationsScheduleA(t *testing.T) {
 	prior := PriorYearData{
-		FormsPresent: []string{"schedule_a"},
+		FormsPresent: []forms.FormID{forms.FormScheduleA},
 	}
 	detected := AutoDetectSituations(prior)
 	if !detected["has_itemized_deductions"] {
@@ -214,7 +215,7 @@ func TestExpatScreeningLivesAbroadHasCANote(t *testing.T) {
 
 func TestAutoDetectFromPriorYearForm2555(t *testing.T) {
 	prior := PriorYearData{
-		FormsPresent: []string{"form_2555", "form_1116", "form_8938"},
+		FormsPresent: []forms.FormID{forms.FormF2555, forms.FormF1116, forms.FormF8938},
 	}
 	detected := AutoDetectSituations(prior)
 
@@ -227,7 +228,7 @@ func TestAutoDetectFromPriorYearForm2555(t *testing.T) {
 
 func TestAutoDetectExpatFromNumericValues(t *testing.T) {
 	prior := PriorYearData{
-		FormsPresent: []string{},
+		FormsPresent: []forms.FormID{},
 		NumericValues: map[string]float64{
 			"form_2555:foreign_earned_income":    120000,
 			"form_1116:foreign_tax_paid_income":  15000,
@@ -252,14 +253,14 @@ func TestExpatScreeningEvaluation(t *testing.T) {
 	}
 	situations := EvaluateScreening(answers)
 
-	formSet := make(map[string]bool)
+	formSet := make(map[forms.FormID]bool)
 	for _, s := range situations {
 		for _, f := range s.FormsNeeded {
 			formSet[f] = true
 		}
 	}
 
-	for _, form := range []string{"form_2555", "form_8938", "form_1116"} {
+	for _, form := range []forms.FormID{forms.FormF2555, forms.FormF8938, forms.FormF1116} {
 		if !formSet[form] {
 			t.Errorf("expected %q in forms needed for expat screening", form)
 		}

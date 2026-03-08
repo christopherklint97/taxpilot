@@ -29,7 +29,7 @@ const (
 //   - Line 21: Total additional taxes -> flows to 1040 line 23
 func Schedule2() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_2",
+		ID:           forms.FormSchedule2,
 		Name:         "Schedule 2 — Additional Taxes",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

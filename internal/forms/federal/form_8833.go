@@ -21,7 +21,7 @@ import (
 // Failure to disclose carries a $1,000 penalty per position.
 func Form8833() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_8833",
+		ID:           forms.FormF8833,
 		Name:         "Form 8833 — Treaty-Based Return Position Disclosure",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

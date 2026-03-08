@@ -318,41 +318,41 @@ func (e *Engine) buildQuestions() {
 				personalInfo = append(personalInfo, q)
 			case field.Line == "employer_name" || field.Line == "employer_ein":
 				employerInfo = append(employerInfo, q)
-			case form.ID == "w2":
+			case form.ID == forms.FormW2:
 				w2Financial = append(w2Financial, q)
-			case form.ID == "1099int" && (field.Line == "payer_name" || field.Line == "payer_tin"):
+			case form.ID == forms.Form1099INT && (field.Line == "payer_name" || field.Line == "payer_tin"):
 				f1099intInfo = append(f1099intInfo, q)
-			case form.ID == "1099int":
+			case form.ID == forms.Form1099INT:
 				f1099intFinancial = append(f1099intFinancial, q)
-			case form.ID == "1099div" && (field.Line == "payer_name" || field.Line == "payer_tin"):
+			case form.ID == forms.Form1099DIV && (field.Line == "payer_name" || field.Line == "payer_tin"):
 				f1099divInfo = append(f1099divInfo, q)
-			case form.ID == "1099div":
+			case form.ID == forms.Form1099DIV:
 				f1099divFinancial = append(f1099divFinancial, q)
-			case form.ID == "1099nec" && (field.Line == "payer_name" || field.Line == "payer_tin"):
+			case form.ID == forms.Form1099NEC && (field.Line == "payer_name" || field.Line == "payer_tin"):
 				f1099necInfo = append(f1099necInfo, q)
-			case form.ID == "1099nec":
+			case form.ID == forms.Form1099NEC:
 				f1099necFinancial = append(f1099necFinancial, q)
-			case form.ID == "1099b" && (field.Line == "description" || field.Line == "date_acquired" || field.Line == "date_sold"):
+			case form.ID == forms.Form1099B && (field.Line == "description" || field.Line == "date_acquired" || field.Line == "date_sold"):
 				f1099bInfo = append(f1099bInfo, q)
-			case form.ID == "1099b":
+			case form.ID == forms.Form1099B:
 				f1099bFinancial = append(f1099bFinancial, q)
-			case form.ID == "schedule_c":
+			case form.ID == forms.FormScheduleC:
 				scheduleCQuestions = append(scheduleCQuestions, q)
-			case form.ID == "form_2555":
+			case form.ID == forms.FormF2555:
 				form2555Questions = append(form2555Questions, q)
-			case form.ID == "form_1116":
+			case form.ID == forms.FormF1116:
 				form1116Questions = append(form1116Questions, q)
-			case form.ID == "form_8938":
+			case form.ID == forms.FormF8938:
 				form8938Questions = append(form8938Questions, q)
-			case form.ID == "form_8833":
+			case form.ID == forms.FormF8833:
 				form8833Questions = append(form8833Questions, q)
-			case form.ID == "form_8889":
+			case form.ID == forms.FormF8889:
 				form8889Questions = append(form8889Questions, q)
-			case form.ID == "schedule_a" || form.ID == "schedule_3":
+			case form.ID == forms.FormScheduleA || form.ID == forms.FormSchedule3:
 				scheduleAQuestions = append(scheduleAQuestions, q)
-			case form.ID == "form_3514":
+			case form.ID == forms.FormF3514:
 				form3514Questions = append(form3514Questions, q)
-			case form.ID == "form_3853":
+			case form.ID == forms.FormF3853:
 				form3853Questions = append(form3853Questions, q)
 			default:
 				remaining = append(remaining, q)

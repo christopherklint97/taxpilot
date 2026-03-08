@@ -12,7 +12,7 @@ import (
 // Part II: Adjustments flows to 1040 line 10 (subtracted from total income).
 func Schedule1() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_1",
+		ID:           forms.FormSchedule1,
 		Name:         "Schedule 1 — Additional Income and Adjustments to Income",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

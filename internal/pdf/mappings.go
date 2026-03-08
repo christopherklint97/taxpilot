@@ -1,10 +1,12 @@
 package pdf
 
+import "taxpilot/internal/forms"
+
 // Federal1040Mappings returns the PDF field mappings for Form 1040.
 // Field names verified against actual 2025 IRS Form 1040 PDF AcroForm fields.
 func Federal1040Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "1040",
+		FormID:       forms.FormF1040,
 		FormName:     "Form 1040 - U.S. Individual Income Tax Return",
 		TemplatePath: "internal/pdf/templates/federal/2025/f1040.pdf",
 		Mappings: []FieldMapping{
@@ -55,7 +57,7 @@ func Federal1040Mappings() *FormPDFConfig {
 // ScheduleAMappings returns the PDF field mappings for Schedule A.
 func ScheduleAMappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_a",
+		FormID:       forms.FormScheduleA,
 		FormName:     "Schedule A — Itemized Deductions",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_a.pdf",
 		Mappings: []FieldMapping{
@@ -85,7 +87,7 @@ func ScheduleAMappings() *FormPDFConfig {
 // ScheduleBMappings returns the PDF field mappings for Schedule B.
 func ScheduleBMappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_b",
+		FormID:       forms.FormScheduleB,
 		FormName:     "Schedule B — Interest and Ordinary Dividends",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_b.pdf",
 		Mappings: []FieldMapping{
@@ -102,7 +104,7 @@ func ScheduleBMappings() *FormPDFConfig {
 // ScheduleCMappings returns the PDF field mappings for Schedule C.
 func ScheduleCMappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_c",
+		FormID:       forms.FormScheduleC,
 		FormName:     "Schedule C — Profit or Loss From Business",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_c.pdf",
 		Mappings: []FieldMapping{
@@ -120,7 +122,7 @@ func ScheduleCMappings() *FormPDFConfig {
 // ScheduleSEMappings returns the PDF field mappings for Schedule SE.
 func ScheduleSEMappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_se",
+		FormID:       forms.FormScheduleSE,
 		FormName:     "Schedule SE — Self-Employment Tax",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_se.pdf",
 		Mappings: []FieldMapping{
@@ -135,7 +137,7 @@ func ScheduleSEMappings() *FormPDFConfig {
 // Schedule1Mappings returns the PDF field mappings for Schedule 1.
 func Schedule1Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_1",
+		FormID:       forms.FormSchedule1,
 		FormName:     "Schedule 1 — Additional Income and Adjustments to Income",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_1.pdf",
 		Mappings: []FieldMapping{
@@ -155,7 +157,7 @@ func Schedule1Mappings() *FormPDFConfig {
 // ScheduleDMappings returns the PDF field mappings for Schedule D.
 func ScheduleDMappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_d",
+		FormID:       forms.FormScheduleD,
 		FormName:     "Schedule D — Capital Gains and Losses",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_d.pdf",
 		Mappings: []FieldMapping{
@@ -175,7 +177,7 @@ func ScheduleDMappings() *FormPDFConfig {
 // Form8949Mappings returns the PDF field mappings for Form 8949.
 func Form8949Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "form_8949",
+		FormID:       forms.FormF8949,
 		FormName:     "Form 8949 — Sales and Other Dispositions of Capital Assets",
 		TemplatePath: "internal/pdf/templates/federal/2025/form_8949.pdf",
 		Mappings: []FieldMapping{
@@ -196,7 +198,7 @@ func Form8949Mappings() *FormPDFConfig {
 // Schedule2Mappings returns the PDF field mappings for Schedule 2.
 func Schedule2Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_2",
+		FormID:       forms.FormSchedule2,
 		FormName:     "Schedule 2 — Additional Taxes",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_2.pdf",
 		Mappings: []FieldMapping{
@@ -213,7 +215,7 @@ func Schedule2Mappings() *FormPDFConfig {
 // Schedule3Mappings returns the PDF field mappings for Schedule 3.
 func Schedule3Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "schedule_3",
+		FormID:       forms.FormSchedule3,
 		FormName:     "Schedule 3 — Additional Credits and Payments",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_3.pdf",
 		Mappings: []FieldMapping{
@@ -227,7 +229,7 @@ func Schedule3Mappings() *FormPDFConfig {
 // Form8889Mappings returns the PDF field mappings for Form 8889.
 func Form8889Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "form_8889",
+		FormID:       forms.FormF8889,
 		FormName:     "Form 8889 — Health Savings Accounts",
 		TemplatePath: "internal/pdf/templates/federal/2025/f8889.pdf",
 		Mappings: []FieldMapping{
@@ -248,7 +250,7 @@ func Form8889Mappings() *FormPDFConfig {
 // Form8995Mappings returns the PDF field mappings for Form 8995.
 func Form8995Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "form_8995",
+		FormID:       forms.FormF8995,
 		FormName:     "Form 8995 — Qualified Business Income Deduction (Simplified)",
 		TemplatePath: "internal/pdf/templates/federal/2025/f8995.pdf",
 		Mappings: []FieldMapping{
@@ -268,7 +270,7 @@ func Form8995Mappings() *FormPDFConfig {
 // ScheduleCAMappings returns the PDF field mappings for Schedule CA (540).
 func ScheduleCAMappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "ca_schedule_ca",
+		FormID:       forms.FormScheduleCA,
 		FormName:     "Schedule CA (540) — California Adjustments",
 		TemplatePath: "internal/pdf/templates/state/ca/2025/schedule_ca.pdf",
 		Mappings: []FieldMapping{
@@ -308,7 +310,7 @@ func ScheduleCAMappings() *FormPDFConfig {
 // Field names verified against actual 2025 FTB Form 540 PDF AcroForm fields.
 func CA540Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "ca_540",
+		FormID:       forms.FormCA540,
 		FormName:     "Form 540 - California Resident Income Tax Return",
 		TemplatePath: "internal/pdf/templates/state/ca/2025/f540.pdf",
 		Mappings: []FieldMapping{
@@ -350,7 +352,7 @@ func CA540Mappings() *FormPDFConfig {
 // Form3514Mappings returns the PDF field mappings for CA Form 3514 (CalEITC).
 func Form3514Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "form_3514",
+		FormID:       forms.FormF3514,
 		FormName:     "Form 3514 — California Earned Income Tax Credit",
 		TemplatePath: "internal/pdf/templates/state/ca/2025/form_3514.pdf",
 		Mappings: []FieldMapping{
@@ -367,7 +369,7 @@ func Form3514Mappings() *FormPDFConfig {
 // Form3853Mappings returns the PDF field mappings for CA Form 3853 (Health Coverage).
 func Form3853Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
-		FormID:       "form_3853",
+		FormID:       forms.FormF3853,
 		FormName:     "Form 3853 — Health Coverage Exemptions and Individual Shared Responsibility Penalty",
 		TemplatePath: "internal/pdf/templates/state/ca/2025/form_3853.pdf",
 		Mappings: []FieldMapping{

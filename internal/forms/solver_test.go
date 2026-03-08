@@ -14,7 +14,7 @@ func approxEqual(a, b float64) bool {
 func TestBasicComputationChain(t *testing.T) {
 	reg := NewRegistry()
 	reg.Register(&FormDef{
-		ID:           "1040",
+		ID:           FormF1040,
 		Name:         "Form 1040",
 		Jurisdiction: Federal,
 		TaxYears:     []int{2025},
@@ -53,7 +53,7 @@ func TestBasicComputationChain(t *testing.T) {
 func TestLongerChain(t *testing.T) {
 	reg := NewRegistry()
 	reg.Register(&FormDef{
-		ID:           "1040",
+		ID:           FormF1040,
 		Name:         "Form 1040",
 		Jurisdiction: Federal,
 		TaxYears:     []int{2025},
@@ -112,7 +112,7 @@ func TestCrossFormDependencies(t *testing.T) {
 
 	// Federal form
 	reg.Register(&FormDef{
-		ID:           "1040",
+		ID:           FormF1040,
 		Name:         "Form 1040",
 		Jurisdiction: Federal,
 		TaxYears:     []int{2025},
@@ -129,7 +129,7 @@ func TestCrossFormDependencies(t *testing.T) {
 
 	// California state form referencing federal AGI
 	reg.Register(&FormDef{
-		ID:           "ca_540",
+		ID:           FormCA540,
 		Name:         "CA 540",
 		Jurisdiction: StateCA,
 		TaxYears:     []int{2025},
@@ -212,7 +212,7 @@ func TestCycleDetection(t *testing.T) {
 func TestMissingInputDetection(t *testing.T) {
 	reg := NewRegistry()
 	reg.Register(&FormDef{
-		ID:           "1040",
+		ID:           FormF1040,
 		Name:         "Form 1040",
 		Jurisdiction: Federal,
 		TaxYears:     []int{2025},
@@ -254,7 +254,7 @@ func TestWildcardSumAll(t *testing.T) {
 
 	// Two W-2 forms with wildcard-matchable keys
 	reg.Register(&FormDef{
-		ID:       "w2",
+		ID:       FormW2,
 		Name:     "W-2",
 		TaxYears: []int{2025},
 		Fields: []FieldDef{
@@ -265,7 +265,7 @@ func TestWildcardSumAll(t *testing.T) {
 	})
 
 	reg.Register(&FormDef{
-		ID:       "1040",
+		ID:       FormF1040,
 		Name:     "Form 1040",
 		TaxYears: []int{2025},
 		Fields: []FieldDef{
@@ -303,7 +303,7 @@ func TestFederalRefResolvesCorrectly(t *testing.T) {
 	reg := NewRegistry()
 
 	reg.Register(&FormDef{
-		ID:           "1040",
+		ID:           FormF1040,
 		Name:         "Form 1040",
 		Jurisdiction: Federal,
 		TaxYears:     []int{2025},
@@ -328,7 +328,7 @@ func TestFederalRefResolvesCorrectly(t *testing.T) {
 	})
 
 	reg.Register(&FormDef{
-		ID:           "ca_540",
+		ID:           FormCA540,
 		Name:         "CA 540",
 		Jurisdiction: StateCA,
 		TaxYears:     []int{2025},
@@ -436,7 +436,7 @@ func TestFieldKey(t *testing.T) {
 func TestRegistryGetField(t *testing.T) {
 	reg := NewRegistry()
 	reg.Register(&FormDef{
-		ID:   "1040",
+		ID:   FormF1040,
 		Name: "Form 1040",
 		Fields: []FieldDef{
 			{Line: "1", Type: UserInput, Label: "Wages"},
@@ -515,7 +515,7 @@ func TestDepValuesTaxYear(t *testing.T) {
 func TestStringComputedFields(t *testing.T) {
 	reg := NewRegistry()
 	reg.Register(&FormDef{
-		ID:       "1040",
+		ID:       FormF1040,
 		Name:     "Form 1040",
 		TaxYears: []int{2025},
 		Fields: []FieldDef{

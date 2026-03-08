@@ -25,7 +25,7 @@ const (
 // applies with W-2 wage/UBIA limitations. In that case, this returns 0.
 func Form8995() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_8995",
+		ID:           forms.FormF8995,
 		Name:         "Qualified Business Income Deduction (Simplified)",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

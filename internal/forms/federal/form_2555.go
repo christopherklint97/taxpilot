@@ -19,7 +19,7 @@ import (
 // added back on Schedule CA.
 func Form2555() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "form_2555",
+		ID:           forms.FormF2555,
 		Name:         "Form 2555 — Foreign Earned Income",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

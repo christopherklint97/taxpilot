@@ -196,7 +196,7 @@ func loadScenario(t *testing.T, path string) (numInputs map[string]float64, strI
 	}
 
 	// Input form prefixes that need instance re-keying (form_id: -> form_id:1:)
-	inputPrefixes := []string{"w2:", "1099int:", "1099div:", "1099nec:", "1099b:"}
+	inputPrefixes := forms.InputFormPrefixes()
 
 	for key, val := range s.Inputs {
 		solverKey := key

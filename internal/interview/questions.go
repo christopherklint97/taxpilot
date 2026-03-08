@@ -1,5 +1,7 @@
 package interview
 
+import "taxpilot/internal/forms"
+
 // ContextualPrompt holds an enhanced prompt for a form field.
 type ContextualPrompt struct {
 	Prompt   string // the question to show the user
@@ -12,22 +14,22 @@ type ContextualPrompt struct {
 // contextualPrompts maps field keys to enhanced prompts.
 // These are used instead of the raw FieldDef.Prompt values.
 var contextualPrompts = map[string]ContextualPrompt{
-	"1040:filing_status": {
+	forms.F1040FilingStatus: {
 		Prompt:   "What is your filing status for 2025?",
 		HelpText: "Your filing status affects your tax brackets, standard deduction, and eligibility for certain credits.",
 		CANote:   "California uses the same filing status as your federal return.",
 		IRCRef:   "IRC §1",
 		CARef:    "R&TC §17042",
 	},
-	"1040:first_name": {
+	forms.F1040FirstName: {
 		Prompt:   "What is your first name?",
 		HelpText: "As shown on your Social Security card.",
 	},
-	"1040:last_name": {
+	forms.F1040LastName: {
 		Prompt:   "What is your last name?",
 		HelpText: "As shown on your Social Security card.",
 	},
-	"1040:ssn": {
+	forms.F1040SSN: {
 		Prompt:   "What is your Social Security number?",
 		HelpText: "Format: XXX-XX-XXXX. This is required for filing and is kept secure.",
 	},

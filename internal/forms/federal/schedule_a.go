@@ -13,7 +13,7 @@ import (
 // charitable contributions, and other deductions.
 func ScheduleA() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_a",
+		ID:           forms.FormScheduleA,
 		Name:         "Schedule A — Itemized Deductions",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},

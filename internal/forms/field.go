@@ -172,7 +172,7 @@ type FieldDef struct {
 
 // FormDef defines a complete tax form.
 type FormDef struct {
-	ID           string
+	ID           FormID
 	Name         string
 	Jurisdiction Jurisdiction
 	TaxYears     []int
@@ -180,6 +180,12 @@ type FormDef struct {
 }
 
 // FieldKey returns the fully qualified key for a field: "form_id:line".
-func FieldKey(formID, line string) string {
-	return fmt.Sprintf("%s:%s", formID, line)
+func FieldKey(formID FormID, line string) string {
+	return fmt.Sprintf("%s:%s", string(formID), line)
+}
+
+// FK is a convenience for building field keys with a typed FormID and line.
+// It is identical to FieldKey but shorter for use in DependsOn lists and map lookups.
+func FK(formID FormID, line string) string {
+	return string(formID) + ":" + line
 }

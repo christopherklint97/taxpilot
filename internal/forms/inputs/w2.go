@@ -6,7 +6,7 @@ import "taxpilot/internal/forms"
 // This captures both federal and state boxes from a single W-2.
 func W2() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "w2",
+		ID:           forms.FormW2,
 		Name:         "W-2 Wage and Tax Statement",
 		Jurisdiction: forms.Federal, // W-2 is federally defined but contains state info
 		TaxYears:     []int{2025},

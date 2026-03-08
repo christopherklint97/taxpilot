@@ -12,7 +12,7 @@ import (
 // categories will be expanded in future iterations.
 func ScheduleC() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           "schedule_c",
+		ID:           forms.FormScheduleC,
 		Name:         "Schedule C — Profit or Loss From Business",
 		Jurisdiction: forms.Federal,
 		TaxYears:     []int{2025},
