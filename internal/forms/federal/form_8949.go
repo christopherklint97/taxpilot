@@ -4,6 +4,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Form8949) }
+
 // Form8949 returns the FormDef for Form 8949 — Sales and Other Dispositions
 // of Capital Assets. This form aggregates 1099-B transactions and computes
 // gain/loss for each category, feeding into Schedule D.
@@ -24,7 +26,9 @@ func Form8949() *forms.FormDef {
 		ID:           forms.FormF8949,
 		Name:         "Form 8949 — Sales and Other Dispositions of Capital Assets",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "income_1099",
+		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			// --- Part I: Short-Term ---
 

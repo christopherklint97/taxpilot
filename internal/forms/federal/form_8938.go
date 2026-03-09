@@ -2,22 +2,10 @@ package federal
 
 import (
 	"taxpilot/internal/forms"
+	"taxpilot/pkg/taxmath"
 )
 
-// FATCA filing thresholds for 2025.
-// Thresholds are higher for taxpayers living abroad.
-const (
-	// Living abroad thresholds
-	fatcaAbroadSingleYearEnd = 200000
-	fatcaAbroadSingleAnyTime = 300000
-	fatcaAbroadMFJYearEnd    = 400000
-	fatcaAbroadMFJAnyTime    = 600000
-	// Living in US thresholds
-	fatcaUSSingleYearEnd = 50000
-	fatcaUSSingleAnyTime = 75000
-	fatcaUSMFJYearEnd    = 100000
-	fatcaUSMFJAnyTime    = 150000
-)
+func init() { forms.RegisterForm(Form8938) }
 
 // Form8938 returns the FormDef for Form 8938 — Statement of Specified
 // Foreign Financial Assets (FATCA).
@@ -33,7 +21,9 @@ func Form8938() *forms.FormDef {
 		ID:           forms.FormF8938,
 		Name:         "Form 8938 — Statement of Specified Foreign Financial Assets",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "expat",
+		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// --- Taxpayer situation ---
 
@@ -41,6 +31,7 @@ func Form8938() *forms.FormDef {
 			{
 				Line:    "lives_abroad",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Do you live outside the United States?",
 				Prompt:  "Do you meet the bona fide residence or physical presence test for living abroad?",
 				Options: []string{"yes", "no"},
@@ -100,6 +91,7 @@ func Form8938() *forms.FormDef {
 			{
 				Line:   "account_country",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Country of foreign accounts",
 				Prompt: "In which country are your foreign financial accounts held?",
 			},
@@ -107,6 +99,7 @@ func Form8938() *forms.FormDef {
 			{
 				Line:   "account_institution",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Foreign financial institution name",
 				Prompt: "What is the name of the foreign financial institution?",
 			},
@@ -114,6 +107,7 @@ func Form8938() *forms.FormDef {
 			{
 				Line:    "account_type",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Type of foreign account",
 				Prompt:  "What type of foreign financial account is it?",
 				Options: []string{"deposit", "custodial", "pension", "other"},
@@ -167,20 +161,21 @@ func Form8938() *forms.FormDef {
 				Label:     "FATCA year-end filing threshold",
 				DependsOn: []string{"form_8938:lives_abroad", "1040:filing_status"},
 				Compute: func(dv forms.DepValues) float64 {
+					cfg := taxmath.GetConfigOrDefault(dv.TaxYear())
 					abroad := dv.GetString("form_8938:lives_abroad") == "yes"
 					fs := dv.GetString("1040:filing_status")
 					mfj := fs == "mfj"
 
 					if abroad {
 						if mfj {
-							return fatcaAbroadMFJYearEnd
+							return cfg.FATCAAbroadMFJYearEnd
 						}
-						return fatcaAbroadSingleYearEnd
+						return cfg.FATCAAbroadSingleYearEnd
 					}
 					if mfj {
-						return fatcaUSMFJYearEnd
+						return cfg.FATCAUSMFJYearEnd
 					}
-					return fatcaUSSingleYearEnd
+					return cfg.FATCAUSSingleYearEnd
 				},
 			},
 			// Any-time threshold
@@ -190,20 +185,21 @@ func Form8938() *forms.FormDef {
 				Label:     "FATCA any-time filing threshold",
 				DependsOn: []string{"form_8938:lives_abroad", "1040:filing_status"},
 				Compute: func(dv forms.DepValues) float64 {
+					cfg := taxmath.GetConfigOrDefault(dv.TaxYear())
 					abroad := dv.GetString("form_8938:lives_abroad") == "yes"
 					fs := dv.GetString("1040:filing_status")
 					mfj := fs == "mfj"
 
 					if abroad {
 						if mfj {
-							return fatcaAbroadMFJAnyTime
+							return cfg.FATCAAbroadMFJAnyTime
 						}
-						return fatcaAbroadSingleAnyTime
+						return cfg.FATCAAbroadSingleAnyTime
 					}
 					if mfj {
-						return fatcaUSMFJAnyTime
+						return cfg.FATCAUSMFJAnyTime
 					}
-					return fatcaUSSingleAnyTime
+					return cfg.FATCAUSSingleAnyTime
 				},
 			},
 			// Filing required (1 = yes, 0 = no)

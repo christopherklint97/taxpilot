@@ -6,6 +6,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Form8889) }
+
 // HSA contribution limits for 2025 (IRS Rev. Proc. 2024-25)
 const (
 	hsaSelfOnly2025 = 4300  // Self-only coverage
@@ -25,7 +27,9 @@ func Form8889() *forms.FormDef {
 		ID:           forms.FormF8889,
 		Name:         "Form 8889 — Health Savings Accounts",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "deductions",
+		QuestionOrder: 6,
 		Fields: []forms.FieldDef{
 			// --- Part I: HSA Contributions and Deduction ---
 

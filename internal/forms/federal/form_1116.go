@@ -6,6 +6,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Form1116) }
+
 // Form1116 returns the FormDef for Form 1116 — Foreign Tax Credit.
 // This computes the credit for income taxes paid to foreign governments.
 //
@@ -23,7 +25,9 @@ func Form1116() *forms.FormDef {
 		ID:           forms.FormF1116,
 		Name:         "Form 1116 — Foreign Tax Credit",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "expat",
+		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// --- Part I: Taxable Income from Sources Outside the US ---
 
@@ -39,6 +43,7 @@ func Form1116() *forms.FormDef {
 			{
 				Line:   "foreign_country",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Country where tax was paid",
 				Prompt: "Which country did you pay foreign taxes to?",
 			},
@@ -74,6 +79,7 @@ func Form1116() *forms.FormDef {
 			{
 				Line:    "accrued_or_paid",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Taxes paid or accrued",
 				Prompt:  "Are you claiming foreign taxes on a paid or accrued basis?",
 				Options: []string{"paid", "accrued"},

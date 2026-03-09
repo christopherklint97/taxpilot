@@ -6,6 +6,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Schedule2) }
+
 // Schedule 2 thresholds for 2025
 const (
 	// Net Investment Income Tax (NIIT) — IRC §1411
@@ -32,7 +34,9 @@ func Schedule2() *forms.FormDef {
 		ID:           forms.FormSchedule2,
 		Name:         "Schedule 2 — Additional Taxes",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "deductions",
+		QuestionOrder: 6,
 		Fields: []forms.FieldDef{
 			// --- Part I: Tax ---
 

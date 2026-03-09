@@ -4,6 +4,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(ScheduleB) }
+
 // ScheduleB returns the FormDef for Schedule B — Interest and Ordinary Dividends.
 // Part I totals interest income from all 1099-INT forms.
 // Part II totals ordinary dividends from all 1099-DIV forms.
@@ -14,7 +16,9 @@ func ScheduleB() *forms.FormDef {
 		ID:           forms.FormScheduleB,
 		Name:         "Schedule B — Interest and Ordinary Dividends",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "income_1099",
+		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			// --- Part I: Interest ---
 
@@ -78,6 +82,7 @@ func ScheduleB() *forms.FormDef {
 			{
 				Line:    "7a",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Foreign financial accounts",
 				Prompt:  "At any time during 2025, did you have a financial interest in or signature authority over a financial account in a foreign country (e.g., bank account, securities account)?" ,
 				Options: []string{"yes", "no"},
@@ -86,6 +91,7 @@ func ScheduleB() *forms.FormDef {
 			{
 				Line:   "7b",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Country of foreign accounts",
 				Prompt: "In which country or countries are the foreign accounts located?",
 			},
@@ -93,6 +99,7 @@ func ScheduleB() *forms.FormDef {
 			{
 				Line:    "8",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Foreign trust",
 				Prompt:  "Did you receive a distribution from, or were you a grantor of, or transferor to, a foreign trust?",
 				Options: []string{"yes", "no"},

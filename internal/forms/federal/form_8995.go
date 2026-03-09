@@ -7,6 +7,8 @@ import (
 	"taxpilot/pkg/taxmath"
 )
 
+func init() { forms.RegisterForm(Form8995) }
+
 // QBI simplified form income thresholds for 2025
 const (
 	qbiRate            = 0.20   // 20% deduction
@@ -28,7 +30,9 @@ func Form8995() *forms.FormDef {
 		ID:           forms.FormF8995,
 		Name:         "Qualified Business Income Deduction (Simplified)",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "business",
+		QuestionOrder: 5,
 		Fields: []forms.FieldDef{
 			// Line 1: Total QBI from qualified businesses (Schedule C)
 			{

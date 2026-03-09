@@ -4,6 +4,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Schedule3) }
+
 // Schedule3 returns the FormDef for Schedule 3 — Additional Credits and Payments.
 //
 // Part I: Nonrefundable Credits (deferred — education, child, etc.)
@@ -15,7 +17,9 @@ func Schedule3() *forms.FormDef {
 		ID:           forms.FormSchedule3,
 		Name:         "Schedule 3 — Additional Credits and Payments",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "deductions",
+		QuestionOrder: 6,
 		Fields: []forms.FieldDef{
 			// --- Part I: Nonrefundable Credits ---
 

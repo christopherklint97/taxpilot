@@ -6,6 +6,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Form3853) }
+
 // Form3853 returns the FormDef for California Form 3853 — Health Coverage
 // Exemptions and Individual Shared Responsibility Penalty. This computes the
 // penalty for not maintaining qualifying health coverage under California's
@@ -15,7 +17,9 @@ func Form3853() *forms.FormDef {
 		ID:           forms.FormF3853,
 		Name:         "Form 3853 — Health Coverage Exemptions and Individual Shared Responsibility Penalty",
 		Jurisdiction: forms.StateCA,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "ca",
+		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// Line 1: Full-year coverage (yes/no)
 			{

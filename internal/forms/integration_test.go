@@ -2022,6 +2022,319 @@ func TestCAExpatFEIEAddbackScenario(t *testing.T) {
 	}
 }
 
+// --------------------------------------------------------------------------
+// Edge-case and error-path tests (Item 15)
+// --------------------------------------------------------------------------
+
+// TestEdgeCaseMissingRequiredInputs verifies that the solver returns a clear
+// error when required UserInput fields are missing from the provided inputs.
+func TestEdgeCaseMissingRequiredInputs(t *testing.T) {
+	g := buildSolver(t)
+
+	// Provide only partial inputs — missing filing_status, name, ssn, etc.
+	numInputs := map[string]float64{
+		"w2:1:wages": 75000,
+	}
+	strInputs := map[string]string{}
+
+	_, err := g.Solve(numInputs, strInputs, 2025)
+	if err == nil {
+		t.Fatal("expected error for missing required inputs, got nil")
+	}
+
+	// Error message should mention "missing required inputs"
+	if !strings.Contains(err.Error(), "missing required inputs") {
+		t.Errorf("expected error to mention missing inputs, got: %v", err)
+	}
+
+	// Specifically, filing_status should be listed
+	if !strings.Contains(err.Error(), "1040:filing_status") {
+		t.Errorf("expected error to mention 1040:filing_status, got: %v", err)
+	}
+}
+
+// TestEdgeCaseZeroIncome verifies that the solver handles zero wages and
+// produces valid (zero) tax results without errors.
+func TestEdgeCaseZeroIncome(t *testing.T) {
+	g := buildSolver(t)
+
+	numInputs := map[string]float64{
+		"w2:1:wages":                 0,
+		"w2:1:federal_tax_withheld":  0,
+		"w2:1:ss_wages":              0,
+		"w2:1:ss_tax_withheld":       0,
+		"w2:1:medicare_wages":        0,
+		"w2:1:medicare_tax_withheld": 0,
+		"w2:1:state_wages":           0,
+		"w2:1:state_tax_withheld":    0,
+		"w2:1:employer_name":         0,
+		"w2:1:employer_ein":          0,
+		"1040:filing_status":         0,
+		"1040:first_name":            0,
+		"1040:last_name":             0,
+		"1040:ssn":                   0,
+	}
+	strInputs := map[string]string{
+		"1040:filing_status": "single",
+		"1040:first_name":    "Zero",
+		"1040:last_name":     "Income",
+		"1040:ssn":           "999-00-0000",
+		"w2:1:employer_name": "None",
+		"w2:1:employer_ein":  "00-0000000",
+	}
+
+	for key, val := range inputFormDefaults {
+		switch v := val.(type) {
+		case float64:
+			if _, exists := numInputs[key]; !exists {
+				numInputs[key] = v
+			}
+		case string:
+			if _, exists := numInputs[key]; !exists {
+				numInputs[key] = 0
+				strInputs[key] = v
+			}
+		}
+	}
+
+	result, err := g.Solve(numInputs, strInputs, 2025)
+	if err != nil {
+		t.Fatalf("Solve failed on zero income: %v", err)
+	}
+
+	// All income lines should be zero
+	assertClose(t, result["1040:1a"], 0, "Line 1a wages")
+	assertClose(t, result["1040:9"], 0, "Line 9 total income")
+	assertClose(t, result["1040:11"], 0, "Line 11 AGI")
+
+	// Taxable income should be zero (can't go negative)
+	assertClose(t, result["1040:15"], 0, "Line 15 taxable income")
+
+	// No tax owed
+	assertClose(t, result["1040:16"], 0, "Line 16 federal tax")
+	assertClose(t, result["1040:24"], 0, "Line 24 total tax")
+	assertClose(t, result["1040:37"], 0, "Line 37 amount owed")
+
+	// No refund either (no payments)
+	assertClose(t, result["1040:34"], 0, "Line 34 refund")
+}
+
+// TestEdgeCaseBusinessExpensesExceedIncome verifies that when Schedule C
+// expenses exceed gross income, the net profit is floored at zero (the
+// current simplified implementation) and tax is calculated correctly.
+func TestEdgeCaseBusinessExpensesExceedIncome(t *testing.T) {
+	g := buildSolver(t)
+
+	numInputs := map[string]float64{
+		"w2:1:wages":                 50000,
+		"w2:1:federal_tax_withheld":  6000,
+		"w2:1:ss_wages":              50000,
+		"w2:1:ss_tax_withheld":       3100,
+		"w2:1:medicare_wages":        50000,
+		"w2:1:medicare_tax_withheld": 725,
+		"w2:1:state_wages":           50000,
+		"w2:1:state_tax_withheld":    2000,
+		"w2:1:employer_name":         0,
+		"w2:1:employer_ein":          0,
+		"1040:filing_status":         0,
+		"1040:first_name":            0,
+		"1040:last_name":             0,
+		"1040:ssn":                   0,
+	}
+	strInputs := map[string]string{
+		"1040:filing_status": "single",
+		"1040:first_name":    "Test",
+		"1040:last_name":     "Loss",
+		"1040:ssn":           "999-00-1111",
+		"w2:1:employer_name": "Day Job Inc",
+		"w2:1:employer_ein":  "12-3456789",
+	}
+
+	for key, val := range inputFormDefaults {
+		switch v := val.(type) {
+		case float64:
+			if _, exists := numInputs[key]; !exists {
+				numInputs[key] = v
+			}
+		case string:
+			if _, exists := numInputs[key]; !exists {
+				numInputs[key] = 0
+				strInputs[key] = v
+			}
+		}
+	}
+
+	// Business with expenses exceeding 1099-NEC income
+	// 1099-NEC provides $5k income, expenses are $10k
+	numInputs["1099nec:1:nonemployee_compensation"] = 5000
+	strInputs["schedule_c:business_name"] = "Side Project"
+	strInputs["schedule_c:business_code"] = "999990"
+	numInputs["schedule_c:8"] = 0     // advertising
+	numInputs["schedule_c:10"] = 0    // car expenses
+	numInputs["schedule_c:17"] = 5000 // legal & professional
+	numInputs["schedule_c:18"] = 3000 // office expense
+	numInputs["schedule_c:22"] = 0    // supplies
+	numInputs["schedule_c:25"] = 2000 // utilities
+	numInputs["schedule_c:27"] = 0    // other expenses
+
+	result, err := g.Solve(numInputs, strInputs, 2025)
+	if err != nil {
+		t.Fatalf("Solve failed: %v", err)
+	}
+
+	// Schedule C line 1 should show 1099-NEC income
+	assertClose(t, result["schedule_c:1"], 5000, "Schedule C gross receipts")
+
+	// Total expenses = $10k
+	assertClose(t, result["schedule_c:28"], 10000, "Schedule C total expenses")
+
+	// Net profit is floored at 0 (simplified: math.Max(0, 5k - 10k))
+	assertClose(t, result["schedule_c:31"], 0, "Schedule C net profit (floored at 0)")
+
+	// Tax should still be non-negative
+	if result["1040:16"] < 0 {
+		t.Errorf("tax should never be negative, got %.2f", result["1040:16"])
+	}
+
+	// AGI should be at least wages (business contributes 0, not negative)
+	assertClose(t, result["1040:11"], 50000, "AGI equals W-2 wages (no business income)")
+}
+
+// TestEdgeCaseFEIEPlusFTCCombined verifies the FEIE+FTC interaction using
+// a JSON scenario. The taxpayer claims FEIE on $130k and FTC on the
+// remaining $70k of $200k total foreign income. The FTC should be limited
+// to non-excluded income only, preventing double benefit.
+func TestEdgeCaseFEIEPlusFTCCombined(t *testing.T) {
+	g := buildSolver(t)
+
+	numInputs, strInputs, taxYear := loadScenario(t,
+		"../../testdata/scenarios/federal/feie_ftc_combined.json")
+
+	result, err := g.Solve(numInputs, strInputs, taxYear)
+	if err != nil {
+		t.Fatalf("Solve failed: %v", err)
+	}
+
+	// FEIE should exclude $130k (limit)
+	assertClose(t, result["form_2555:total_exclusion"], 130000, "FEIE exclusion")
+
+	// Schedule 1 line 8d should be -$130k
+	assertClose(t, result["schedule_1:8d"], -130000, "FEIE deduction on Schedule 1")
+
+	// Remaining income: $200k - $130k = $70k
+	assertClose(t, result["1040:9"], 70000, "total income after FEIE")
+	assertClose(t, result["1040:11"], 70000, "AGI")
+
+	// Taxable: $70k - $15k standard deduction = $55k
+	assertClose(t, result["1040:15"], 55000, "taxable income")
+
+	// Tax should use stacking (higher effective rate)
+	if result["1040:16"] <= 0 {
+		t.Error("expected non-zero stacked tax")
+	}
+
+	// FTC: $70k foreign source on $55k taxable
+	// Limitation ratio = min(1.0, 70000/55000) = 1.0 (capped)
+	// So FTC limitation = full US tax
+	usTax := result["1040:16"]
+	assertClose(t, result["form_1116:21"], usTax, "FTC limitation (ratio capped at 1.0)")
+
+	// FTC credit = min($21k taxes paid, US tax)
+	expectedCredit := math.Min(21000, usTax)
+	assertClose(t, result["form_1116:22"], expectedCredit, "FTC credit")
+
+	// Credit should flow through Schedule 3 to 1040
+	assertClose(t, result["schedule_3:1"], expectedCredit, "Schedule 3 line 1")
+	assertClose(t, result["1040:20"], expectedCredit, "1040 line 20 credits")
+
+	// Tax after credits should be less than tax before
+	if result["1040:22"] >= usTax {
+		t.Error("expected tax after FTC < tax before")
+	}
+
+	// FBAR should be required
+	assertClose(t, result["schedule_b:fbar_required"], 1, "FBAR required")
+
+	// Carryforward: if taxes paid ($21k) > limitation, excess carries forward
+	if result["form_1116:15"] > result["form_1116:21"] {
+		if result["form_1116:carryforward"] <= 0 {
+			t.Error("expected positive carryforward when taxes paid > limitation")
+		}
+	}
+}
+
+// TestEdgeCaseFEIEExceedsIncome verifies that when foreign earned income
+// is less than the FEIE limit, only actual income is excluded (not the limit).
+func TestEdgeCaseFEIEExceedsIncome(t *testing.T) {
+	g := buildSolver(t)
+
+	numInputs := map[string]float64{
+		"w2:1:wages":                 40000, // income below FEIE limit
+		"w2:1:federal_tax_withheld":  0,
+		"w2:1:ss_wages":              0,
+		"w2:1:ss_tax_withheld":       0,
+		"w2:1:medicare_wages":        0,
+		"w2:1:medicare_tax_withheld": 0,
+		"w2:1:state_wages":           0,
+		"w2:1:state_tax_withheld":    0,
+		"w2:1:employer_name":         0,
+		"w2:1:employer_ein":          0,
+		"1040:filing_status":         0,
+		"1040:first_name":            0,
+		"1040:last_name":             0,
+		"1040:ssn":                   0,
+	}
+	strInputs := map[string]string{
+		"1040:filing_status": "single",
+		"1040:first_name":    "Low",
+		"1040:last_name":     "Earner",
+		"1040:ssn":           "999-00-2222",
+		"w2:1:employer_name": "Small Foreign Co",
+		"w2:1:employer_ein":  "00-0000000",
+	}
+
+	for key, val := range inputFormDefaults {
+		switch v := val.(type) {
+		case float64:
+			if _, exists := numInputs[key]; !exists {
+				numInputs[key] = v
+			}
+		case string:
+			if _, exists := numInputs[key]; !exists {
+				numInputs[key] = 0
+				strInputs[key] = v
+			}
+		}
+	}
+
+	// FEIE: only $40k of income, full year abroad
+	numInputs["form_2555:foreign_earned_income"] = 40000
+	numInputs["form_2555:ppt_days_present"] = 0
+	numInputs["form_2555:exchange_rate"] = 1.0
+	numInputs["form_2555:foreign_tax_paid"] = 8000
+	numInputs["form_2555:employer_provided_housing"] = 0
+	numInputs["form_2555:housing_expenses"] = 0
+	strInputs["form_2555:qualifying_test"] = "bona_fide_residence"
+	strInputs["form_2555:bfrt_full_year"] = "yes"
+	strInputs["form_2555:foreign_country"] = "Mexico"
+	strInputs["form_2555:self_employed_abroad"] = "no"
+
+	result, err := g.Solve(numInputs, strInputs, 2025)
+	if err != nil {
+		t.Fatalf("Solve failed: %v", err)
+	}
+
+	// Exclusion should be $40k (actual income), not $130k (limit)
+	assertClose(t, result["form_2555:foreign_income_exclusion"], 40000, "FEIE exclusion = actual income")
+
+	// AGI should be zero (all income excluded)
+	assertClose(t, result["1040:11"], 0, "AGI should be 0")
+
+	// No tax owed
+	assertClose(t, result["1040:16"], 0, "no tax when all income excluded")
+	assertClose(t, result["1040:24"], 0, "no total tax")
+}
+
 func TestCAFEIEAddback(t *testing.T) {
 	g := buildSolver(t)
 

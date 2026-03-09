@@ -2,6 +2,8 @@ package inputs
 
 import "taxpilot/internal/forms"
 
+func init() { forms.RegisterForm(F1099B) }
+
 // F1099B returns the FormDef for a 1099-B Proceeds From Broker and Barter Exchange Transactions.
 // Each 1099-B represents a single sale or disposition of a security.
 // Multiple sales are handled via instance prefixes (e.g., 1099b:1:, 1099b:2:).
@@ -10,23 +12,28 @@ func F1099B() *forms.FormDef {
 		ID:           forms.Form1099B,
 		Name:         "1099-B Proceeds From Broker Transactions",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "income_1099",
+		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			{
 				Line:   "description",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Description of property",
 				Prompt: "Describe the security sold (e.g., \"100 sh AAPL\"):",
 			},
 			{
 				Line:   "date_acquired",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Date acquired",
 				Prompt: "When did you acquire this security (MM/DD/YYYY or VARIOUS)?",
 			},
 			{
 				Line:   "date_sold",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Date sold",
 				Prompt: "When did you sell this security (MM/DD/YYYY)?",
 			},
@@ -57,6 +64,7 @@ func F1099B() *forms.FormDef {
 			{
 				Line:    "term",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Short-term or long-term",
 				Prompt:  "Was this a short-term or long-term holding?",
 				Options: []string{"short", "long"},
@@ -64,6 +72,7 @@ func F1099B() *forms.FormDef {
 			{
 				Line:    "basis_reported",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Basis reported to IRS",
 				Prompt:  "Was cost basis reported to the IRS by your broker?",
 				Options: []string{"yes", "no"},

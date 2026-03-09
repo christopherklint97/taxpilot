@@ -2,23 +2,29 @@ package inputs
 
 import "taxpilot/internal/forms"
 
+func init() { forms.RegisterForm(F1099DIV) }
+
 // F1099DIV returns the FormDef for a 1099-DIV Dividends and Distributions.
 func F1099DIV() *forms.FormDef {
 	return &forms.FormDef{
 		ID:           forms.Form1099DIV,
 		Name:         "1099-DIV Dividends and Distributions",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "income_1099",
+		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			{
 				Line:   "payer_name",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Payer name",
 				Prompt: "What is the payer's name (from 1099-DIV)?",
 			},
 			{
 				Line:   "payer_tin",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Payer TIN",
 				Prompt: "What is the payer's TIN (XX-XXXXXXX)?",
 			},

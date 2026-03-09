@@ -7,6 +7,8 @@ import (
 	"taxpilot/pkg/taxmath"
 )
 
+func init() { forms.RegisterForm(Form2555) }
+
 // Form2555 returns the FormDef for Form 2555 — Foreign Earned Income.
 // This computes the Foreign Earned Income Exclusion (FEIE) and foreign
 // housing exclusion/deduction for US citizens and residents living abroad.
@@ -22,7 +24,9 @@ func Form2555() *forms.FormDef {
 		ID:           forms.FormF2555,
 		Name:         "Form 2555 — Foreign Earned Income",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "expat",
+		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// --- Part I: General Information ---
 
@@ -30,6 +34,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "foreign_country",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Foreign country of residence",
 				Prompt: "What country do you live in?",
 			},
@@ -37,6 +42,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "foreign_address",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Foreign address",
 				Prompt: "What is your foreign address?",
 			},
@@ -44,6 +50,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "employer_name_2555",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Employer name (foreign)",
 				Prompt: "What is your foreign employer's name?",
 			},
@@ -51,6 +58,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:    "employer_foreign",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Is your employer a foreign entity?",
 				Prompt:  "Is your employer a foreign (non-US) entity?",
 				Options: []string{"yes", "no"},
@@ -59,6 +67,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:    "self_employed_abroad",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Self-employed abroad",
 				Prompt:  "Are you self-employed in your foreign country?",
 				Options: []string{"yes", "no"},
@@ -70,6 +79,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:    "qualifying_test",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Qualifying test for FEIE",
 				Prompt:  "Which qualifying test do you meet for the Foreign Earned Income Exclusion?",
 				Options: []string{"bona_fide_residence", "physical_presence"},
@@ -81,6 +91,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "bfrt_start_date",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Bona fide residence start date",
 				Prompt: "When did your bona fide residence in a foreign country begin? (MM/DD/YYYY)",
 			},
@@ -88,6 +99,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "bfrt_end_date",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Bona fide residence end date",
 				Prompt: "When did (or will) your bona fide residence end? (MM/DD/YYYY or 'continuing')",
 			},
@@ -95,6 +107,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:    "bfrt_full_year",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Bona fide resident for full tax year",
 				Prompt:  "Were you a bona fide resident of a foreign country for the entire tax year?",
 				Options: []string{"yes", "no"},
@@ -113,6 +126,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "ppt_period_start",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Physical presence period start",
 				Prompt: "What is the start date of your 12-month qualifying period? (MM/DD/YYYY)",
 			},
@@ -120,6 +134,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "ppt_period_end",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Physical presence period end",
 				Prompt: "What is the end date of your 12-month qualifying period? (MM/DD/YYYY)",
 			},
@@ -137,6 +152,7 @@ func Form2555() *forms.FormDef {
 			{
 				Line:   "currency_code",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Foreign currency code",
 				Prompt: "What currency were you paid in? (e.g., SEK, EUR, GBP)",
 			},

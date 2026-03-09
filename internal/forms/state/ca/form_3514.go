@@ -6,6 +6,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Form3514) }
+
 // Form3514 returns the FormDef for California Form 3514 — California Earned
 // Income Tax Credit (CalEITC). This form computes the CalEITC and the Young
 // Child Tax Credit (YCTC) for low-income California filers.
@@ -14,7 +16,9 @@ func Form3514() *forms.FormDef {
 		ID:           forms.FormF3514,
 		Name:         "Form 3514 — California Earned Income Tax Credit",
 		Jurisdiction: forms.StateCA,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "ca",
+		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// Line 1: Earned income (wages + positive self-employment income)
 			{
@@ -85,6 +89,7 @@ func Form3514() *forms.FormDef {
 			{
 				Line:    "6_yctc",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Qualifying child under age 6",
 				Prompt:  "Do you have a qualifying child under age 6?",
 				Options: []string{"yes", "no"},

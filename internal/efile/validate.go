@@ -52,36 +52,11 @@ func (r *ValidationReport) computeValidity() {
 // hasW2Wages checks whether any w2:*:wages key has a positive value.
 func hasW2Wages(results map[string]float64) bool {
 	for k, v := range results {
-		if strings.HasPrefix(k, string(forms.FormW2)+":") && strings.HasSuffix(k, ":" + forms.W2Wages) && v > 0 {
+		if strings.HasPrefix(k, string(forms.FormW2)+":") && strings.HasSuffix(k, ":"+forms.W2Wages) && v > 0 {
 			return true
 		}
 	}
 	return false
-}
-
-// getStr retrieves a string input, returning empty string if not found.
-func getStr(strInputs map[string]string, key string) string {
-	if strInputs == nil {
-		return ""
-	}
-	return strInputs[key]
-}
-
-// getNum retrieves a numeric result, returning 0 if not found.
-func getNum(results map[string]float64, key string) float64 {
-	if results == nil {
-		return 0
-	}
-	return results[key]
-}
-
-// numExists checks whether a key exists in the results map.
-func numExists(results map[string]float64, key string) bool {
-	if results == nil {
-		return false
-	}
-	_, ok := results[key]
-	return ok
 }
 
 // ValidateReturn validates a federal return for e-filing readiness.
@@ -89,12 +64,12 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	var report ValidationReport
 
 	// R0001: SSN required
-	if getStr(strInputs, forms.F1040SSN) == "" {
+	if forms.GetStr(strInputs, forms.F1040SSN) == "" {
 		report.addResult("R0001", SeverityError, forms.F1040SSN, "SSN is required for e-filing")
 	}
 
 	// R0002: Filing status required and valid
-	fs := getStr(strInputs, forms.F1040FilingStatus)
+	fs := forms.GetStr(strInputs, forms.F1040FilingStatus)
 	validStatuses := map[string]bool{
 		"single": true, "mfj": true, "mfs": true, "hoh": true, "qss": true,
 	}
@@ -104,45 +79,45 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	}
 
 	// R0003: First name required
-	if getStr(strInputs, forms.F1040FirstName) == "" {
+	if forms.GetStr(strInputs, forms.F1040FirstName) == "" {
 		report.addResult("R0003", SeverityError, forms.F1040FirstName, "First name is required")
 	}
 
 	// R0004: Last name required
-	if getStr(strInputs, forms.F1040LastName) == "" {
+	if forms.GetStr(strInputs, forms.F1040LastName) == "" {
 		report.addResult("R0004", SeverityError, forms.F1040LastName, "Last name is required")
 	}
 
 	// R0005: Total income must be non-negative
-	if numExists(results, forms.F1040Line9) && getNum(results, forms.F1040Line9) < 0 {
+	if forms.NumExists(results, forms.F1040Line9) && forms.GetNum(results, forms.F1040Line9) < 0 {
 		report.addResult("R0005", SeverityError, forms.F1040Line9, "Total income must be non-negative")
 	}
 
 	// R0006: Taxable income must not exceed total income
-	if numExists(results, forms.F1040Line15) && numExists(results, forms.F1040Line9) {
-		if getNum(results, forms.F1040Line15) > getNum(results, forms.F1040Line9) {
+	if forms.NumExists(results, forms.F1040Line15) && forms.NumExists(results, forms.F1040Line9) {
+		if forms.GetNum(results, forms.F1040Line15) > forms.GetNum(results, forms.F1040Line9) {
 			report.addResult("R0006", SeverityError, forms.F1040Line15,
 				"Taxable income cannot exceed total income")
 		}
 	}
 
 	// R0007: Total tax must be non-negative
-	if numExists(results, forms.F1040Line24) && getNum(results, forms.F1040Line24) < 0 {
+	if forms.NumExists(results, forms.F1040Line24) && forms.GetNum(results, forms.F1040Line24) < 0 {
 		report.addResult("R0007", SeverityError, forms.F1040Line24, "Total tax must be non-negative")
 	}
 
 	// R0008: Withholding must match sum (25d == 25a + 25b within $1)
-	if numExists(results, forms.F1040Line25d) {
-		sum := getNum(results, forms.F1040Line25a) + getNum(results, forms.F1040Line25b)
-		if math.Abs(getNum(results, forms.F1040Line25d)-sum) > 1.0 {
+	if forms.NumExists(results, forms.F1040Line25d) {
+		sum := forms.GetNum(results, forms.F1040Line25a) + forms.GetNum(results, forms.F1040Line25b)
+		if math.Abs(forms.GetNum(results, forms.F1040Line25d)-sum) > 1.0 {
 			report.addResult("R0008", SeverityError, forms.F1040Line25d,
 				"Total withholding (line 25d) must equal sum of lines 25a and 25b (within $1)")
 		}
 	}
 
 	// R0009: Refund and amount owed can't both be positive
-	refund := getNum(results, forms.F1040Line34)
-	owed := getNum(results, forms.F1040Line37)
+	refund := forms.GetNum(results, forms.F1040Line34)
+	owed := forms.GetNum(results, forms.F1040Line37)
 	if refund > 0 && owed > 0 {
 		report.addResult("R0009", SeverityError, forms.F1040Line34,
 			"Refund and amount owed cannot both be positive")
@@ -150,8 +125,8 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 
 	// R0010: Must have some income source (W-2, Schedule C, or Form 2555 foreign income)
 	hasW2 := hasW2Wages(results)
-	hasScheduleC := getNum(results, forms.SchedCLine31) > 0
-	hasForeignIncome := getNum(results, forms.F2555ForeignEarnedIncome) > 0
+	hasScheduleC := forms.GetNum(results, forms.SchedCLine31) > 0
+	hasForeignIncome := forms.GetNum(results, forms.F2555ForeignEarnedIncome) > 0
 	if !hasW2 && !hasScheduleC && !hasForeignIncome {
 		report.addResult("R0010", SeverityError, forms.FK(forms.FormW2, "1:wages"),
 			"At least one W-2 with wages, Schedule C net profit, or foreign earned income is required")
@@ -159,7 +134,7 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 
 	// R0011: Form 2555 requires qualifying test
 	if hasForeignIncome {
-		qt := getStr(strInputs, forms.F2555QualifyingTest)
+		qt := forms.GetStr(strInputs, forms.F2555QualifyingTest)
 		if qt != "bona_fide_residence" && qt != "physical_presence" {
 			report.addResult("R0011", SeverityError, forms.F2555QualifyingTest,
 				"Form 2555 requires a qualifying test (bona_fide_residence or physical_presence)")
@@ -167,8 +142,8 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	}
 
 	// R0012: Physical presence test requires >= 330 days
-	if getStr(strInputs, forms.F2555QualifyingTest) == "physical_presence" {
-		days := getNum(results, forms.F2555QualifyingDays)
+	if forms.GetStr(strInputs, forms.F2555QualifyingTest) == "physical_presence" {
+		days := forms.GetNum(results, forms.F2555QualifyingDays)
 		if days < 330 {
 			report.addResult("R0012", SeverityError, forms.F2555PPTDaysPresent,
 				"Physical presence test requires at least 330 days in a foreign country")
@@ -176,16 +151,16 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	}
 
 	// R0013: FEIE cannot exceed the limit
-	exclusion := getNum(results, forms.F2555TotalExclusion)
-	limit := getNum(results, forms.F2555ExclusionLimit)
+	exclusion := forms.GetNum(results, forms.F2555TotalExclusion)
+	limit := forms.GetNum(results, forms.F2555ExclusionLimit)
 	if exclusion > 0 && limit > 0 && exclusion > limit+1 {
 		report.addResult("R0013", SeverityError, forms.F2555TotalExclusion,
 			"FEIE exclusion exceeds the annual limit")
 	}
 
 	// R0014: Form 8938 required if threshold met but not filed
-	if numExists(results, forms.F8938FilingRequired) && getNum(results, forms.F8938FilingRequired) == 1 {
-		totalMax := getNum(results, forms.F8938TotalMaxValue)
+	if forms.NumExists(results, forms.F8938FilingRequired) && forms.GetNum(results, forms.F8938FilingRequired) == 1 {
+		totalMax := forms.GetNum(results, forms.F8938TotalMaxValue)
 		if totalMax == 0 {
 			report.addResult("R0014", SeverityError, forms.F8938TotalMaxValue,
 				"Form 8938 filing is required but foreign asset values appear incomplete")
@@ -193,36 +168,36 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	}
 
 	// W0005: FBAR reminder if foreign accounts > $10,000
-	if getStr(strInputs, forms.SchedBLine7a) == "yes" {
+	if forms.GetStr(strInputs, forms.SchedBLine7a) == "yes" {
 		report.addResult("W0005", SeverityInfo, forms.SchedBLine7a,
 			"You indicated foreign accounts — remember to file FBAR (FinCEN 114) separately at bsaefiling.fincen.treas.gov if aggregate value exceeded $10,000")
 	}
 
 	// W0001: Charitable donations > 60% of AGI
-	agi := getNum(results, forms.F1040Line11)
-	charitable := getNum(results, forms.SchedALine12)
+	agi := forms.GetNum(results, forms.F1040Line11)
+	charitable := forms.GetNum(results, forms.SchedALine12)
 	if agi > 0 && charitable > 0.6*agi {
 		report.addResult("W0001", SeverityWarning, forms.SchedALine12,
 			"Charitable donations exceed 60% of AGI, which may trigger audit scrutiny")
 	}
 
 	// W0002: Medical expenses > 20% of AGI
-	medical := getNum(results, forms.SchedALine1)
+	medical := forms.GetNum(results, forms.SchedALine1)
 	if agi > 0 && medical > 0.2*agi {
 		report.addResult("W0002", SeverityWarning, forms.SchedALine1,
 			"Medical expenses exceed 20% of AGI, which is unusually high")
 	}
 
 	// W0003: Business expense ratio > 80% of revenue
-	bizRevenue := getNum(results, forms.SchedCLine7)
-	bizExpenses := getNum(results, forms.SchedCLine28)
+	bizRevenue := forms.GetNum(results, forms.SchedCLine7)
+	bizExpenses := forms.GetNum(results, forms.SchedCLine28)
 	if bizRevenue > 0 && bizExpenses > 0.8*bizRevenue {
 		report.addResult("W0003", SeverityWarning, forms.SchedCLine28,
 			"Business expenses exceed 80% of revenue, which may trigger audit scrutiny")
 	}
 
 	// W0004: SALT deduction at cap
-	salt := getNum(results, forms.SchedALine5d)
+	salt := forms.GetNum(results, forms.SchedALine5d)
 	if salt > 0 {
 		cap := 10000.0
 		if fs == "mfs" {
@@ -243,28 +218,28 @@ func ValidateCAReturn(results map[string]float64, strInputs map[string]string, t
 	var report ValidationReport
 
 	// R1001: CA AGI required
-	if !numExists(results, forms.CA540Line17) {
+	if !forms.NumExists(results, forms.CA540Line17) {
 		report.addResult("R1001", SeverityError, forms.CA540Line17,
 			"California AGI is required")
 	}
 
 	// R1002: CA total tax must be non-negative
-	if numExists(results, forms.CA540Line40) && getNum(results, forms.CA540Line40) < 0 {
+	if forms.NumExists(results, forms.CA540Line40) && forms.GetNum(results, forms.CA540Line40) < 0 {
 		report.addResult("R1002", SeverityError, forms.CA540Line40,
 			"California total tax must be non-negative")
 	}
 
 	// R1003: CA refund and amount owed can't both be positive
-	caRefund := getNum(results, forms.CA540Line75)
-	caOwed := getNum(results, forms.CA540Line81)
+	caRefund := forms.GetNum(results, forms.CA540Line75)
+	caOwed := forms.GetNum(results, forms.CA540Line81)
 	if caRefund > 0 && caOwed > 0 {
 		report.addResult("R1003", SeverityError, forms.CA540Line75,
 			"California refund and amount owed cannot both be positive")
 	}
 
 	// W1001: CA AGI differs from federal AGI by > $100,000
-	if numExists(results, forms.CA540Line17) && numExists(results, forms.F1040Line11) {
-		diff := math.Abs(getNum(results, forms.CA540Line17) - getNum(results, forms.F1040Line11))
+	if forms.NumExists(results, forms.CA540Line17) && forms.NumExists(results, forms.F1040Line11) {
+		diff := math.Abs(forms.GetNum(results, forms.CA540Line17) - forms.GetNum(results, forms.F1040Line11))
 		if diff > 100000 {
 			report.addResult("W1001", SeverityWarning, forms.CA540Line17,
 				"California AGI differs from federal AGI by more than $100,000")
@@ -272,16 +247,16 @@ func ValidateCAReturn(results map[string]float64, strInputs map[string]string, t
 	}
 
 	// R1004: CA Schedule CA must include FEIE add-back when FEIE is claimed
-	feieExclusion := getNum(results, forms.F2555TotalExclusion)
-	feieAddBack := getNum(results, forms.SchedCALine8dColC)
+	feieExclusion := forms.GetNum(results, forms.F2555TotalExclusion)
+	feieAddBack := forms.GetNum(results, forms.SchedCALine8dColC)
 	if feieExclusion > 0 && math.Abs(feieAddBack-feieExclusion) > 1.0 {
 		report.addResult("R1004", SeverityError, forms.SchedCALine8dColC,
 			"CA Schedule CA FEIE add-back must equal the federal FEIE exclusion amount")
 	}
 
 	// W1002: CA effective tax rate > 13.3%
-	caAGI := getNum(results, forms.CA540Line17)
-	caTax := getNum(results, forms.CA540Line40)
+	caAGI := forms.GetNum(results, forms.CA540Line17)
+	caTax := forms.GetNum(results, forms.CA540Line40)
 	if caAGI > 0 && caTax/caAGI > 0.133 {
 		report.addResult("W1002", SeverityWarning, forms.CA540Line40,
 			"California effective tax rate exceeds 13.3%; verify mental health surcharge is correct")
@@ -289,6 +264,17 @@ func ValidateCAReturn(results map[string]float64, strInputs map[string]string, t
 
 	report.computeValidity()
 	return report
+}
+
+// FullValidation runs validation and reasonableness checks, returning a unified report.
+func FullValidation(results map[string]float64, strInputs map[string]string, taxYear int, includeCA bool) ValidationReport {
+	validation := ValidateFull(results, strInputs, taxYear, includeCA)
+	reasonableness := ReasonablenessCheck(results, strInputs, taxYear, includeCA)
+	merged := ValidationReport{
+		Results: append(validation.Results, reasonableness.Results...),
+	}
+	merged.computeValidity()
+	return merged
 }
 
 // ValidateFull runs both federal and CA validation, merging results.

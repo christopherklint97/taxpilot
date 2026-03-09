@@ -51,6 +51,24 @@ func (d DepValues) Get(key string) float64 {
 	return d.values[key]
 }
 
+// GetStrict returns the float64 value for the given key, or an error if the key doesn't exist.
+func (d DepValues) GetStrict(key string) (float64, error) {
+	v, ok := d.values[key]
+	if !ok {
+		return 0, fmt.Errorf("dependency key %q not found in DepValues", key)
+	}
+	return v, nil
+}
+
+// Keys returns all available numeric keys in the DepValues.
+func (d DepValues) Keys() []string {
+	keys := make([]string, 0, len(d.values))
+	for k := range d.values {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // GetString returns the string value for the given key, or "" if not found.
 func (d DepValues) GetString(key string) string {
 	return d.strValues[key]
@@ -158,25 +176,54 @@ func matchWildcard(pattern, s string) bool {
 	return true
 }
 
+// FieldValueType indicates the data type of a field's value.
+type FieldValueType int
+
+const (
+	NumericValue FieldValueType = iota // default: numeric/currency
+	StringValue                        // text input (names, SSN, EIN, etc.)
+)
+
 // FieldDef defines a single field on a tax form.
 type FieldDef struct {
 	Line       string
 	Type       FieldType
+	ValueType  FieldValueType          // NumericValue or StringValue
 	Label      string
-	Prompt     string                // human-readable question (for UserInput)
-	DependsOn  []string              // field keys this depends on (form_id:line format)
-	Options    []string              // for enum-type UserInput fields
+	Prompt     string                  // human-readable question (for UserInput)
+	DependsOn  []string               // field keys this depends on (form_id:line format)
+	Options    []string               // for enum-type UserInput fields
 	Compute    func(DepValues) float64 // for Computed/FederalRef/Lookup fields
 	ComputeStr func(DepValues) string  // for string-valued computed fields
 }
 
 // FormDef defines a complete tax form.
 type FormDef struct {
-	ID           FormID
-	Name         string
-	Jurisdiction Jurisdiction
-	TaxYears     []int
-	Fields       []FieldDef
+	ID            FormID
+	Name          string
+	Jurisdiction  Jurisdiction
+	TaxYears      []int
+	Fields        []FieldDef
+	QuestionGroup string // e.g., "personal", "income_w2", "expat", "ca"
+	QuestionOrder int    // sort order within group (lower = earlier)
+
+	fieldIndex map[string]int // lazily built: line -> index in Fields
+}
+
+// FieldByLine returns the FieldDef for the given line, or nil if not found.
+// The first call builds an internal index for O(1) lookups on subsequent calls.
+func (f *FormDef) FieldByLine(line string) *FieldDef {
+	if f.fieldIndex == nil {
+		f.fieldIndex = make(map[string]int, len(f.Fields))
+		for i := range f.Fields {
+			f.fieldIndex[f.Fields[i].Line] = i
+		}
+	}
+	idx, ok := f.fieldIndex[line]
+	if !ok {
+		return nil
+	}
+	return &f.Fields[idx]
 }
 
 // FieldKey returns the fully qualified key for a field: "form_id:line".

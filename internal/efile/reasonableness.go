@@ -2,9 +2,10 @@ package efile
 
 import (
 	"fmt"
+	"math"
 
 	"taxpilot/internal/forms"
-	"math"
+	"taxpilot/pkg/taxmath"
 )
 
 // ReasonablenessCheck validates computed tax return values for internal
@@ -14,15 +15,16 @@ import (
 func ReasonablenessCheck(results map[string]float64, strInputs map[string]string, taxYear int, includeCA bool) ValidationReport {
 	var report ValidationReport
 
-	filingStatus := getStr(strInputs, forms.F1040FilingStatus)
+	cfg := taxmath.GetConfigOrDefault(taxYear)
+	filingStatus := forms.GetStr(strInputs, forms.F1040FilingStatus)
 
 	// --- Cross-check computed values ---
 
 	// RC001: AGI should equal total income minus adjustments
-	if numExists(results, forms.F1040Line11) && numExists(results, forms.F1040Line9) {
-		agi := getNum(results, forms.F1040Line11)
-		totalIncome := getNum(results, forms.F1040Line9)
-		adjustments := getNum(results, forms.Sched1Line26) // 0 if not present
+	if forms.NumExists(results, forms.F1040Line11) && forms.NumExists(results, forms.F1040Line9) {
+		agi := forms.GetNum(results, forms.F1040Line11)
+		totalIncome := forms.GetNum(results, forms.F1040Line9)
+		adjustments := forms.GetNum(results, forms.Sched1Line26) // 0 if not present
 		expected := totalIncome - adjustments
 		if math.Abs(agi-expected) > 1.0 {
 			report.addResult("RC001", SeverityWarning, forms.F1040Line11,
@@ -31,13 +33,13 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC002: Taxable income should equal AGI minus deduction
-	if numExists(results, forms.F1040Line15) && numExists(results, forms.F1040Line11) {
-		taxableIncome := getNum(results, forms.F1040Line15)
-		agi := getNum(results, forms.F1040Line11)
+	if forms.NumExists(results, forms.F1040Line15) && forms.NumExists(results, forms.F1040Line11) {
+		taxableIncome := forms.GetNum(results, forms.F1040Line15)
+		agi := forms.GetNum(results, forms.F1040Line11)
 		// Use itemized deduction if present, otherwise standard deduction
-		deduction := getNum(results, forms.F1040Line12)
-		if numExists(results, forms.SchedALine17) && getNum(results, forms.SchedALine17) > 0 {
-			deduction = getNum(results, forms.SchedALine17)
+		deduction := forms.GetNum(results, forms.F1040Line12)
+		if forms.NumExists(results, forms.SchedALine17) && forms.GetNum(results, forms.SchedALine17) > 0 {
+			deduction = forms.GetNum(results, forms.SchedALine17)
 		}
 		expected := agi - deduction
 		if expected < 0 {
@@ -50,10 +52,10 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC003: Refund should equal payments minus tax when payments > tax
-	if numExists(results, forms.F1040Line34) && numExists(results, forms.F1040Line33) && numExists(results, forms.F1040Line24) {
-		refund := getNum(results, forms.F1040Line34)
-		payments := getNum(results, forms.F1040Line33)
-		tax := getNum(results, forms.F1040Line24)
+	if forms.NumExists(results, forms.F1040Line34) && forms.NumExists(results, forms.F1040Line33) && forms.NumExists(results, forms.F1040Line24) {
+		refund := forms.GetNum(results, forms.F1040Line34)
+		payments := forms.GetNum(results, forms.F1040Line33)
+		tax := forms.GetNum(results, forms.F1040Line24)
 		if payments > tax && refund > 0 {
 			expected := payments - tax
 			if math.Abs(refund-expected) > 1.0 {
@@ -64,10 +66,10 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC004: Amount owed should equal tax minus payments when tax > payments
-	if numExists(results, forms.F1040Line37) && numExists(results, forms.F1040Line33) && numExists(results, forms.F1040Line24) {
-		owed := getNum(results, forms.F1040Line37)
-		payments := getNum(results, forms.F1040Line33)
-		tax := getNum(results, forms.F1040Line24)
+	if forms.NumExists(results, forms.F1040Line37) && forms.NumExists(results, forms.F1040Line33) && forms.NumExists(results, forms.F1040Line24) {
+		owed := forms.GetNum(results, forms.F1040Line37)
+		payments := forms.GetNum(results, forms.F1040Line33)
+		tax := forms.GetNum(results, forms.F1040Line24)
 		if tax > payments && owed > 0 {
 			expected := tax - payments
 			if math.Abs(owed-expected) > 1.0 {
@@ -80,9 +82,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	// --- Flag unusual values (audit triggers) ---
 
 	// RC005: Home office deduction > 30% of business income
-	if numExists(results, forms.FK(forms.FormScheduleC, "30")) && numExists(results, forms.SchedCLine7) {
-		homeOffice := getNum(results, forms.FK(forms.FormScheduleC, "30"))
-		bizIncome := getNum(results, forms.SchedCLine7)
+	if forms.NumExists(results, forms.FK(forms.FormScheduleC, "30")) && forms.NumExists(results, forms.SchedCLine7) {
+		homeOffice := forms.GetNum(results, forms.FK(forms.FormScheduleC, "30"))
+		bizIncome := forms.GetNum(results, forms.SchedCLine7)
 		if bizIncome > 0 && homeOffice > 0.3*bizIncome {
 			report.addResult("RC005", SeverityWarning, forms.FK(forms.FormScheduleC, "30"),
 				"Home office deduction is large relative to business income")
@@ -90,9 +92,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC006: Self-employment income > $400 but no SE tax
-	if numExists(results, forms.SchedCLine31) {
-		seIncome := getNum(results, forms.SchedCLine31)
-		seTax := getNum(results, forms.FK(forms.FormSchedule2, "4"))
+	if forms.NumExists(results, forms.SchedCLine31) {
+		seIncome := forms.GetNum(results, forms.SchedCLine31)
+		seTax := forms.GetNum(results, forms.FK(forms.FormSchedule2, "4"))
 		if seIncome > 400 && seTax == 0 {
 			report.addResult("RC006", SeverityWarning, forms.FK(forms.FormSchedule2, "4"),
 				"Self-employment income present but no SE tax computed")
@@ -100,16 +102,13 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC007: HSA contributions exceed IRS limits
-	if numExists(results, forms.F8889Line2) {
-		hsaContrib := getNum(results, forms.F8889Line2)
-		// 2025 limits
-		singleLimit := 4300.0
-		familyLimit := 8550.0
+	if forms.NumExists(results, forms.F8889Line2) {
+		hsaContrib := forms.GetNum(results, forms.F8889Line2)
 		if hsaContrib > 0 {
-			limit := singleLimit
+			limit := cfg.HSALimitSelfOnly
 			label := "single"
 			if filingStatus == "mfj" || filingStatus == "mfs" {
-				limit = familyLimit
+				limit = cfg.HSALimitFamily
 				label = "family"
 			}
 			if hsaContrib > limit {
@@ -120,12 +119,12 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC008: Capital losses exceed limit
-	if numExists(results, forms.FK(forms.FormScheduleD, "21")) {
-		capLoss := getNum(results, forms.FK(forms.FormScheduleD, "21"))
+	if forms.NumExists(results, forms.FK(forms.FormScheduleD, "21")) {
+		capLoss := forms.GetNum(results, forms.FK(forms.FormScheduleD, "21"))
 		if capLoss < 0 {
-			limit := -3000.0
+			limit := cfg.CapitalLossLimit
 			if filingStatus == "mfs" {
-				limit = -1500.0
+				limit = cfg.CapitalLossLimitMFS
 			}
 			if capLoss < limit {
 				report.addResult("RC008", SeverityWarning, forms.FK(forms.FormScheduleD, "21"),
@@ -135,9 +134,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC009: Estimated tax payments exceed total tax
-	if numExists(results, forms.Sched3Line8) && numExists(results, forms.F1040Line24) {
-		estimated := getNum(results, forms.Sched3Line8)
-		totalTax := getNum(results, forms.F1040Line24)
+	if forms.NumExists(results, forms.Sched3Line8) && forms.NumExists(results, forms.F1040Line24) {
+		estimated := forms.GetNum(results, forms.Sched3Line8)
+		totalTax := forms.GetNum(results, forms.F1040Line24)
 		if estimated > 0 && estimated > totalTax {
 			report.addResult("RC009", SeverityInfo, forms.Sched3Line8,
 				"Estimated payments exceed total tax; verify amounts")
@@ -145,10 +144,10 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC010: Effective federal tax rate > 37%
-	if numExists(results, forms.F1040Line24) && numExists(results, forms.F1040Line11) {
-		totalTax := getNum(results, forms.F1040Line24)
-		agi := getNum(results, forms.F1040Line11)
-		if agi > 0 && totalTax/agi > 0.37 {
+	if forms.NumExists(results, forms.F1040Line24) && forms.NumExists(results, forms.F1040Line11) {
+		totalTax := forms.GetNum(results, forms.F1040Line24)
+		agi := forms.GetNum(results, forms.F1040Line11)
+		if agi > 0 && totalTax/agi > cfg.MaxEffectiveTaxRate {
 			report.addResult("RC010", SeverityWarning, forms.F1040Line24,
 				"Effective tax rate exceeds highest bracket")
 		}
@@ -157,9 +156,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	// --- CA consistency checks ---
 	if includeCA {
 		// RC011: CA AGI differs significantly from federal AGI
-		if numExists(results, forms.CA540Line17) && numExists(results, forms.F1040Line11) {
-			caAGI := getNum(results, forms.CA540Line17)
-			fedAGI := getNum(results, forms.F1040Line11)
+		if forms.NumExists(results, forms.CA540Line17) && forms.NumExists(results, forms.F1040Line11) {
+			caAGI := forms.GetNum(results, forms.CA540Line17)
+			fedAGI := forms.GetNum(results, forms.F1040Line11)
 			diff := math.Abs(caAGI - fedAGI)
 			if fedAGI > 0 && diff > 0.2*math.Abs(fedAGI) && diff > 5000 {
 				report.addResult("RC011", SeverityInfo, forms.CA540Line17,
@@ -168,13 +167,13 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 		}
 
 		// RC012: CA tax should be <= 13.3% of taxable income + 1% mental health surcharge on amount > $1M
-		if numExists(results, forms.CA540Line31) && numExists(results, forms.CA540Line19) {
-			caTax := getNum(results, forms.CA540Line31)
-			caTaxableIncome := getNum(results, forms.CA540Line19)
+		if forms.NumExists(results, forms.CA540Line31) && forms.NumExists(results, forms.CA540Line19) {
+			caTax := forms.GetNum(results, forms.CA540Line31)
+			caTaxableIncome := forms.GetNum(results, forms.CA540Line19)
 			if caTaxableIncome > 0 {
-				maxTax := 0.133 * caTaxableIncome
-				if caTaxableIncome > 1000000 {
-					maxTax += 0.01 * (caTaxableIncome - 1000000)
+				maxTax := cfg.CAMaxMarginalRate * caTaxableIncome
+				if caTaxableIncome > cfg.CAMentalHealthThreshold {
+					maxTax += cfg.CAMentalHealthRate * (caTaxableIncome - cfg.CAMentalHealthThreshold)
 				}
 				if caTax > maxTax {
 					report.addResult("RC012", SeverityWarning, forms.CA540Line31,
@@ -184,19 +183,19 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 		}
 
 		// RC013: HSA add-back on Schedule CA
-		if numExists(results, forms.F8889Line2) && getNum(results, forms.F8889Line2) > 0 {
-			if !numExists(results, forms.FK(forms.FormScheduleCA, "15_col_c")) || getNum(results, forms.FK(forms.FormScheduleCA, "15_col_c")) <= 0 {
+		if forms.NumExists(results, forms.F8889Line2) && forms.GetNum(results, forms.F8889Line2) > 0 {
+			if !forms.NumExists(results, forms.FK(forms.FormScheduleCA, "15_col_c")) || forms.GetNum(results, forms.FK(forms.FormScheduleCA, "15_col_c")) <= 0 {
 				report.addResult("RC013", SeverityInfo, forms.FK(forms.FormScheduleCA, "15_col_c"),
 					"HSA contributions taken federally but no CA Schedule CA add-back found; CA does not conform to federal HSA deduction")
 			}
 		}
 
 		// RC014: QBI deduction should not carry to CA
-		if numExists(results, forms.FK(forms.FormF8995, "15")) && getNum(results, forms.FK(forms.FormF8995, "15")) > 0 {
-			if numExists(results, forms.CA540Line18) {
-				caDeduction := getNum(results, forms.CA540Line18)
-				fedDeduction := getNum(results, forms.F1040Line12)
-				qbi := getNum(results, forms.FK(forms.FormF8995, "15"))
+		if forms.NumExists(results, forms.FK(forms.FormF8995, "15")) && forms.GetNum(results, forms.FK(forms.FormF8995, "15")) > 0 {
+			if forms.NumExists(results, forms.CA540Line18) {
+				caDeduction := forms.GetNum(results, forms.CA540Line18)
+				fedDeduction := forms.GetNum(results, forms.F1040Line12)
+				qbi := forms.GetNum(results, forms.FK(forms.FormF8995, "15"))
 				// If CA deduction includes QBI, it would be close to federal deduction
 				// CA should not include QBI, so CA deduction should be less
 				if fedDeduction > 0 && caDeduction >= fedDeduction && qbi > 0 {
@@ -210,8 +209,8 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	// --- Expat reasonableness checks ---
 
 	// RC015: FEIE claimed but low qualifying days
-	if numExists(results, forms.F2555TotalExclusion) && getNum(results, forms.F2555TotalExclusion) > 0 {
-		days := getNum(results, forms.F2555QualifyingDays)
+	if forms.NumExists(results, forms.F2555TotalExclusion) && forms.GetNum(results, forms.F2555TotalExclusion) > 0 {
+		days := forms.GetNum(results, forms.F2555QualifyingDays)
 		if days > 0 && days < 330 {
 			report.addResult("RC015", SeverityWarning, forms.F2555QualifyingDays,
 				fmt.Sprintf("FEIE claimed with only %d qualifying days; full exclusion requires 365 days (BFRT) or 330 days (PPT)", int(days)))
@@ -219,9 +218,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC016: FTC exceeds 50% of foreign income
-	if numExists(results, forms.F1116Line22) && numExists(results, forms.F1116Line7) {
-		ftc := getNum(results, forms.F1116Line22)
-		foreignIncome := getNum(results, forms.F1116Line7)
+	if forms.NumExists(results, forms.F1116Line22) && forms.NumExists(results, forms.F1116Line7) {
+		ftc := forms.GetNum(results, forms.F1116Line22)
+		foreignIncome := forms.GetNum(results, forms.F1116Line7)
 		if foreignIncome > 0 && ftc > 0.5*foreignIncome {
 			report.addResult("RC016", SeverityWarning, forms.F1116Line22,
 				"Foreign tax credit exceeds 50% of foreign source income; verify foreign taxes paid")
@@ -229,9 +228,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC017: FEIE + FTC no double benefit check
-	if numExists(results, forms.F2555TotalExclusion) && numExists(results, forms.F1116Line22) {
-		feie := getNum(results, forms.F2555TotalExclusion)
-		ftc := getNum(results, forms.F1116Line22)
+	if forms.NumExists(results, forms.F2555TotalExclusion) && forms.NumExists(results, forms.F1116Line22) {
+		feie := forms.GetNum(results, forms.F2555TotalExclusion)
+		ftc := forms.GetNum(results, forms.F1116Line22)
 		if feie > 0 && ftc > 0 {
 			report.addResult("RC017", SeverityInfo, forms.F1116Line22,
 				"Both FEIE and FTC claimed — verify FTC applies only to income NOT excluded by FEIE")
@@ -239,9 +238,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 	}
 
 	// RC018: FATCA value fluctuation (max value >> year-end value)
-	if numExists(results, forms.F8938TotalMaxValue) && numExists(results, forms.F8938TotalYearEndValue) {
-		maxVal := getNum(results, forms.F8938TotalMaxValue)
-		yearEnd := getNum(results, forms.F8938TotalYearEndValue)
+	if forms.NumExists(results, forms.F8938TotalMaxValue) && forms.NumExists(results, forms.F8938TotalYearEndValue) {
+		maxVal := forms.GetNum(results, forms.F8938TotalMaxValue)
+		yearEnd := forms.GetNum(results, forms.F8938TotalYearEndValue)
 		if yearEnd > 0 && maxVal > 3*yearEnd {
 			report.addResult("RC018", SeverityInfo, forms.F8938TotalMaxValue,
 				fmt.Sprintf("Peak foreign asset value ($%.0f) is more than 3x year-end value ($%.0f); verify values", maxVal, yearEnd))
@@ -250,9 +249,9 @@ func ReasonablenessCheck(results map[string]float64, strInputs map[string]string
 
 	if includeCA {
 		// RC019: CA FEIE add-back equals federal FEIE
-		if numExists(results, forms.F2555TotalExclusion) && getNum(results, forms.F2555TotalExclusion) > 0 {
-			feie := getNum(results, forms.F2555TotalExclusion)
-			addBack := getNum(results, forms.SchedCALine8dColC)
+		if forms.NumExists(results, forms.F2555TotalExclusion) && forms.GetNum(results, forms.F2555TotalExclusion) > 0 {
+			feie := forms.GetNum(results, forms.F2555TotalExclusion)
+			addBack := forms.GetNum(results, forms.SchedCALine8dColC)
 			if math.Abs(addBack-feie) > 1.0 {
 				report.addResult("RC019", SeverityWarning, forms.SchedCALine8dColC,
 					fmt.Sprintf("CA FEIE add-back ($%.0f) does not match federal FEIE ($%.0f)", addBack, feie))

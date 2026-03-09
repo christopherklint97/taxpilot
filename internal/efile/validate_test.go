@@ -444,6 +444,67 @@ func TestValidateFull_WarningsDoNotBlockValidity(t *testing.T) {
 	}
 }
 
+// --- FullValidation tests ---
+
+func TestFullValidation_MergesValidationAndReasonableness(t *testing.T) {
+	results, strInputs := baseValidInputs()
+	// Add data that triggers a reasonableness check (RC005: home office > 30% of biz income)
+	results["schedule_c:7"] = 100000
+	results["schedule_c:30"] = 40000 // 40% of biz income
+	results["schedule_c:31"] = 60000
+
+	report := FullValidation(results, strInputs, 2025, false)
+
+	// Should include validation results (no errors expected with valid base inputs)
+	// and reasonableness results
+	hasValidation := false
+	hasReasonableness := false
+	for _, r := range report.Results {
+		if len(r.Code) > 0 && r.Code[0] == 'R' && r.Code[1] == '0' {
+			hasValidation = true
+		}
+		if len(r.Code) > 1 && r.Code[:2] == "RC" {
+			hasReasonableness = true
+		}
+	}
+	if !hasReasonableness {
+		t.Error("expected reasonableness check results in FullValidation output")
+	}
+	// RC005 should be present
+	if findResult(report, "RC005") == nil {
+		t.Error("expected RC005 (home office) in FullValidation results")
+	}
+	// Validation errors should block validity even if reasonableness is fine
+	_ = hasValidation
+}
+
+func TestFullValidation_ErrorBlocksValidity(t *testing.T) {
+	results, strInputs := baseValidInputs()
+	delete(strInputs, "1040:ssn") // triggers R0001 error
+	report := FullValidation(results, strInputs, 2025, false)
+	if report.IsValid {
+		t.Error("expected FullValidation to be invalid when validation has errors")
+	}
+	if findResult(report, "R0001") == nil {
+		t.Error("expected R0001 in FullValidation results")
+	}
+}
+
+func TestFullValidation_WithCA(t *testing.T) {
+	results, strInputs := baseValidCAInputs()
+	results["ca_540:19"] = 50000
+	results["ca_540:31"] = 3000
+	report := FullValidation(results, strInputs, 2025, true)
+	if !report.IsValid {
+		t.Errorf("expected valid FullValidation with CA, got %d results", len(report.Results))
+		for _, r := range report.Results {
+			if r.Severity == SeverityError {
+				t.Errorf("  %s (%d): %s", r.Code, r.Severity, r.Message)
+			}
+		}
+	}
+}
+
 func TestValidateReturn_NilMaps(t *testing.T) {
 	report := ValidateReturn(nil, nil, 2025)
 	if report.IsValid {

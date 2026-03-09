@@ -2,12 +2,16 @@ package interview
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
 	"taxpilot/internal/forms"
-	"taxpilot/internal/forms/federal"
-	"taxpilot/internal/forms/inputs"
+	// Blank imports ensure init() fires in each form package,
+	// registering all forms via forms.RegisterForm.
+	_ "taxpilot/internal/forms/federal"
+	_ "taxpilot/internal/forms/inputs"
+	"taxpilot/internal/forms/state"
 	"taxpilot/internal/forms/state/ca"
 )
 
@@ -49,44 +53,10 @@ type Question struct {
 	FormName string   // which form this belongs to
 }
 
-// stringFields are field lines that should be treated as string inputs
-// rather than numeric.
-var stringFields = map[string]bool{
-	"first_name":    true,
-	"last_name":     true,
-	"ssn":           true,
-	"employer_name": true,
-	"employer_ein":  true,
-	"payer_name":    true,
-	"payer_tin":     true,
-	"business_name": true,
-	"business_code": true,
-	"description":   true,
-	"date_acquired": true,
-	"date_sold":     true,
-	"6_yctc":                true,
-	"foreign_country":       true,
-	"foreign_address":       true,
-	"employer_name_2555":    true,
-	"employer_foreign":      true,
-	"self_employed_abroad":  true,
-	"qualifying_test":       true,
-	"bfrt_start_date":       true,
-	"bfrt_end_date":         true,
-	"bfrt_full_year":        true,
-	"ppt_period_start":      true,
-	"ppt_period_end":        true,
-	"currency_code":         true,
-	"accrued_or_paid":       true,
-	"7b":                            true,
-	"lives_abroad":                  true,
-	"account_country":               true,
-	"account_institution":           true,
-	"account_type":                  true,
-	"treaty_country":                true,
-	"treaty_article":                true,
-	"irc_provision":                 true,
-	"treaty_position_explanation":   true,
+// isStringField checks whether a field should be treated as string input
+// based on its ValueType metadata or Options list.
+func isStringField(field *forms.FieldDef) bool {
+	return field.ValueType == forms.StringValue || len(field.Options) > 0
 }
 
 // NewEngine creates a new Engine, registers all forms, builds the dependency
@@ -268,9 +238,15 @@ func formatCurrency(amount float64) string {
 }
 
 // buildQuestions collects all UserInput fields and orders them logically.
+// Ordering is driven by the QuestionGroup and QuestionOrder metadata on each
+// FormDef, with special sub-ordering for personal identification fields and
+// employer/payer info fields within their respective groups.
 func (e *Engine) buildQuestions() {
+	// Special buckets for sub-ordering within "personal" group
 	var filingStatus []Question
 	var personalInfo []Question
+
+	// Special buckets for sub-ordering within input form groups
 	var employerInfo []Question
 	var w2Financial []Question
 	var f1099intInfo []Question
@@ -281,16 +257,10 @@ func (e *Engine) buildQuestions() {
 	var f1099necFinancial []Question
 	var f1099bInfo []Question
 	var f1099bFinancial []Question
-	var scheduleCQuestions []Question
-	var form2555Questions []Question
-	var form1116Questions []Question
-	var form8938Questions []Question
-	var form8833Questions []Question
-	var form8889Questions []Question
-	var scheduleAQuestions []Question
-	var form3514Questions []Question
-	var form3853Questions []Question
-	var remaining []Question
+
+	// Group-based buckets keyed by QuestionGroup
+	groupBuckets := make(map[string][]Question)
+	groupOrder := make(map[string]int)
 
 	for _, form := range e.registry.AllForms() {
 		for _, field := range form.Fields {
@@ -299,7 +269,7 @@ func (e *Engine) buildQuestions() {
 			}
 
 			key := forms.FieldKey(form.ID, field.Line)
-			isStr := stringFields[field.Line] || len(field.Options) > 0
+			isStr := isStringField(&field)
 
 			q := Question{
 				Key:      key,
@@ -310,52 +280,75 @@ func (e *Engine) buildQuestions() {
 				FormName: form.Name,
 			}
 
-			// Categorize for ordering
-			switch {
-			case field.Line == "filing_status":
-				filingStatus = append(filingStatus, q)
-			case field.Line == "first_name" || field.Line == "last_name" || field.Line == "ssn":
-				personalInfo = append(personalInfo, q)
-			case field.Line == "employer_name" || field.Line == "employer_ein":
-				employerInfo = append(employerInfo, q)
-			case form.ID == forms.FormW2:
-				w2Financial = append(w2Financial, q)
-			case form.ID == forms.Form1099INT && (field.Line == "payer_name" || field.Line == "payer_tin"):
-				f1099intInfo = append(f1099intInfo, q)
-			case form.ID == forms.Form1099INT:
-				f1099intFinancial = append(f1099intFinancial, q)
-			case form.ID == forms.Form1099DIV && (field.Line == "payer_name" || field.Line == "payer_tin"):
-				f1099divInfo = append(f1099divInfo, q)
-			case form.ID == forms.Form1099DIV:
-				f1099divFinancial = append(f1099divFinancial, q)
-			case form.ID == forms.Form1099NEC && (field.Line == "payer_name" || field.Line == "payer_tin"):
-				f1099necInfo = append(f1099necInfo, q)
-			case form.ID == forms.Form1099NEC:
-				f1099necFinancial = append(f1099necFinancial, q)
-			case form.ID == forms.Form1099B && (field.Line == "description" || field.Line == "date_acquired" || field.Line == "date_sold"):
-				f1099bInfo = append(f1099bInfo, q)
-			case form.ID == forms.Form1099B:
-				f1099bFinancial = append(f1099bFinancial, q)
-			case form.ID == forms.FormScheduleC:
-				scheduleCQuestions = append(scheduleCQuestions, q)
-			case form.ID == forms.FormF2555:
-				form2555Questions = append(form2555Questions, q)
-			case form.ID == forms.FormF1116:
-				form1116Questions = append(form1116Questions, q)
-			case form.ID == forms.FormF8938:
-				form8938Questions = append(form8938Questions, q)
-			case form.ID == forms.FormF8833:
-				form8833Questions = append(form8833Questions, q)
-			case form.ID == forms.FormF8889:
-				form8889Questions = append(form8889Questions, q)
-			case form.ID == forms.FormScheduleA || form.ID == forms.FormSchedule3:
-				scheduleAQuestions = append(scheduleAQuestions, q)
-			case form.ID == forms.FormF3514:
-				form3514Questions = append(form3514Questions, q)
-			case form.ID == forms.FormF3853:
-				form3853Questions = append(form3853Questions, q)
-			default:
-				remaining = append(remaining, q)
+			group := form.QuestionGroup
+
+			// Special sub-ordering for personal identification fields
+			if group == "personal" {
+				switch {
+				case field.Line == "filing_status":
+					filingStatus = append(filingStatus, q)
+				case field.Line == "first_name" || field.Line == "last_name" || field.Line == "ssn":
+					personalInfo = append(personalInfo, q)
+				default:
+					// Other personal fields go into the general personal bucket
+					groupBuckets[group] = append(groupBuckets[group], q)
+					groupOrder[group] = form.QuestionOrder
+				}
+				continue
+			}
+
+			// Special sub-ordering for W-2 employer info
+			if group == "income_w2" {
+				switch {
+				case field.Line == "employer_name" || field.Line == "employer_ein":
+					employerInfo = append(employerInfo, q)
+				default:
+					w2Financial = append(w2Financial, q)
+				}
+				continue
+			}
+
+			// Special sub-ordering for 1099 payer info
+			if group == "income_1099" {
+				switch form.ID {
+				case forms.Form1099INT:
+					if field.Line == "payer_name" || field.Line == "payer_tin" {
+						f1099intInfo = append(f1099intInfo, q)
+					} else {
+						f1099intFinancial = append(f1099intFinancial, q)
+					}
+				case forms.Form1099DIV:
+					if field.Line == "payer_name" || field.Line == "payer_tin" {
+						f1099divInfo = append(f1099divInfo, q)
+					} else {
+						f1099divFinancial = append(f1099divFinancial, q)
+					}
+				case forms.Form1099NEC:
+					if field.Line == "payer_name" || field.Line == "payer_tin" {
+						f1099necInfo = append(f1099necInfo, q)
+					} else {
+						f1099necFinancial = append(f1099necFinancial, q)
+					}
+				case forms.Form1099B:
+					if field.Line == "description" || field.Line == "date_acquired" || field.Line == "date_sold" {
+						f1099bInfo = append(f1099bInfo, q)
+					} else {
+						f1099bFinancial = append(f1099bFinancial, q)
+					}
+				default:
+					groupBuckets[group] = append(groupBuckets[group], q)
+					groupOrder[group] = form.QuestionOrder
+				}
+				continue
+			}
+
+			// All other groups: use QuestionGroup metadata
+			if group == "" {
+				group = "zzz_remaining" // unknown groups sort last
+			}
+			groupBuckets[group] = append(groupBuckets[group], q)
+			if _, ok := groupOrder[group]; !ok {
+				groupOrder[group] = form.QuestionOrder
 			}
 		}
 	}
@@ -366,32 +359,56 @@ func (e *Engine) buildQuestions() {
 	employerInfo = sortByLineOrder(employerInfo, []string{"employer_name", "employer_ein"})
 	f1099intInfo = sortByLineOrder(f1099intInfo, []string{"payer_name", "payer_tin"})
 	f1099divInfo = sortByLineOrder(f1099divInfo, []string{"payer_name", "payer_tin"})
+	f1099necInfo = sortByLineOrder(f1099necInfo, []string{"payer_name", "payer_tin"})
+	f1099bInfo = sortByLineOrder(f1099bInfo, []string{"description", "date_acquired", "date_sold"})
 
+	// Build the final question list: special buckets first, then group-based
 	e.questions = nil
+
+	// Personal group (special sub-ordering)
 	e.questions = append(e.questions, filingStatus...)
 	e.questions = append(e.questions, personalInfo...)
+
+	// W-2 group (special sub-ordering)
 	e.questions = append(e.questions, employerInfo...)
 	e.questions = append(e.questions, w2Financial...)
+
+	// 1099 group (special sub-ordering)
 	e.questions = append(e.questions, f1099intInfo...)
 	e.questions = append(e.questions, f1099intFinancial...)
 	e.questions = append(e.questions, f1099divInfo...)
 	e.questions = append(e.questions, f1099divFinancial...)
-	f1099necInfo = sortByLineOrder(f1099necInfo, []string{"payer_name", "payer_tin"})
 	e.questions = append(e.questions, f1099necInfo...)
 	e.questions = append(e.questions, f1099necFinancial...)
-	f1099bInfo = sortByLineOrder(f1099bInfo, []string{"description", "date_acquired", "date_sold"})
 	e.questions = append(e.questions, f1099bInfo...)
 	e.questions = append(e.questions, f1099bFinancial...)
-	e.questions = append(e.questions, form2555Questions...)
-	e.questions = append(e.questions, form1116Questions...)
-	e.questions = append(e.questions, form8938Questions...)
-	e.questions = append(e.questions, form8833Questions...)
-	e.questions = append(e.questions, scheduleCQuestions...)
-	e.questions = append(e.questions, form8889Questions...)
-	e.questions = append(e.questions, scheduleAQuestions...)
-	e.questions = append(e.questions, form3514Questions...)
-	e.questions = append(e.questions, form3853Questions...)
-	e.questions = append(e.questions, remaining...)
+
+	// Remaining groups sorted by QuestionOrder
+	type groupEntry struct {
+		name  string
+		order int
+		qs    []Question
+	}
+	var groups []groupEntry
+	for name, qs := range groupBuckets {
+		// Skip groups already handled via special buckets
+		if name == "personal" || name == "income_w2" || name == "income_1099" {
+			// These may have overflow questions from the general personal bucket
+			e.questions = append(e.questions, qs...)
+			continue
+		}
+		groups = append(groups, groupEntry{name: name, order: groupOrder[name], qs: qs})
+	}
+	sort.Slice(groups, func(i, j int) bool {
+		if groups[i].order != groups[j].order {
+			return groups[i].order < groups[j].order
+		}
+		return groups[i].name < groups[j].name
+	})
+	for _, g := range groups {
+		e.questions = append(e.questions, g.qs...)
+	}
+
 	e.current = 0
 }
 
@@ -595,35 +612,16 @@ func (e *Engine) Progress() (current int, total int) {
 }
 
 // SetupRegistry creates a Registry with all known forms registered.
+// Forms are auto-registered via init() functions in each form package.
+// The blank imports below ensure every form package is linked and its
+// init() fires before this function is called.
 func SetupRegistry() *forms.Registry {
-	reg := forms.NewRegistry()
-	// Input forms
-	reg.Register(inputs.W2())
-	reg.Register(inputs.F1099INT())
-	reg.Register(inputs.F1099DIV())
-	reg.Register(inputs.F1099NEC())
-	reg.Register(inputs.F1099B())
-	// Federal forms
-	reg.Register(federal.F1040())
-	reg.Register(federal.ScheduleA())
-	reg.Register(federal.ScheduleB())
-	reg.Register(federal.ScheduleC())
-	reg.Register(federal.ScheduleD())
-	reg.Register(federal.Form8949())
-	reg.Register(federal.Schedule1())
-	reg.Register(federal.Schedule2())
-	reg.Register(federal.Schedule3())
-	reg.Register(federal.ScheduleSE())
-	reg.Register(federal.Form8995())
-	reg.Register(federal.Form8889())
-	reg.Register(federal.Form2555())
-	reg.Register(federal.Form1116())
-	reg.Register(federal.Form8938())
-	reg.Register(federal.Form8833())
-	// CA state forms
-	reg.Register(ca.F540())
-	reg.Register(ca.ScheduleCA())
-	reg.Register(ca.Form3514())
-	reg.Register(ca.Form3853())
-	return reg
+	return forms.NewRegistryFromAutoForms()
+}
+
+// SetupStateRegistry creates a StateRegistry with all known state form sets.
+func SetupStateRegistry() *state.StateRegistry {
+	sr := state.NewStateRegistry()
+	sr.Register(&ca.CAFormSet{})
+	return sr
 }

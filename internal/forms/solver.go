@@ -2,6 +2,7 @@ package forms
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -109,7 +110,7 @@ func (g *DependencyGraph) TopologicalSort() ([]string, error) {
 	}
 
 	// Sort queue for deterministic output
-	sortStrings(queue)
+	slices.Sort(queue)
 
 	var sorted []string
 	for len(queue) > 0 {
@@ -120,7 +121,8 @@ func (g *DependencyGraph) TopologicalSort() ([]string, error) {
 		for _, dependent := range reverseAdj[node] {
 			inDegree[dependent]--
 			if inDegree[dependent] == 0 {
-				queue = insertSorted(queue, dependent)
+				queue = append(queue, dependent)
+				slices.Sort(queue)
 			}
 		}
 	}
@@ -133,7 +135,7 @@ func (g *DependencyGraph) TopologicalSort() ([]string, error) {
 				cycleNodes = append(cycleNodes, node)
 			}
 		}
-		sortStrings(cycleNodes)
+		slices.Sort(cycleNodes)
 		return nil, fmt.Errorf("cycle detected involving fields: %s", strings.Join(cycleNodes, ", "))
 	}
 
@@ -154,7 +156,7 @@ func (g *DependencyGraph) MissingInputs(provided map[string]float64) []string {
 			}
 		}
 	}
-	sortStrings(missing)
+	slices.Sort(missing)
 	return missing
 }
 
@@ -213,23 +215,3 @@ func (g *DependencyGraph) Solve(inputs map[string]float64, strInputs map[string]
 	return result, nil
 }
 
-// sortStrings sorts a string slice in place (simple insertion sort to avoid
-// importing sort package).
-func sortStrings(s []string) {
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && s[j] < s[j-1]; j-- {
-			s[j], s[j-1] = s[j-1], s[j]
-		}
-	}
-}
-
-// insertSorted inserts a string into an already-sorted slice maintaining order.
-func insertSorted(s []string, val string) []string {
-	s = append(s, val)
-	i := len(s) - 1
-	for i > 0 && s[i] < s[i-1] {
-		s[i], s[i-1] = s[i-1], s[i]
-		i--
-	}
-	return s
-}

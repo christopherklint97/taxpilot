@@ -9,6 +9,9 @@ standard_deduction:
 mental_health_threshold: 1000000
 mental_health_rate: 0.01
 
+# Maximum CA marginal tax rate (top bracket)
+max_marginal_rate: 0.133
+
 exemption_credit:
   single: 144
   mfj: 288

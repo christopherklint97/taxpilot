@@ -7,6 +7,8 @@ import (
 	"taxpilot/pkg/taxmath"
 )
 
+func init() { forms.RegisterForm(ScheduleA) }
+
 // ScheduleA returns the FormDef for Schedule A — Itemized Deductions.
 // Taxpayers choose between standard deduction and itemized deductions.
 // Key sections: medical expenses, state/local taxes (SALT), interest,
@@ -16,7 +18,9 @@ func ScheduleA() *forms.FormDef {
 		ID:           forms.FormScheduleA,
 		Name:         "Schedule A — Itemized Deductions",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "deductions",
+		QuestionOrder: 6,
 		Fields: []forms.FieldDef{
 			// --- Medical and Dental Expenses ---
 

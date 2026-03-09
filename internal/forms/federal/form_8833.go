@@ -4,6 +4,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Form8833) }
+
 // Form8833 returns the FormDef for Form 8833 — Treaty-Based Return
 // Position Disclosure Under Section 6114 or 7701(b).
 //
@@ -24,12 +26,15 @@ func Form8833() *forms.FormDef {
 		ID:           forms.FormF8833,
 		Name:         "Form 8833 — Treaty-Based Return Position Disclosure",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "expat",
+		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// Treaty country
 			{
 				Line:   "treaty_country",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Treaty country",
 				Prompt: "Which country's tax treaty are you relying on?",
 			},
@@ -37,6 +42,7 @@ func Form8833() *forms.FormDef {
 			{
 				Line:   "treaty_article",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Treaty article number",
 				Prompt: "Which article of the tax treaty applies (e.g., 'Article 18 — Pensions')?",
 			},
@@ -44,6 +50,7 @@ func Form8833() *forms.FormDef {
 			{
 				Line:   "irc_provision",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "IRC provision being overridden",
 				Prompt: "Which IRC section is modified by the treaty position (e.g., 'IRC §61' or 'IRC §871')?",
 			},
@@ -51,6 +58,7 @@ func Form8833() *forms.FormDef {
 			{
 				Line:   "treaty_position_explanation",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Explanation of treaty-based position",
 				Prompt: "Briefly explain your treaty-based return position:",
 			},

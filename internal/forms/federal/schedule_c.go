@@ -6,6 +6,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(ScheduleC) }
+
 // ScheduleC returns the FormDef for Schedule C — Profit or Loss From Business.
 // This is a simplified version covering basic sole proprietor income from
 // 1099-NEC with user-entered expenses. Full Schedule C with detailed expense
@@ -15,18 +17,22 @@ func ScheduleC() *forms.FormDef {
 		ID:           forms.FormScheduleC,
 		Name:         "Schedule C — Profit or Loss From Business",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "business",
+		QuestionOrder: 5,
 		Fields: []forms.FieldDef{
 			// --- Business Info ---
 			{
 				Line:   "business_name",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Business name",
 				Prompt: "What is your business name (or your name if sole proprietor)?",
 			},
 			{
 				Line:    "business_code",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Principal business code",
 				Prompt:  "What is your principal business activity code (6-digit NAICS)?",
 			},

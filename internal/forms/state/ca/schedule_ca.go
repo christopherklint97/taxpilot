@@ -2,6 +2,8 @@ package ca
 
 import "taxpilot/internal/forms"
 
+func init() { forms.RegisterForm(ScheduleCA) }
+
 // ScheduleCA returns the FormDef for Schedule CA (540) — California Adjustments.
 // This form adjusts federal income for California differences.
 //
@@ -25,7 +27,9 @@ func ScheduleCA() *forms.FormDef {
 		ID:           forms.FormScheduleCA,
 		Name:         "Schedule CA (540) — California Adjustments",
 		Jurisdiction: forms.StateCA,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "ca",
+		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// ===================================================================
 			// Part I, Section A: Income

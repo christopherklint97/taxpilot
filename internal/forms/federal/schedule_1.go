@@ -4,6 +4,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(Schedule1) }
+
 // Schedule1 returns the FormDef for Schedule 1 — Additional Income and
 // Adjustments to Income. This wires additional income sources (interest,
 // dividends, capital gains, business income) into Form 1040 lines 8 and 10.
@@ -15,7 +17,9 @@ func Schedule1() *forms.FormDef {
 		ID:           forms.FormSchedule1,
 		Name:         "Schedule 1 — Additional Income and Adjustments to Income",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "income_w2",
+		QuestionOrder: 2,
 		Fields: []forms.FieldDef{
 			// --- Part I: Additional Income ---
 

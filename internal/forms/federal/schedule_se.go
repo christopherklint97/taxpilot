@@ -6,6 +6,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(ScheduleSE) }
+
 // Self-employment tax constants for 2025
 const (
 	ssTaxRate2025          = 0.124  // Social Security portion (12.4%)
@@ -24,18 +26,12 @@ func ScheduleSE() *forms.FormDef {
 		ID:           forms.FormScheduleSE,
 		Name:         "Schedule SE — Self-Employment Tax",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "business",
+		QuestionOrder: 5,
 		Fields: []forms.FieldDef{
 			// Line 2: Net earnings from self-employment (from Schedule C)
-			{
-				Line:      "2",
-				Type:      forms.Computed,
-				Label:     "Net earnings from self-employment",
-				DependsOn: []string{"schedule_c:31"},
-				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_c:31")
-				},
-			},
+			forms.RefField("2", "Net earnings from self-employment", "schedule_c:31"),
 			// Line 3: 92.35% of line 2 (if > $400)
 			{
 				Line:      "3",
@@ -84,15 +80,7 @@ func ScheduleSE() *forms.FormDef {
 				},
 			},
 			// Line 6: Total self-employment tax
-			{
-				Line:      "6",
-				Type:      forms.Computed,
-				Label:     "Self-employment tax",
-				DependsOn: []string{"schedule_se:4", "schedule_se:5"},
-				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_se:4") + dv.Get("schedule_se:5")
-				},
-			},
+			forms.SumField("6", "Self-employment tax", "schedule_se:4", "schedule_se:5"),
 			// Line 7: Deductible part (50% of SE tax — goes to Schedule 1 line 16)
 			{
 				Line:      "7",

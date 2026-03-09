@@ -7,6 +7,8 @@ import (
 	"taxpilot/pkg/taxmath"
 )
 
+func init() { forms.RegisterForm(F1040) }
+
 // F1040 returns the FormDef for Form 1040 — U.S. Individual Income Tax Return.
 // This is a simplified MVP covering a single (or multiple) W-2 filer with
 // standard deduction. Additional income sources and itemized deductions will
@@ -16,12 +18,15 @@ func F1040() *forms.FormDef {
 		ID:           forms.FormF1040,
 		Name:         "U.S. Individual Income Tax Return",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "personal",
+		QuestionOrder: 1,
 		Fields: []forms.FieldDef{
 			// --- Identification ---
 			{
 				Line:    "filing_status",
 				Type:    forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:   "Filing status",
 				Prompt:  "What is your filing status?",
 				Options: []string{"single", "mfj", "mfs", "hoh", "qss"},
@@ -29,18 +34,21 @@ func F1040() *forms.FormDef {
 			{
 				Line:   "first_name",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "First name",
 				Prompt: "What is your first name?",
 			},
 			{
 				Line:   "last_name",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Last name",
 				Prompt: "What is your last name?",
 			},
 			{
 				Line:   "ssn",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Social Security number",
 				Prompt: "What is your Social Security number (XXX-XX-XXXX)?",
 			},

@@ -13,3 +13,39 @@ additional_standard_deduction:
   mfs: 1600
   hoh: 2000
   qss: 1600
+
+# HSA contribution limits
+hsa_limit:
+  self_only: 4300
+  family: 8550
+
+# Capital loss deduction limits
+capital_loss_limit:
+  default: -3000
+  mfs: -1500
+
+# Effective tax rate threshold (highest bracket)
+max_effective_tax_rate: 0.37
+
+# SALT deduction cap
+salt_cap:
+  default: 10000
+  mfs: 5000
+
+# FEIE (Foreign Earned Income Exclusion)
+feie_exclusion_limit: 130000
+physical_presence_min_days: 330
+
+# FBAR threshold
+fbar_threshold: 10000
+
+# FATCA thresholds (Form 8938)
+fatca_threshold:
+  abroad_single_year_end: 200000
+  abroad_single_any_time: 300000
+  abroad_mfj_year_end: 400000
+  abroad_mfj_any_time: 600000
+  us_single_year_end: 50000
+  us_single_any_time: 75000
+  us_mfj_year_end: 100000
+  us_mfj_any_time: 150000

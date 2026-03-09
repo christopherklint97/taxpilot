@@ -24,10 +24,11 @@ func testRegistry() *forms.Registry {
 				Options: []string{"single", "mfj", "mfs", "hoh", "qss"},
 			},
 			{
-				Line:   "first_name",
-				Type:   forms.UserInput,
-				Label:  "First Name",
-				Prompt: "What is your first name?",
+				Line:      "first_name",
+				Type:      forms.UserInput,
+				ValueType: forms.StringValue,
+				Label:     "First Name",
+				Prompt:    "What is your first name?",
 			},
 			{
 				Line:   "wages",

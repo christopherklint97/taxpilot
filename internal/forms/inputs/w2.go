@@ -2,6 +2,8 @@ package inputs
 
 import "taxpilot/internal/forms"
 
+func init() { forms.RegisterForm(W2) }
+
 // W2 returns the FormDef for a W-2 Wage and Tax Statement.
 // This captures both federal and state boxes from a single W-2.
 func W2() *forms.FormDef {
@@ -9,17 +11,21 @@ func W2() *forms.FormDef {
 		ID:           forms.FormW2,
 		Name:         "W-2 Wage and Tax Statement",
 		Jurisdiction: forms.Federal, // W-2 is federally defined but contains state info
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "income_w2",
+		QuestionOrder: 2,
 		Fields: []forms.FieldDef{
 			{
 				Line:   "employer_name",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Employer name",
 				Prompt: "What is the employer's name?",
 			},
 			{
 				Line:   "employer_ein",
 				Type:   forms.UserInput,
+				ValueType: forms.StringValue,
 				Label:  "Employer EIN",
 				Prompt: "What is the employer's EIN (XX-XXXXXXX)?",
 			},

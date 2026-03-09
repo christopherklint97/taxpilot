@@ -4,8 +4,11 @@ import (
 	"math"
 
 	"taxpilot/internal/forms"
+	"taxpilot/internal/forms/state"
 	"taxpilot/pkg/taxmath"
 )
+
+func init() { forms.RegisterForm(F540) }
 
 // F540 returns the FormDef for California Form 540 — California Resident
 // Income Tax Return. This is a simplified MVP covering a W-2 filer with
@@ -15,7 +18,9 @@ func F540() *forms.FormDef {
 		ID:           forms.FormCA540,
 		Name:         "California Resident Income Tax Return",
 		Jurisdiction: forms.StateCA,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "ca",
+		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// Filing status — references the federal filing status from Form 1040
 			{
@@ -221,6 +226,9 @@ func F540() *forms.FormDef {
 
 // CAFormSet implements the state.StateFormSet interface for California.
 type CAFormSet struct{}
+
+// Compile-time interface compliance check.
+var _ state.StateFormSet = CAFormSet{}
 
 // Code returns the two-letter state abbreviation.
 func (c CAFormSet) Code() string { return "CA" }

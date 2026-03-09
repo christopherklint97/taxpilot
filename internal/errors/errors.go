@@ -3,6 +3,8 @@ package errors
 import (
 	"fmt"
 	"strings"
+
+	"taxpilot/internal/forms"
 )
 
 // UnsupportedError indicates a tax situation TaxPilot can't handle.
@@ -53,40 +55,13 @@ func (e *CPAReferralError) Error() string {
 	return fmt.Sprintf("CPA Referral (%s complexity): %s — %s", e.Complexity, e.Situation, e.Reason)
 }
 
-// ---------------------------------------------------------------------------
-// Helper functions (mirrors conventions in efile/validate.go)
-// ---------------------------------------------------------------------------
-
-func getStr(strInputs map[string]string, key string) string {
-	if strInputs == nil {
-		return ""
-	}
-	return strInputs[key]
-}
-
-func getNum(results map[string]float64, key string) float64 {
-	if results == nil {
-		return 0
-	}
-	return results[key]
-}
-
-func numExists(results map[string]float64, key string) bool {
-	if results == nil {
-		return false
-	}
-	_, ok := results[key]
-	return ok
-}
-
-func hasKeyPrefix(m map[string]float64, prefix string) bool {
-	for k := range m {
-		if strings.HasPrefix(k, prefix) {
-			return true
-		}
-	}
-	return false
-}
+// Aliases for shared helper functions from forms package.
+var (
+	getStr      = forms.GetStr
+	getNum      = forms.GetNum
+	numExists   = forms.NumExists
+	hasKeyPrefix = forms.HasKeyPrefix
+)
 
 // ---------------------------------------------------------------------------
 // Situation checkers

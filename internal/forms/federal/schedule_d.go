@@ -4,6 +4,8 @@ import (
 	"taxpilot/internal/forms"
 )
 
+func init() { forms.RegisterForm(ScheduleD) }
+
 // ScheduleD returns the FormDef for Schedule D — Capital Gains and Losses.
 // This form aggregates capital gains/losses from:
 //   - Form 8949 (stock/security sales from 1099-B)
@@ -16,7 +18,9 @@ func ScheduleD() *forms.FormDef {
 		ID:           forms.FormScheduleD,
 		Name:         "Schedule D — Capital Gains and Losses",
 		Jurisdiction: forms.Federal,
-		TaxYears:     []int{2025},
+		TaxYears:      []int{2025},
+		QuestionGroup: "income_1099",
+		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			// --- Part I: Short-Term Capital Gains and Losses ---
 

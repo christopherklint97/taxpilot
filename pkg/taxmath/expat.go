@@ -1,14 +1,9 @@
 package taxmath
 
-// FEIE (Foreign Earned Income Exclusion) limits by tax year.
-var feieLimits = map[int]float64{
-	2025: 130000,
-}
-
 // FEIELimit returns the foreign earned income exclusion limit for the given tax year.
 func FEIELimit(taxYear int) float64 {
-	if limit, ok := feieLimits[taxYear]; ok {
-		return limit
+	if c := GetConfig(taxYear); c != nil {
+		return c.FEIEExclusionLimit
 	}
 	return 0
 }
