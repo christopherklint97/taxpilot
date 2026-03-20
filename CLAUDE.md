@@ -7,11 +7,11 @@ It ingests prior-year returns for context, asks smart questions, and can
 e-file directly to the IRS (MeF) and CA FTB, or export filled PDFs.
 
 ## Tech Stack
-- **Language:** Go 1.22+
+- **Language:** Go 1.26+
 - **CLI framework:** Cobra
 - **TUI framework:** Bubble Tea + Lip Gloss
 - **PDF handling:** pdfcpu (reading/writing IRS + FTB forms)
-- **LLM integration:** Anthropic Claude API (via anthropic-sdk-go)
+- **LLM integration:** OpenRouter API (routing to Anthropic Claude models)
 - **XML generation:** encoding/xml (for MeF and CA e-file submissions)
 - **SOAP client:** Custom (for IRS MeF A2A interface)
 - **Embedding/search:** SQLite + vec extension (or Qdrant if needed later)
@@ -93,8 +93,13 @@ W-2, 1099-INT, 1099-DIV, 1099-NEC, 1099-B
 ### California
 Form 540, Schedule CA (with FEIE/HSA/SALT/QBI add-backs), Form 3514 (CalEITC), Form 3853 (Health Coverage)
 
+## Release
+- **GoReleaser** builds cross-platform binaries (linux/darwin, amd64/arm64)
+- **Homebrew tap:** `christopherklint97/homebrew-tap`
+- GitHub Actions workflow: `.github/workflows/release.yml`
+
 ## Directory Guide
-- `cmd/` — CLI entrypoint only, minimal logic
+- `cmd/taxpilot/` — CLI entrypoint (Cobra), minimal logic
 - `internal/interview/` — The interactive Q&A engine, situation detection, FBAR guidance
 - `internal/forms/` — Deterministic form logic (THE CORE)
 - `internal/forms/federal/` — One file per IRS form (16 forms)
@@ -112,7 +117,7 @@ Form 540, Schedule CA (with FEIE/HSA/SALT/QBI add-backs), Form 3514 (CalEITC), F
 - `internal/tui/` — Bubble Tea views
 - `pkg/taxmath/` — Pure math utilities (brackets, rounding, tables, expat tax stacking)
 - `data/` — Year-specific tax data, knowledge base, MeF/CA schemas
-- `testdata/` — Test scenarios with known-good inputs/outputs (17 scenarios)
+- `testdata/` — Test scenarios with known-good inputs/outputs (20 scenarios)
 
 ## Common Tasks
 

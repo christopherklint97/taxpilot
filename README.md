@@ -66,7 +66,7 @@ internal/
   tui/                  Bubble Tea views
   errors/               Typed errors (unsupported, incomplete, CPA referral)
 pkg/taxmath/            Pure math (brackets, rounding, tables, expat stacking)
-testdata/               17 test scenarios with known-good inputs/outputs
+testdata/               20 test scenarios with known-good inputs/outputs
 data/                   Year-specific tax data, prompts, schemas
 ```
 
@@ -81,7 +81,7 @@ Each form field is typed as `UserInput`, `Computed`, `FederalRef`, `Lookup`, or 
 ## Quick Start
 
 ```bash
-# Prerequisites: Go 1.22+
+# Prerequisites: Go 1.26+
 
 # Start interactive interview
 go run ./cmd/taxpilot
@@ -126,6 +126,16 @@ Full support for Americans living abroad:
 - **FBAR guidance**: Detects when FinCEN 114 filing is required, provides instructions
 - **Treaty disclosure (Form 8833)**: US-Sweden treaty and other treaty positions
 - **CA non-conformity**: California does not allow the FEIE — automatic add-back on Schedule CA
+
+## Installation
+
+```bash
+# Via Homebrew
+brew install christopherklint97/tap/taxpilot
+
+# Or build from source (requires Go 1.26+)
+go install github.com/christopherklint97/taxpilot/cmd/taxpilot@latest
+```
 
 ## Security
 
