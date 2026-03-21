@@ -257,8 +257,12 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.input) > 0 {
 				m.input = m.input[:len(m.input)-1]
 				m.err = ""
-			} else {
-				// Go back to previous question
+			}
+			return m, nil
+
+		case tea.KeyLeft:
+			// Go back to previous question (only when input is empty)
+			if m.input == "" {
 				if m.engine.Back() {
 					m.err = ""
 				}
@@ -497,7 +501,7 @@ func (m InterviewView) View() string {
 
 	// Help text — wrap into multiple lines to fit terminal width
 	helpItems := []string{
-		"Enter: submit", "Backspace: go back", "?: help",
+		"Enter: submit", "←: go back", "?: help",
 		"??: AI explain", "why: why asked", "calc: calculator",
 		"q: save & quit",
 	}
