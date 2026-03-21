@@ -38,8 +38,8 @@ var contextualPrompts = map[string]ContextualPrompt{
 		HelpText: "Enter the employer name exactly as shown on your W-2 (Box c).",
 	},
 	"w2:1:employer_ein": {
-		Prompt:   "What is your employer's EIN?",
-		HelpText: "The 9-digit Employer Identification Number from your W-2 (Box b). Format: XX-XXXXXXX.",
+		Prompt:   "What is the employer's EIN?",
+		HelpText: "The 9-digit Employer Identification Number from your W-2 (Box b). Format: XX-XXXXXXX. If your employer is a foreign entity without a US EIN, enter FOREIGN.",
 	},
 	"w2:1:wages": {
 		Prompt:   "What were your total wages from this employer?",

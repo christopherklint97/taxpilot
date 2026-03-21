@@ -377,12 +377,42 @@ func (m InterviewView) View() string {
 		errBlock = tui.ErrorStyle.Render("⚠ " + m.err)
 	}
 
-	// Help text
-	helpLine := "Enter: submit  |  Backspace: go back  |  ?: help  |  ??: AI explain  |  why: why asked  |  q: save & quit"
-	if m.stateCode == "CA" {
-		helpLine += "  |  ca: CA diff"
+	// Help text — wrap into multiple lines to fit terminal width
+	helpItems := []string{
+		"Enter: submit", "Backspace: go back", "?: help",
+		"??: AI explain", "why: why asked", "q: save & quit",
 	}
-	help := tui.HelpStyle.Render(helpLine)
+	if m.stateCode == "CA" {
+		helpItems = append(helpItems, "ca: CA diff")
+	}
+	sep := "  |  "
+	// Account for border padding (2 chars each side) + border itself (1 char each side)
+	maxW := m.width - 6
+	if maxW < 40 {
+		maxW = 40
+	}
+	var helpLines []string
+	line := ""
+	for i, item := range helpItems {
+		candidate := line
+		if candidate != "" {
+			candidate += sep
+		}
+		candidate += item
+		if line != "" && lipgloss.Width(candidate) > maxW {
+			helpLines = append(helpLines, line)
+			line = item
+		} else {
+			if i > 0 && line != "" {
+				line += sep
+			}
+			line += item
+		}
+	}
+	if line != "" {
+		helpLines = append(helpLines, line)
+	}
+	help := tui.HelpStyle.Render(strings.Join(helpLines, "\n"))
 
 	// Compose layout
 	parts := []string{

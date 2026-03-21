@@ -27,7 +27,7 @@ func W2() *forms.FormDef {
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Employer EIN",
-				Prompt: "What is the employer's EIN (XX-XXXXXXX)?",
+				Prompt: "What is the employer's EIN (XX-XXXXXXX)? Enter FOREIGN if no US EIN.",
 			},
 			{
 				Line:   "wages",
