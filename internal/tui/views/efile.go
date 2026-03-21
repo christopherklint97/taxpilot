@@ -329,7 +329,8 @@ func (m EFileView) viewReview() string {
 		tui.HelpStyle.Render("v/Enter: validate & continue  |  b: back  |  q: quit"))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 func (m EFileView) viewValidation() string {
@@ -383,7 +384,8 @@ func (m EFileView) viewValidation() string {
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 func (m EFileView) viewPIN() string {
@@ -421,7 +423,8 @@ func (m EFileView) viewPIN() string {
 		tui.HelpStyle.Render("Enter: submit  |  Esc: cancel  |  Digits only"))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 func (m EFileView) viewConfirm() string {
@@ -453,7 +456,8 @@ func (m EFileView) viewConfirm() string {
 		tui.HelpStyle.Render("y: submit  |  n: go back  |  q: quit"))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 func (m EFileView) viewSubmitting() string {
@@ -468,7 +472,8 @@ func (m EFileView) viewSubmitting() string {
 		"  Please wait. Do not close this window."))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 func (m EFileView) viewResult() string {
@@ -528,5 +533,6 @@ func (m EFileView) viewResult() string {
 		tui.HelpStyle.Render("Enter/q: quit"))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }

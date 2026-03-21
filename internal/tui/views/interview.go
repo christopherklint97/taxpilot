@@ -262,7 +262,8 @@ func (m *InterviewView) saveState() {
 // View satisfies tea.Model.
 func (m InterviewView) View() string {
 	if m.done {
-		return tui.BorderStyle.Render(
+		cw := tui.ContentWidth(m.width)
+		return tui.BorderStyle.Width(cw).Render(
 			tui.SuccessStyle.Render("All questions answered! Computing results..."),
 		) + "\n"
 	}
@@ -288,19 +289,22 @@ func (m InterviewView) View() string {
 	bar := tui.HighlightStyle.Render(strings.Repeat("█", filled)) +
 		tui.HelpStyle.Render(strings.Repeat("░", barWidth-filled))
 
+	// Content width inside the border
+	contentW := tui.ContentWidth(m.width)
+
 	// Form context
-	formContext := tui.TitleStyle.Render(q.FormName)
+	formContext := tui.TitleStyle.Width(contentW).Render(q.FormName)
 
 	// Get contextual prompt for enhanced question text
 	cp := interview.GetContextualPrompt(q.Key, q.Prompt, m.stateCode)
 
 	// Question prompt (use contextual prompt instead of raw prompt)
-	prompt := tui.PromptStyle.Render(cp.Prompt)
+	prompt := tui.PromptStyle.Width(contentW).Render(cp.Prompt)
 
 	// Contextual help text below the prompt
 	var contextHelp string
 	if cp.HelpText != "" {
-		contextHelp = tui.HelpStyle.Render(cp.HelpText)
+		contextHelp = tui.HelpStyle.Width(contentW).Render(cp.HelpText)
 	}
 
 	// CA-specific note
@@ -309,6 +313,7 @@ func (m InterviewView) View() string {
 		caNote = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#E5C07B")).
 			Italic(true).
+			Width(contentW).
 			Render("CA: " + cp.CANote)
 	}
 
@@ -318,6 +323,7 @@ func (m InterviewView) View() string {
 		userHelp = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#98C379")).
 			Italic(true).
+			Width(contentW).
 			Render(m.helpText)
 	}
 
@@ -327,11 +333,13 @@ func (m InterviewView) View() string {
 		aiHelp = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#E5C07B")).
 			Italic(true).
+			Width(contentW).
 			Render("Loading AI explanation...")
 	} else if m.aiHelpText != "" {
 		aiHelp = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#56B6C2")).
 			Italic(true).
+			Width(contentW).
 			Render(m.aiHelpText)
 	}
 
@@ -339,15 +347,16 @@ func (m InterviewView) View() string {
 	var priorYearBlock string
 	pyd := m.engine.GetPriorYearDefault()
 	if pyd != nil {
-		priorYearBlock = tui.SuccessStyle.Render(
+		priorYearBlock = tui.SuccessStyle.Width(contentW).Render(
 			fmt.Sprintf("Last year: %s", pyd.PriorValue),
-		) + "\n" + tui.HelpStyle.Render(
+		) + "\n" + tui.HelpStyle.Width(contentW).Render(
 			"Press Enter to keep last year's value, or type a new one",
 		)
 		if pyd.CANote != "" {
 			priorYearBlock += "\n" + lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#E5C07B")).
 				Italic(true).
+				Width(contentW).
 				Render("CA: "+pyd.CANote)
 		}
 	}
@@ -386,11 +395,6 @@ func (m InterviewView) View() string {
 		helpItems = append(helpItems, "ca: CA diff")
 	}
 	sep := "  |  "
-	// Account for border padding (2 chars each side) + border itself (1 char each side)
-	maxW := m.width - 6
-	if maxW < 40 {
-		maxW = 40
-	}
 	var helpLines []string
 	line := ""
 	for i, item := range helpItems {
@@ -399,7 +403,7 @@ func (m InterviewView) View() string {
 			candidate += sep
 		}
 		candidate += item
-		if line != "" && lipgloss.Width(candidate) > maxW {
+		if line != "" && lipgloss.Width(candidate) > contentW {
 			helpLines = append(helpLines, line)
 			line = item
 		} else {
@@ -448,7 +452,7 @@ func (m InterviewView) View() string {
 	parts = append(parts, "", help)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, parts...)
-	return tui.BorderStyle.Render(content) + "\n"
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 // formatOptionLabel converts a filing status code to a human-readable label.

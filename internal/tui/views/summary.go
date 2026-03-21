@@ -185,7 +185,8 @@ func (m SummaryView) View() string {
 	))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 // formatMoney formats a label and dollar amount on a single line.

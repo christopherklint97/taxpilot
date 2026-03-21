@@ -202,7 +202,8 @@ func (m WelcomeModel) View() string {
 		help,
 	)
 
-	return tui.BorderStyle.Render(content) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 // appendUniqueStrings appends items from add to base, skipping duplicates.

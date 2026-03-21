@@ -210,7 +210,8 @@ func (m ReviewView) View() string {
 	))
 
 	body := lipgloss.JoinVertical(lipgloss.Left, sections...)
-	return tui.BorderStyle.Render(body) + "\n"
+	contentW := tui.ContentWidth(m.width)
+	return tui.BorderStyle.Width(contentW).Render(body) + "\n"
 }
 
 func (m ReviewView) renderTabBar() string {

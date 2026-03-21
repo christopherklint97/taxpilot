@@ -44,3 +44,13 @@ var (
 			Foreground(lipgloss.Color("#61AFEF")).
 			Bold(true)
 )
+
+// ContentWidth returns the usable width inside a BorderStyle box.
+// BorderStyle has 1-char border + 2-char padding on each side = 6 total.
+func ContentWidth(termWidth int) int {
+	w := termWidth - 6
+	if w < 40 {
+		w = 40
+	}
+	return w
+}
