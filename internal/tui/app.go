@@ -101,6 +101,14 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.err = err.Error()
 				return a, nil
 			}
+			// Pass current terminal size to the new view so it renders
+			// at full width immediately (the initial WindowSizeMsg was
+			// already consumed by the previous view).
+			if a.width > 0 {
+				view, _ = view.Update(tea.WindowSizeMsg{
+					Width: a.width, Height: a.height,
+				})
+			}
 			a.active = view
 			a.currentView = ViewInterview
 			return a, a.active.Init()
@@ -109,6 +117,11 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ShowSummaryMsg:
 		if a.factory.MakeSummary != nil {
 			a.active = a.factory.MakeSummary(msg)
+			if a.width > 0 {
+				a.active, _ = a.active.Update(tea.WindowSizeMsg{
+					Width: a.width, Height: a.height,
+				})
+			}
 			a.currentView = ViewSummary
 			return a, a.active.Init()
 		}
@@ -125,6 +138,11 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.factory.MakeEFile != nil {
 			a.currentView = ViewEFile
 			a.active = a.factory.MakeEFile(msg)
+			if a.width > 0 {
+				a.active, _ = a.active.Update(tea.WindowSizeMsg{
+					Width: a.width, Height: a.height,
+				})
+			}
 			return a, a.active.Init()
 		}
 
@@ -132,6 +150,11 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.factory.MakeReview != nil {
 			a.currentView = ViewReview
 			a.active = a.factory.MakeReview(msg)
+			if a.width > 0 {
+				a.active, _ = a.active.Update(tea.WindowSizeMsg{
+					Width: a.width, Height: a.height,
+				})
+			}
 			return a, a.active.Init()
 		}
 

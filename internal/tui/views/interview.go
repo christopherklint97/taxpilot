@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"taxpilot/internal/calc"
 	"taxpilot/internal/interview"
 	"taxpilot/internal/state"
 	"taxpilot/internal/tui"
@@ -25,6 +26,16 @@ type InterviewView struct {
 	stateCode    string
 	width        int
 	height       int
+
+	// Calculator sub-mode
+	calcMode      bool               // true when calculator is active
+	calcInput     string             // expression being typed in calculator
+	calcResult    string             // computed result display
+	calcResultVal float64            // numeric result for submitting
+	calcHasResult bool               // true when a valid result is available
+	calcRates     map[string]float64 // cached exchange rates
+	calcRatesErr  string             // error fetching rates
+	calcLoading   bool               // true while fetching rates
 }
 
 // NewInterviewView creates a new InterviewView with the given engine.
@@ -76,7 +87,21 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tui.ExchangeRatesMsg:
+		m.calcLoading = false
+		if msg.Err != nil {
+			m.calcRatesErr = msg.Err.Error()
+		} else {
+			m.calcRates = msg.Rates
+			m.calcRatesErr = ""
+		}
+		return m, nil
+
 	case tea.KeyMsg:
+		// Calculator sub-mode key handling
+		if m.calcMode {
+			return m.updateCalcMode(msg)
+		}
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			// Save state and quit
@@ -154,6 +179,23 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				m.input = ""
+				return m, nil
+			}
+			// Handle "calc" command — enter calculator mode
+			if m.input == "calc" {
+				m.input = ""
+				m.calcMode = true
+				m.calcInput = ""
+				m.calcResult = ""
+				m.calcHasResult = false
+				// Fetch exchange rates in the background if not cached
+				if m.calcRates == nil && !m.calcLoading {
+					m.calcLoading = true
+					return m, func() tea.Msg {
+						rates, err := calc.FetchRates()
+						return tui.ExchangeRatesMsg{Rates: rates, Err: err}
+					}
+				}
 				return m, nil
 			}
 			// Handle "?" help command
@@ -248,6 +290,68 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// updateCalcMode handles key events when the calculator is active.
+func (m InterviewView) updateCalcMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEsc:
+		// Exit calculator without using the result
+		m.calcMode = false
+		m.calcInput = ""
+		m.calcResult = ""
+		m.calcHasResult = false
+		return m, nil
+
+	case tea.KeyEnter:
+		if m.calcInput == "" && m.calcHasResult {
+			// Empty input + result available: use the result as the field value
+			m.calcMode = false
+			m.input = fmt.Sprintf("%.2f", m.calcResultVal)
+			m.calcInput = ""
+			m.calcResult = ""
+			m.calcHasResult = false
+			return m, nil
+		}
+		if m.calcInput != "" {
+			// Evaluate the expression
+			result, breakdown, err := calc.Eval(m.calcInput, m.calcRates)
+			if err != nil {
+				m.calcResult = "Error: " + err.Error()
+				m.calcHasResult = false
+			} else {
+				m.calcResultVal = result
+				m.calcHasResult = true
+				if breakdown != "" {
+					m.calcResult = breakdown
+				} else {
+					m.calcResult = fmt.Sprintf("= %.2f", result)
+				}
+			}
+		}
+		return m, nil
+
+	case tea.KeyBackspace, tea.KeyDelete:
+		if len(m.calcInput) > 0 {
+			m.calcInput = m.calcInput[:len(m.calcInput)-1]
+			m.calcHasResult = false
+			m.calcResult = ""
+		}
+		return m, nil
+
+	case tea.KeyRunes:
+		m.calcInput += msg.String()
+		// Clear previous result when typing new input
+		m.calcHasResult = false
+		m.calcResult = ""
+		return m, nil
+
+	case tea.KeySpace:
+		m.calcInput += " "
+		return m, nil
+	}
+
+	return m, nil
+}
+
 // saveState persists the current interview state to disk.
 func (m *InterviewView) saveState() {
 	ret := state.NewTaxReturn(m.taxYear, m.stateCode)
@@ -261,6 +365,10 @@ func (m *InterviewView) saveState() {
 
 // View satisfies tea.Model.
 func (m InterviewView) View() string {
+	if m.calcMode {
+		return m.viewCalc()
+	}
+
 	if m.done {
 		cw := tui.ContentWidth(m.width)
 		return tui.BorderStyle.Width(cw).Render(
@@ -389,7 +497,8 @@ func (m InterviewView) View() string {
 	// Help text — wrap into multiple lines to fit terminal width
 	helpItems := []string{
 		"Enter: submit", "Backspace: go back", "?: help",
-		"??: AI explain", "why: why asked", "q: save & quit",
+		"??: AI explain", "why: why asked", "calc: calculator",
+		"q: save & quit",
 	}
 	if m.stateCode == "CA" {
 		helpItems = append(helpItems, "ca: CA diff")
@@ -450,6 +559,69 @@ func (m InterviewView) View() string {
 		parts = append(parts, errBlock)
 	}
 	parts = append(parts, "", help)
+
+	content := lipgloss.JoinVertical(lipgloss.Left, parts...)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
+}
+
+// viewCalc renders the calculator overlay.
+func (m InterviewView) viewCalc() string {
+	contentW := tui.ContentWidth(m.width)
+
+	title := tui.TitleStyle.Width(contentW).Render("Calculator")
+
+	// Instructions
+	instructions := tui.HelpStyle.Width(contentW).Render(
+		"Type an expression and press Enter to evaluate.\n" +
+			"Supports: +, -, *, /  and currency codes (e.g., 1000 EUR, 500 GBP + 200 SEK)")
+
+	// Exchange rate status
+	var rateStatus string
+	if m.calcLoading {
+		rateStatus = tui.HelpStyle.Render("Loading exchange rates...")
+	} else if m.calcRatesErr != "" {
+		rateStatus = tui.ErrorStyle.Render("Rates: " + m.calcRatesErr)
+	} else if m.calcRates != nil {
+		rateStatus = tui.SuccessStyle.Render("Exchange rates loaded")
+	}
+
+	// Input
+	cursor := tui.HighlightStyle.Render("▸ ")
+	inputLine := cursor + tui.InputStyle.Render(m.calcInput) +
+		tui.HighlightStyle.Render("█")
+
+	// Result
+	var resultBlock string
+	if m.calcResult != "" {
+		resultStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#98C379")).
+			Bold(true).
+			Width(contentW)
+		if m.calcHasResult {
+			resultStyle = resultStyle.Foreground(lipgloss.Color("#98C379"))
+		} else {
+			resultStyle = resultStyle.Foreground(lipgloss.Color("#E06C75"))
+		}
+		resultBlock = resultStyle.Render(m.calcResult)
+	}
+
+	// Help bar
+	var helpText string
+	if m.calcHasResult {
+		helpText = tui.HelpStyle.Render("Enter: use result  |  Esc: cancel  |  Type: new expression")
+	} else {
+		helpText = tui.HelpStyle.Render("Enter: calculate  |  Esc: cancel")
+	}
+
+	parts := []string{title, "", instructions}
+	if rateStatus != "" {
+		parts = append(parts, rateStatus)
+	}
+	parts = append(parts, "", inputLine)
+	if resultBlock != "" {
+		parts = append(parts, "", resultBlock)
+	}
+	parts = append(parts, "", helpText)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, parts...)
 	return tui.BorderStyle.Width(contentW).Render(content) + "\n"

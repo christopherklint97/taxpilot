@@ -112,6 +112,12 @@ type EFileSubmissionResult struct {
 	Message      string
 }
 
+// ExchangeRatesMsg carries fetched exchange rates back to the view.
+type ExchangeRatesMsg struct {
+	Rates map[string]float64
+	Err   error
+}
+
 // ExportPDFMsg requests PDF export of the return.
 type ExportPDFMsg struct {
 	Results   map[string]float64
