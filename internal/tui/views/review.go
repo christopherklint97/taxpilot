@@ -42,6 +42,7 @@ type ReviewView struct {
 	width        int
 	height       int
 	scrollOffset int
+	exportMsg    string
 }
 
 // NewReviewView creates a ReviewView with the given data.
@@ -71,6 +72,13 @@ func (m ReviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		return m, nil
+	case tui.ExportPDFResultMsg:
+		if msg.Err != nil {
+			m.exportMsg = fmt.Sprintf("Export error: %v", msg.Err)
+		} else {
+			m.exportMsg = fmt.Sprintf("Exported %d file(s)", len(msg.Paths))
+		}
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -119,8 +127,13 @@ func (m ReviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "e":
-			// Export PDFs (placeholder)
-			return m, nil
+			return m, func() tea.Msg {
+				return tui.ExportPDFMsg{
+					Results:   m.results,
+					StrInputs: m.strResults,
+					TaxYear:   m.taxYear,
+				}
+			}
 		case "f":
 			// Start e-file flow
 			return m, func() tea.Msg {
@@ -183,6 +196,12 @@ func (m ReviewView) View() string {
 	}
 
 	sections = append(sections, content...)
+
+	// Export status
+	if m.exportMsg != "" {
+		sections = append(sections, "")
+		sections = append(sections, tui.HighlightStyle.Render(m.exportMsg))
+	}
 
 	// Footer
 	sections = append(sections, "")

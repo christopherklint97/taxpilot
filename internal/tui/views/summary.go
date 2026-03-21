@@ -18,6 +18,7 @@ type SummaryView struct {
 	state      string
 	width      int
 	height     int
+	exportMsg  string // status message after export
 }
 
 // NewSummaryView creates a SummaryView with the given results.
@@ -42,13 +43,25 @@ func (m SummaryView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		return m, nil
+	case tui.ExportPDFResultMsg:
+		if msg.Err != nil {
+			m.exportMsg = fmt.Sprintf("Export error: %v", msg.Err)
+		} else {
+			m.exportMsg = fmt.Sprintf("Exported %d file(s): %s", len(msg.Paths), strings.Join(msg.Paths, ", "))
+		}
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "e":
-			// TODO: export PDFs
-			return m, nil
+			return m, func() tea.Msg {
+				return tui.ExportPDFMsg{
+					Results:   m.results,
+					StrInputs: m.strResults,
+					TaxYear:   m.taxYear,
+				}
+			}
 		case "f":
 			// Start e-file flow
 			return m, func() tea.Msg {
@@ -70,8 +83,13 @@ func (m SummaryView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "b":
-			// TODO: go back to interview
-			return m, nil
+			return m, func() tea.Msg {
+				return tui.StartInterviewMsg{
+					TaxYear:   m.taxYear,
+					StateCode: m.state,
+					Continue:  true,
+				}
+			}
 		}
 	}
 	return m, nil
@@ -152,6 +170,12 @@ func (m SummaryView) View() string {
 		} else {
 			sections = append(sections, formatMoney("CA Balance", 0))
 		}
+	}
+
+	// Export status
+	if m.exportMsg != "" {
+		sections = append(sections, "")
+		sections = append(sections, tui.HighlightStyle.Render(m.exportMsg))
 	}
 
 	// Footer

@@ -85,3 +85,42 @@ type StartEFileMsg struct {
 	FederalOnly bool
 	StateOnly   bool
 }
+
+// EFileSubmitMsg triggers the actual e-file submission.
+type EFileSubmitMsg struct {
+	Results     map[string]float64
+	StrInputs   map[string]string
+	TaxYear     int
+	State       string
+	FederalOnly bool
+	StateOnly   bool
+	Auth        interface{} // *efile.EFileAuth — interface to avoid import cycle
+}
+
+// EFileResultMsg carries the submission result back to the view.
+type EFileResultMsg struct {
+	FederalResult *EFileSubmissionResult
+	CAResult      *EFileSubmissionResult
+	Err           error
+}
+
+// EFileSubmissionResult holds per-jurisdiction submission result.
+type EFileSubmissionResult struct {
+	SubmissionID string
+	Status       string
+	Message      string
+}
+
+// ExportPDFMsg requests PDF export of the return.
+type ExportPDFMsg struct {
+	Results   map[string]float64
+	StrInputs map[string]string
+	TaxYear   int
+	OutputDir string // empty = default (~/.taxpilot/export)
+}
+
+// ExportPDFResultMsg carries the export result back to the view.
+type ExportPDFResultMsg struct {
+	Paths []string
+	Err   error
+}

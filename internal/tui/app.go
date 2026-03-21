@@ -48,6 +48,14 @@ type ViewFactory struct {
 	// ExplainCADiff triggers a CA vs federal difference explanation.
 	// Called when RequestCADiffMsg is received. May be nil if no LLM is configured.
 	ExplainCADiff func(msg RequestCADiffMsg) tea.Msg
+
+	// ExportPDF exports filled PDFs for the return.
+	// Called when ExportPDFMsg is received. May be nil.
+	ExportPDF func(msg ExportPDFMsg) tea.Msg
+
+	// SubmitEFile handles e-file submission.
+	// Called when EFileSubmitMsg is received. May be nil.
+	SubmitEFile func(msg EFileSubmitMsg) tea.Msg
 }
 
 // App is the top-level Bubble Tea model that routes between views.
@@ -114,9 +122,11 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case StartEFileMsg:
-		a.currentView = ViewEFile
-		a.active = a.factory.MakeEFile(msg)
-		return a, a.active.Init()
+		if a.factory.MakeEFile != nil {
+			a.currentView = ViewEFile
+			a.active = a.factory.MakeEFile(msg)
+			return a, a.active.Init()
+		}
 
 	case ShowReviewMsg:
 		if a.factory.MakeReview != nil {
@@ -162,6 +172,22 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, func() tea.Msg {
 			return CADiffResponseMsg{
 				Explanation: "AI explanations are not available. Set OPENROUTER_API_KEY to enable them.",
+			}
+		}
+
+	case ExportPDFMsg:
+		if a.factory.ExportPDF != nil {
+			fn := a.factory.ExportPDF
+			return a, func() tea.Msg {
+				return fn(msg)
+			}
+		}
+
+	case EFileSubmitMsg:
+		if a.factory.SubmitEFile != nil {
+			fn := a.factory.SubmitEFile
+			return a, func() tea.Msg {
+				return fn(msg)
 			}
 		}
 	}

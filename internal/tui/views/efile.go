@@ -23,26 +23,14 @@ const (
 	StepResult                      // show submission result
 )
 
-// EFileSubmitMsg triggers the actual e-file submission.
-type EFileSubmitMsg struct {
-	FederalXML []byte
-	CAXML      []byte
-	Auth       *efile.EFileAuth
-}
+// EFileSubmitMsg is an alias for tui.EFileSubmitMsg.
+type EFileSubmitMsg = tui.EFileSubmitMsg
 
-// EFileResultMsg carries the submission result back to the view.
-type EFileResultMsg struct {
-	FederalResult *EFileSubmissionResult
-	CAResult      *EFileSubmissionResult
-	Err           error
-}
+// EFileResultMsg is an alias for tui.EFileResultMsg.
+type EFileResultMsg = tui.EFileResultMsg
 
-// EFileSubmissionResult holds per-jurisdiction submission result.
-type EFileSubmissionResult struct {
-	SubmissionID string
-	Status       string
-	Message      string
-}
+// EFileSubmissionResult is an alias for tui.EFileSubmissionResult.
+type EFileSubmissionResult = tui.EFileSubmissionResult
 
 // EFileView is the Bubble Tea model for the e-file submission flow.
 type EFileView struct {
@@ -64,7 +52,7 @@ type EFileView struct {
 	federalOnly bool
 	stateOnly   bool
 
-	submitResult *EFileResultMsg
+	submitResult *tui.EFileResultMsg
 	errMsg       string
 }
 
@@ -101,7 +89,7 @@ func (m EFileView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		return m, nil
 
-	case EFileResultMsg:
+	case tui.EFileResultMsg:
 		m.submitResult = &msg
 		m.step = StepResult
 		return m, nil
@@ -234,10 +222,14 @@ func (m EFileView) handleConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.step = StepSubmitting
 		// Trigger submission
 		return m, func() tea.Msg {
-			return EFileSubmitMsg{
-				FederalXML: m.federalXML,
-				CAXML:      m.caXML,
-				Auth:       m.auth,
+			return tui.EFileSubmitMsg{
+				Results:     m.results,
+				StrInputs:   m.strResults,
+				TaxYear:     m.taxYear,
+				State:       m.state,
+				FederalOnly: m.federalOnly,
+				StateOnly:   m.stateOnly,
+				Auth:        m.auth,
 			}
 		}
 	case "n", "N", "b":
