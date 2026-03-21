@@ -3,6 +3,7 @@ package pdf
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -63,13 +64,24 @@ func (p *Parser) ParseFile(path string) (*ParsedReturn, error) {
 	pdfFields := flattenFormGroup(fg)
 
 	// Detect which form this PDF is.
-	formID, config := p.detectFormFromFields(pdfFields, fg)
-	if config == nil {
-		// Could not match form fields — try OCR as fallback.
+	formID, config := p.detectFormFromFields(pdfFields, fg, path)
+	if formID == "" {
+		// Could not identify form at all — try OCR as fallback.
 		if OCRAvailable() {
 			return p.ParseFileOCR(path)
 		}
 		return nil, fmt.Errorf("could not detect form type for %s", path)
+	}
+
+	// If form detected but no field mappings registered, return with raw fields only.
+	if config == nil {
+		return &ParsedReturn{
+			FormID:    formID,
+			TaxYear:   detectTaxYear(fg),
+			Fields:    make(map[string]float64),
+			StrFields: make(map[string]string),
+			RawFields: pdfFields,
+		}, nil
 	}
 
 	// Build the reverse mapping: PDFField -> FieldMapping.
@@ -127,8 +139,8 @@ func (p *Parser) DetectForm(path string) (forms.FormID, error) {
 	}
 
 	pdfFields := flattenFormGroup(fg)
-	formID, config := p.detectFormFromFields(pdfFields, fg)
-	if config == nil {
+	formID, _ := p.detectFormFromFields(pdfFields, fg, path)
+	if formID == "" {
 		return "", fmt.Errorf("could not detect form type for %s", path)
 	}
 	return formID, nil
@@ -188,30 +200,138 @@ func flattenFormGroup(fg *form.FormGroup) map[string]string {
 	return fields
 }
 
-// detectFormFromFields determines which registered form config best matches
-// the PDF's field names. Returns the form ID and config, or ("", nil) if
-// no match is found.
-func (p *Parser) detectFormFromFields(pdfFields map[string]string, fg *form.FormGroup) (forms.FormID, *FormPDFConfig) {
-	// First, try metadata-based detection from the source/title.
-	if fg != nil {
-		source := strings.ToLower(fg.Header.Source)
-		title := strings.ToLower(fg.Header.Title)
-		combined := source + " " + title
-		for formID, config := range p.configs {
-			switch formID {
-			case forms.FormF1040:
-				if strings.Contains(combined, "1040") && !strings.Contains(combined, "540") {
-					return formID, config
-				}
-			case forms.FormCA540:
-				if strings.Contains(combined, "540") {
-					return formID, config
-				}
+// metadataFormRules defines patterns matched against PDF metadata (title, source,
+// subject) to identify tax forms. Rules are checked in order; the first match wins.
+// More specific patterns (e.g. "schedule b") must come before broader ones
+// (e.g. "1040") to avoid false matches.
+var metadataFormRules = []struct {
+	formID   forms.FormID
+	requires []string // all must be present (lowercased)
+	rejects  []string // none may be present (lowercased)
+}{
+	// CA Schedule CA must match before federal Schedule C (substring collision).
+	{forms.FormScheduleCA, []string{"schedule ca"}, nil},
+
+	// Federal schedules (must match before generic "1040")
+	{forms.FormScheduleA, []string{"schedule a"}, []string{"schedule ca"}},
+	{forms.FormScheduleB, []string{"schedule b"}, nil},
+	{forms.FormScheduleC, []string{"schedule c"}, []string{"schedule ca"}},
+	{forms.FormScheduleD, []string{"schedule d"}, nil},
+	{forms.FormScheduleSE, []string{"schedule se"}, nil},
+	{forms.FormSchedule1, []string{"schedule 1"}, nil},
+	{forms.FormSchedule2, []string{"schedule 2"}, nil},
+	{forms.FormSchedule3, []string{"schedule 3"}, nil},
+
+	// Federal forms (specific before generic)
+	{forms.FormF2555, []string{"2555"}, nil},
+	{forms.FormF1116, []string{"1116"}, nil},
+	{forms.FormF8938, []string{"8938"}, nil},
+	{forms.FormF8833, []string{"8833"}, nil},
+	{forms.FormF8949, []string{"8949"}, nil},
+	{forms.FormF8889, []string{"8889"}, nil},
+	{forms.FormF8995, []string{"8995"}, nil},
+	{forms.FormF1040, []string{"1040"}, []string{"540"}},
+
+	// California forms (specific before generic "540")
+	{forms.FormF3514, []string{"3514"}, nil},
+	{forms.FormF3853, []string{"3853"}, nil},
+	// 540NR before 540 — "540nr" contains "540", so must be checked first.
+	{forms.FormCA540NR, []string{"540nr"}, nil},
+	{forms.FormCA540, []string{"540"}, []string{"540nr", "540-nr", "schedule ca"}},
+}
+
+// filenameFormRules maps filename substrings to form IDs. Checked after
+// metadata rules fail. Filename matching is less reliable, so only use
+// unambiguous patterns.
+var filenameFormRules = []struct {
+	formID   forms.FormID
+	requires []string
+	rejects  []string
+}{
+	{forms.FormScheduleB, []string{"1040sb"}, nil},
+	{forms.FormSchedule1, []string{"1040s1"}, nil},
+	{forms.FormSchedule2, []string{"1040s2"}, nil},
+	{forms.FormSchedule3, []string{"1040s3"}, nil},
+	{forms.FormScheduleA, []string{"1040sa"}, nil},
+	{forms.FormScheduleC, []string{"1040sc"}, nil},
+	{forms.FormScheduleD, []string{"1040sd"}, nil},
+	{forms.FormScheduleSE, []string{"1040sse"}, nil},
+	{forms.FormF2555, []string{"2555"}, nil},
+	{forms.FormF1116, []string{"1116"}, nil},
+	{forms.FormF8938, []string{"8938"}, nil},
+	{forms.FormF8833, []string{"8833"}, nil},
+	{forms.FormF8949, []string{"8949"}, nil},
+	{forms.FormF8889, []string{"8889"}, nil},
+	{forms.FormF8995, []string{"8995"}, nil},
+	{forms.FormF1040, []string{"1040"}, []string{"540"}},
+	{forms.FormScheduleCA, []string{"540-ca", "schedule_ca"}, nil},
+	{forms.FormF3514, []string{"3514"}, nil},
+	{forms.FormF3853, []string{"3853"}, nil},
+	{forms.FormCA540NR, []string{"540nr"}, nil},
+	{forms.FormCA540, []string{"540"}, []string{"540nr", "540-nr", "540-ca"}},
+}
+
+// matchRules checks a text against a set of require/reject rules.
+func matchRules(text string, rules []struct {
+	formID   forms.FormID
+	requires []string
+	rejects  []string
+}) forms.FormID {
+	for _, rule := range rules {
+		match := true
+		for _, req := range rule.requires {
+			if !strings.Contains(text, req) {
+				match = false
+				break
 			}
+		}
+		if !match {
+			continue
+		}
+		rejected := false
+		for _, rej := range rule.rejects {
+			if strings.Contains(text, rej) {
+				rejected = true
+				break
+			}
+		}
+		if rejected {
+			continue
+		}
+		return rule.formID
+	}
+	return ""
+}
+
+// detectFormFromFields determines which registered form config best matches
+// the PDF. It tries (in order): metadata title/source, filename, then
+// field-name matching. Returns the form ID and config, or ("", nil) if
+// no match is found.
+func (p *Parser) detectFormFromFields(pdfFields map[string]string, fg *form.FormGroup, path string) (forms.FormID, *FormPDFConfig) {
+	// Stage 1: Metadata-based detection from title/source/subject.
+	if fg != nil {
+		combined := strings.ToLower(fg.Header.Source + " " + fg.Header.Title + " " + fg.Header.Subject)
+		if id := matchRules(combined, metadataFormRules); id != "" {
+			if config, ok := p.configs[id]; ok {
+				return id, config
+			}
+			// Form detected but no mappings registered — return ID with nil config.
+			return id, nil
 		}
 	}
 
-	// Fall back to field-name matching: pick the config with the most matching fields.
+	// Stage 2: Filename-based detection.
+	if path != "" {
+		filename := strings.ToLower(filepath.Base(path))
+		if id := matchRules(filename, filenameFormRules); id != "" {
+			if config, ok := p.configs[id]; ok {
+				return id, config
+			}
+			return id, nil
+		}
+	}
+
+	// Stage 3: Field-name matching (fallback for PDFs with matching AcroForm IDs).
 	var bestID forms.FormID
 	var bestConfig *FormPDFConfig
 	bestScore := 0

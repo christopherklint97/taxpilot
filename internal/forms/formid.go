@@ -39,6 +39,7 @@ const (
 
 const (
 	FormCA540      FormID = "ca_540"
+	FormCA540NR    FormID = "ca_540nr"
 	FormScheduleCA FormID = "ca_schedule_ca"
 	FormF3514      FormID = "form_3514"
 	FormF3853      FormID = "form_3853"

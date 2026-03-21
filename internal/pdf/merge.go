@@ -197,6 +197,16 @@ func formLabel(id forms.FormID) string {
 		return "CA Form 3514"
 	case forms.FormF3853:
 		return "CA Form 3853"
+	case forms.FormCA540NR:
+		return "CA Form 540NR"
+	case forms.FormF2555:
+		return "Form 2555"
+	case forms.FormF1116:
+		return "Form 1116"
+	case forms.FormF8938:
+		return "Form 8938"
+	case forms.FormF8833:
+		return "Form 8833"
 	default:
 		return string(id)
 	}

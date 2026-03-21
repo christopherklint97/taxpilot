@@ -193,7 +193,7 @@ func TestDetectFormFromFields(t *testing.T) {
 		"f1_22": "75000",
 		"f1_24": "75000",
 	}
-	formID, config := p.detectFormFromFields(pdfFields, nil)
+	formID, config := p.detectFormFromFields(pdfFields, nil, "")
 	if formID != "1040" {
 		t.Errorf("detectFormFromFields: got formID=%q, want %q", formID, "1040")
 	}
@@ -206,7 +206,7 @@ func TestDetectFormFromFields(t *testing.T) {
 		"Line_7":  "50000",
 		"Line_13": "75000",
 	}
-	formID, config = p.detectFormFromFields(pdfFields, nil)
+	formID, config = p.detectFormFromFields(pdfFields, nil, "")
 	if formID != "ca_540" {
 		t.Errorf("detectFormFromFields: got formID=%q, want %q", formID, "ca_540")
 	}
@@ -215,7 +215,7 @@ func TestDetectFormFromFields(t *testing.T) {
 	pdfFields = map[string]string{
 		"unknown_field": "123",
 	}
-	formID, config = p.detectFormFromFields(pdfFields, nil)
+	formID, config = p.detectFormFromFields(pdfFields, nil, "")
 	if formID != "" || config != nil {
 		t.Errorf("detectFormFromFields: expected no match, got formID=%q", formID)
 	}
