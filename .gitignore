@@ -30,6 +30,9 @@ Thumbs.db
 # TaxPilot user data
 .taxpilot/
 
+# Prior-year returns (sensitive tax documents)
+returns/
+
 # PDF templates (downloaded separately — see internal/pdf/templates/README.md)
 internal/pdf/templates/**/*.pdf
 data/tax_years/*/federal/*.pdf
