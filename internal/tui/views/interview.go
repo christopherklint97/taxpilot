@@ -320,6 +320,7 @@ func (m InterviewView) updateCalcMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			} else {
 				m.calcResultVal = result
 				m.calcHasResult = true
+				m.calcInput = "" // clear input so next Enter uses the result
 				if breakdown != "" {
 					m.calcResult = breakdown
 				} else {
