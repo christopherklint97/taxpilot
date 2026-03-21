@@ -56,7 +56,7 @@ func TestSetModel(t *testing.T) {
 
 func TestRequestSerialization(t *testing.T) {
 	req := ChatRequest{
-		Model: "anthropic/claude-sonnet-4",
+		Model: "anthropic/claude-sonnet-4.6",
 		Messages: []Message{
 			{Role: "system", Content: "You are helpful."},
 			{Role: "user", Content: "Hello"},
@@ -74,7 +74,7 @@ func TestRequestSerialization(t *testing.T) {
 		t.Fatalf("unmarshal error: %v", err)
 	}
 
-	if parsed["model"] != "anthropic/claude-sonnet-4" {
+	if parsed["model"] != "anthropic/claude-sonnet-4.6" {
 		t.Errorf("unexpected model: %v", parsed["model"])
 	}
 	msgs := parsed["messages"].([]any)

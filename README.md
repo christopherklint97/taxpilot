@@ -102,7 +102,16 @@ go run ./cmd/taxpilot --validate
 go run ./cmd/taxpilot --efile
 ```
 
-For AI-powered explanations, set `OPENROUTER_API_KEY` in your environment. The interview works without it — you just get static help text instead of LLM-generated explanations.
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `OPENROUTER_API_KEY` | Required for AI-powered explanations (interview works without it — static help text instead) |
+| `TAXPILOT_MODEL` | Override the default LLM model (default: `anthropic/claude-sonnet-4.6`) |
+
+You can also pass `--model <model>` on the command line, which takes precedence over both the default and `TAXPILOT_MODEL`.
+
+All API requests use OpenRouter's Zero Data Retention (ZDR) routing — prompts and completions are never stored by providers.
 
 ## Testing
 

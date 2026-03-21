@@ -32,7 +32,7 @@ type factory struct {
 }
 
 // buildFactory creates a factory with optional LLM support.
-func buildFactory(taxYear int, stateCode string, _ string) *factory {
+func buildFactory(taxYear int, stateCode string, _ string, modelOverride string) *factory {
 	f := &factory{
 		taxYear:   taxYear,
 		stateCode: stateCode,
@@ -41,6 +41,10 @@ func buildFactory(taxYear int, stateCode string, _ string) *factory {
 	// Try to initialize LLM client
 	client, err := llm.NewClient("")
 	if err == nil {
+		if modelOverride != "" {
+			client.SetModel(modelOverride)
+		}
+		client.SetZDR(true)
 		f.llmClient = client
 		f.explainer = llm.NewExplainer(client)
 		store := knowledge.NewStore()

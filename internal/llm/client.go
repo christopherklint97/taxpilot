@@ -17,12 +17,18 @@ type Message struct {
 	Content string `json:"content"`
 }
 
+// ProviderPreferences controls OpenRouter provider routing options.
+type ProviderPreferences struct {
+	ZDR bool `json:"zdr,omitempty"` // Zero Data Retention — route only to endpoints that don't store data
+}
+
 // ChatRequest is the request payload for OpenRouter.
 type ChatRequest struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	MaxTokens   int       `json:"max_tokens,omitempty"`
-	Temperature float64   `json:"temperature,omitempty"`
+	Model       string               `json:"model"`
+	Messages    []Message            `json:"messages"`
+	MaxTokens   int                  `json:"max_tokens,omitempty"`
+	Temperature float64              `json:"temperature,omitempty"`
+	Provider    *ProviderPreferences `json:"provider,omitempty"`
 }
 
 // Choice represents a single completion choice.
@@ -56,14 +62,16 @@ type Client struct {
 	apiKey     string
 	baseURL    string
 	model      string
+	zdr        bool // zero data retention
 	httpClient *http.Client
 }
 
 // DefaultModel is the default model to use via OpenRouter.
-const DefaultModel = "anthropic/claude-sonnet-4"
+const DefaultModel = "anthropic/claude-sonnet-4.6"
 
 // NewClient creates a new OpenRouter client.
 // Reads OPENROUTER_API_KEY from environment if apiKey is empty.
+// Reads TAXPILOT_MODEL from environment to override the default model.
 func NewClient(apiKey string) (*Client, error) {
 	if apiKey == "" {
 		apiKey = os.Getenv("OPENROUTER_API_KEY")
@@ -71,14 +79,23 @@ func NewClient(apiKey string) (*Client, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("OPENROUTER_API_KEY not set — set it in your environment or pass it directly")
 	}
+	model := DefaultModel
+	if envModel := os.Getenv("TAXPILOT_MODEL"); envModel != "" {
+		model = envModel
+	}
 	return &Client{
 		apiKey:  apiKey,
 		baseURL: "https://openrouter.ai/api/v1/chat/completions",
-		model:   DefaultModel,
+		model:   model,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 	}, nil
+}
+
+// SetZDR enables or disables Zero Data Retention routing.
+func (c *Client) SetZDR(enabled bool) {
+	c.zdr = enabled
 }
 
 // SetModel changes the model used for completions.
@@ -98,6 +115,9 @@ func (c *Client) ChatWithOptions(ctx context.Context, messages []Message, maxTok
 		Messages:    messages,
 		MaxTokens:   maxTokens,
 		Temperature: temperature,
+	}
+	if c.zdr {
+		req.Provider = &ProviderPreferences{ZDR: true}
 	}
 
 	body, err := json.Marshal(req)

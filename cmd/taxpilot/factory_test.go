@@ -10,7 +10,7 @@ import (
 )
 
 func TestMakeInterview_New(t *testing.T) {
-	f := buildFactory(2025, "CA", "")
+	f := buildFactory(2025, "CA", "", "")
 	msg := tui.StartInterviewMsg{TaxYear: 2025, StateCode: "CA"}
 	view, err := f.makeInterview(msg)
 	if err != nil {
@@ -22,7 +22,7 @@ func TestMakeInterview_New(t *testing.T) {
 }
 
 func TestMakeInterview_WithPriorYear(t *testing.T) {
-	f := buildFactory(2025, "CA", "")
+	f := buildFactory(2025, "CA", "", "")
 	f.priorNumeric = map[string]float64{"1040:11": 75000}
 	f.priorString = map[string]string{"1040:first_name": "Jane"}
 	msg := tui.StartInterviewMsg{TaxYear: 2025, StateCode: "CA"}
@@ -57,7 +57,7 @@ func TestMakeInterview_Continue(t *testing.T) {
 	os.WriteFile(defaultPath, data, 0o644)
 	defer os.Setenv("HOME", origHome)
 
-	f := buildFactory(2025, "CA", "")
+	f := buildFactory(2025, "CA", "", "")
 	msg := tui.StartInterviewMsg{TaxYear: 2025, StateCode: "CA", Continue: true}
 	view, err := f.makeInterview(msg)
 	if err != nil {
@@ -76,7 +76,7 @@ func TestMakeSummary_SavesState(t *testing.T) {
 	os.MkdirAll(filepath.Join(tmpDir, ".taxpilot"), 0o755)
 	defer os.Setenv("HOME", origHome)
 
-	f := buildFactory(2025, "CA", "")
+	f := buildFactory(2025, "CA", "", "")
 	msg := tui.ShowSummaryMsg{
 		Results:   map[string]float64{"1040:11": 50000},
 		StrInputs: map[string]string{"1040:first_name": "Alice"},
@@ -105,7 +105,7 @@ func TestMakeSummary_SavesState(t *testing.T) {
 
 func TestExplainCallbacks_NilLLM(t *testing.T) {
 	// When no API key, LLM callbacks should be nil
-	f := buildFactory(2025, "CA", "")
+	f := buildFactory(2025, "CA", "", "")
 	vf := f.ViewFactory()
 
 	// Without an API key, Explain should be nil (gracefully handled by App)
@@ -126,7 +126,7 @@ func TestExplainCallbacks_NilLLM(t *testing.T) {
 
 func TestExportPDF(t *testing.T) {
 	tmpDir := t.TempDir()
-	f := buildFactory(2025, "CA", "")
+	f := buildFactory(2025, "CA", "", "")
 	msg := tui.ExportPDFMsg{
 		Results:   map[string]float64{"1040:11": 50000, "1040:15": 40000},
 		StrInputs: map[string]string{"1040:first_name": "Test"},
@@ -148,7 +148,7 @@ func TestExportPDF(t *testing.T) {
 }
 
 func TestViewFactory_AllFieldsSet(t *testing.T) {
-	f := buildFactory(2025, "CA", "")
+	f := buildFactory(2025, "CA", "", "")
 	vf := f.ViewFactory()
 
 	if vf.MakeInterview == nil {

@@ -34,6 +34,7 @@ func main() {
 	validateOnly := flag.Bool("validate", false, "Validate only (no TUI)")
 	federalOnly := flag.Bool("federal-only", false, "Federal only")
 	stateOnly := flag.Bool("state-only", false, "State only")
+	modelOverride := flag.String("model", "", "OpenRouter model (overrides TAXPILOT_MODEL and default)")
 	flag.Parse()
 
 	// Non-TUI: --validate
@@ -49,7 +50,7 @@ func main() {
 	}
 
 	// TUI mode
-	factory := buildFactory(*taxYear, *stateCode, *exportDir)
+	factory := buildFactory(*taxYear, *stateCode, *exportDir, *modelOverride)
 
 	welcome := views.NewWelcomeModel(*taxYear, *stateCode)
 

@@ -11,7 +11,7 @@ e-file directly to the IRS (MeF) and CA FTB, or export filled PDFs.
 - **CLI framework:** Cobra
 - **TUI framework:** Bubble Tea + Lip Gloss
 - **PDF handling:** pdfcpu (reading/writing IRS + FTB forms)
-- **LLM integration:** OpenRouter API (routing to Anthropic Claude models)
+- **LLM integration:** OpenRouter API (default: `anthropic/claude-sonnet-4.6`, configurable via `--model` flag or `TAXPILOT_MODEL` env var; ZDR enabled)
 - **XML generation:** encoding/xml (for MeF and CA e-file submissions)
 - **SOAP client:** Custom (for IRS MeF A2A interface)
 - **Embedding/search:** SQLite + vec extension (or Qdrant if needed later)
@@ -170,6 +170,7 @@ go run ./cmd/taxpilot --efile --federal-only # E-file federal only
 go run ./cmd/taxpilot --efile --state-only   # E-file CA only
 go run ./cmd/taxpilot --validate             # Validate against MeF business rules
 go run ./cmd/taxpilot --state CA             # Set state (default from config)
+go run ./cmd/taxpilot --model deepseek/deepseek-v3.2  # Override LLM model
 ```
 
 ## Testing
