@@ -5,10 +5,12 @@ import "taxpilot/internal/forms"
 func init() { forms.RegisterForm(F1099DIV) }
 
 // F1099DIV returns the FormDef for a 1099-DIV Dividends and Distributions.
+// 1099-DIV forms are issued by US brokerages and fund companies only.
+// Foreign dividends are reported directly on Schedule B and Form 1040.
 func F1099DIV() *forms.FormDef {
 	return &forms.FormDef{
 		ID:           forms.Form1099DIV,
-		Name:         "1099-DIV Dividends and Distributions",
+		Name:         "1099-DIV Dividends and Distributions (US payers only)",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
 		QuestionGroup: forms.GroupIncome1099,
@@ -19,7 +21,7 @@ func F1099DIV() *forms.FormDef {
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Payer name",
-				Prompt: "What is the payer's name (from 1099-DIV)?",
+				Prompt: "What is the US payer's name (from 1099-DIV)? (Skip this form if all dividends are from foreign sources — foreign dividends are reported separately)",
 			},
 			{
 				Line:   forms.LinePayerTIN,

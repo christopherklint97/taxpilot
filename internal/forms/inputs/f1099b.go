@@ -5,12 +5,14 @@ import "taxpilot/internal/forms"
 func init() { forms.RegisterForm(F1099B) }
 
 // F1099B returns the FormDef for a 1099-B Proceeds From Broker and Barter Exchange Transactions.
+// 1099-B forms are issued by US brokers only. Sales through foreign brokerages
+// that do not issue 1099-B should be reported directly on Form 8949.
 // Each 1099-B represents a single sale or disposition of a security.
 // Multiple sales are handled via instance prefixes (e.g., 1099b:1:, 1099b:2:).
 func F1099B() *forms.FormDef {
 	return &forms.FormDef{
 		ID:           forms.Form1099B,
-		Name:         "1099-B Proceeds From Broker Transactions",
+		Name:         "1099-B Proceeds From Broker Transactions (US brokers only)",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
 		QuestionGroup: forms.GroupIncome1099,
@@ -21,7 +23,7 @@ func F1099B() *forms.FormDef {
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Description of property",
-				Prompt: "Describe the security sold (e.g., \"100 sh AAPL\"):",
+				Prompt: "Describe the security sold from a US broker (e.g., \"100 sh AAPL\"). Skip this form if the sale was through a foreign brokerage.",
 			},
 			{
 				Line:   forms.LineDateAcquired,

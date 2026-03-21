@@ -183,10 +183,10 @@ var contextualPrompts = map[string]ContextualPrompt{
 		HelpText: "1099-INT Box 9. This may be subject to the Alternative Minimum Tax (AMT). Enter 0 if none.",
 	},
 
-	// --- 1099-DIV fields ---
+	// --- 1099-DIV fields (US payers only) ---
 	"1099div:1:payer_name": {
-		Prompt:   "Who is the payer for your 1099-DIV?",
-		HelpText: "Enter the name of the brokerage or fund company that paid you dividends.",
+		Prompt:   "Who is the US payer for your 1099-DIV?",
+		HelpText: "Enter the name of the US brokerage or fund company that issued a 1099-DIV. Only US financial institutions issue 1099-DIV forms. If all your dividends are from foreign sources, skip this form — foreign dividends are reported directly on Schedule B and Form 1040.",
 	},
 	"1099div:1:payer_tin": {
 		Prompt:   "What is the payer's TIN?",
@@ -271,10 +271,10 @@ var contextualPrompts = map[string]ContextualPrompt{
 		IRCRef:   "IRC §6654",
 	},
 
-	// --- 1099-NEC fields ---
+	// --- 1099-NEC fields (US payers only) ---
 	"1099nec:1:payer_name": {
-		Prompt:   "Who is the payer for your 1099-NEC?",
-		HelpText: "Enter the name of the client or company that paid you as a non-employee (independent contractor).",
+		Prompt:   "Who is the US payer for your 1099-NEC?",
+		HelpText: "Enter the name of the US client or company that issued a 1099-NEC. Only US entities issue 1099-NEC forms. If all your contractor income is from foreign clients, skip this form — foreign self-employment income is entered separately.",
 	},
 	"1099nec:1:payer_tin": {
 		Prompt:   "What is the payer's TIN?",
@@ -337,10 +337,10 @@ var contextualPrompts = map[string]ContextualPrompt{
 		IRCRef:   "IRC §162(a)",
 	},
 
-	// --- 1099-B fields ---
+	// --- 1099-B fields (US brokers only) ---
 	"1099b:1:description": {
-		Prompt:   "Describe the security you sold:",
-		HelpText: "Enter a short description like \"100 sh AAPL\" or \"VTSAX mutual fund.\" This helps identify the transaction on Form 8949.",
+		Prompt:   "Describe the security you sold (from a US broker):",
+		HelpText: "Enter a short description like \"100 sh AAPL\" or \"VTSAX mutual fund.\" Only US brokers issue 1099-B forms. If you sold securities through a foreign brokerage, skip this form — those sales are reported directly on Form 8949.",
 	},
 	"1099b:1:date_acquired": {
 		Prompt:   "When did you acquire this security?",

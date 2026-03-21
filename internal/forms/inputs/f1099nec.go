@@ -5,10 +5,12 @@ import "taxpilot/internal/forms"
 func init() { forms.RegisterForm(F1099NEC) }
 
 // F1099NEC returns the FormDef for a 1099-NEC Nonemployee Compensation.
+// 1099-NEC forms are issued by US clients and companies only.
+// Foreign freelance/contractor income is entered as foreign self-employment income.
 func F1099NEC() *forms.FormDef {
 	return &forms.FormDef{
 		ID:           forms.Form1099NEC,
-		Name:         "1099-NEC Nonemployee Compensation",
+		Name:         "1099-NEC Nonemployee Compensation (US payers only)",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
 		QuestionGroup: forms.GroupIncome1099,
@@ -19,7 +21,7 @@ func F1099NEC() *forms.FormDef {
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Payer name",
-				Prompt: "What is the payer's name (from 1099-NEC)?",
+				Prompt: "What is the US payer's name (from 1099-NEC)? (Skip this form if the payer is foreign — foreign contractor income is entered separately)",
 			},
 			{
 				Line:   forms.LinePayerTIN,
