@@ -9,10 +9,10 @@ type StartInterviewMsg struct {
 
 // ShowSummaryMsg tells the App to switch from interview to summary view.
 type ShowSummaryMsg struct {
-	Results    map[string]float64
-	StrInputs  map[string]string
-	TaxYear    int
-	State      string
+	Results   map[string]float64
+	StrInputs map[string]string
+	TaxYear   int
+	State     string
 }
 
 // ImportPriorYearMsg tells the App to import prior-year return(s).
@@ -40,6 +40,22 @@ type RequestExplanationMsg struct {
 type ExplanationResponseMsg struct {
 	Explanation string
 	Err         error
+}
+
+// RequestAIPromptMsg sends a free-form question to the AI about the current field.
+type RequestAIPromptMsg struct {
+	UserQuestion string
+	FieldKey     string
+	Label        string
+	FormName     string
+	FilingStatus string
+	AnsweredKeys map[string]string
+}
+
+// AIPromptResponseMsg carries the AI's answer back to the view.
+type AIPromptResponseMsg struct {
+	Answer string
+	Err    error
 }
 
 // RequestWhyAskedMsg triggers a "why am I being asked this?" explanation.
@@ -110,6 +126,16 @@ type EFileSubmissionResult struct {
 	SubmissionID string
 	Status       string
 	Message      string
+}
+
+// AIStreamChunkMsg carries a streaming chunk of AI text to the view.
+// When Done is true, the stream is complete. Ch carries the channel forward
+// so the view can issue a command to read the next chunk.
+type AIStreamChunkMsg struct {
+	Text string
+	Err  error
+	Done bool
+	Ch   <-chan interface{} // receives StreamChunk values; typed as interface{} to avoid import cycle
 }
 
 // ExchangeRatesMsg carries fetched exchange rates back to the view.

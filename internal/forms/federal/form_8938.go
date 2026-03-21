@@ -18,9 +18,9 @@ func init() { forms.RegisterForm(Form8938) }
 // failure to file carries significant penalties ($10,000+ per year).
 func Form8938() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           forms.FormF8938,
-		Name:         "Form 8938 — Statement of Specified Foreign Financial Assets",
-		Jurisdiction: forms.Federal,
+		ID:            forms.FormF8938,
+		Name:          "Form 8938 — Statement of Specified Foreign Financial Assets",
+		Jurisdiction:  forms.Federal,
 		TaxYears:      []int{2025},
 		QuestionGroup: forms.GroupExpat,
 		QuestionOrder: 4,
@@ -29,22 +29,23 @@ func Form8938() *forms.FormDef {
 
 			// Lives abroad (determines which threshold applies)
 			{
-				Line:    "lives_abroad",
-				Type:    forms.UserInput,
+				Line:      "lives_abroad",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:   "Do you live outside the United States?",
-				Prompt:  "Do you meet the bona fide residence or physical presence test for living abroad?",
-				Options: forms.YesNoOptions,
+				Label:     "Do you live outside the United States?",
+				Prompt:    "Do you meet the bona fide residence or physical presence test for living abroad?",
+				Options:   forms.YesNoOptions,
 			},
 
 			// --- Financial account details ---
 
 			// Number of foreign financial accounts
 			{
-				Line:   "num_accounts",
-				Type:   forms.UserInput,
-				Label:  "Number of foreign financial accounts",
-				Prompt: "How many foreign financial accounts do you have (bank, brokerage, pension, etc.)?",
+				Line:      "num_accounts",
+				Type:      forms.UserInput,
+				ValueType: forms.IntegerValue,
+				Label:     "Number of foreign financial accounts",
+				Prompt:    "How many foreign financial accounts do you have (bank, brokerage, pension, etc.)?",
 			},
 			// Maximum value of all accounts during the year
 			{
@@ -65,10 +66,11 @@ func Form8938() *forms.FormDef {
 
 			// Number of other foreign assets
 			{
-				Line:   "num_other_assets",
-				Type:   forms.UserInput,
-				Label:  "Number of other specified foreign financial assets",
-				Prompt: "How many other specified foreign financial assets do you have (foreign stocks, partnership interests, etc.)?",
+				Line:      "num_other_assets",
+				Type:      forms.UserInput,
+				ValueType: forms.IntegerValue,
+				Label:     "Number of other specified foreign financial assets",
+				Prompt:    "How many other specified foreign financial assets do you have (foreign stocks, partnership interests, etc.)?",
 			},
 			// Maximum value of other assets
 			{
@@ -89,28 +91,28 @@ func Form8938() *forms.FormDef {
 
 			// Country of primary account
 			{
-				Line:   "account_country",
-				Type:   forms.UserInput,
+				Line:      "account_country",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Country of foreign accounts",
-				Prompt: "In which country are your foreign financial accounts held?",
+				Label:     "Country of foreign accounts",
+				Prompt:    "In which country are your foreign financial accounts held?",
 			},
 			// Institution name
 			{
-				Line:   "account_institution",
-				Type:   forms.UserInput,
+				Line:      "account_institution",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Foreign financial institution name",
-				Prompt: "What is the name of the foreign financial institution?",
+				Label:     "Foreign financial institution name",
+				Prompt:    "What is the name of the foreign financial institution?",
 			},
 			// Account type
 			{
-				Line:    "account_type",
-				Type:    forms.UserInput,
+				Line:      "account_type",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:   "Type of foreign account",
-				Prompt:  "What type of foreign financial account is it?",
-				Options: []string{"deposit", "custodial", "pension", "other"},
+				Label:     "Type of foreign account",
+				Prompt:    "What type of foreign financial account is it?",
+				Options:   []string{"deposit", "custodial", "pension", "other"},
 			},
 
 			// --- Income from foreign assets ---

@@ -10,23 +10,32 @@ import (
 	"taxpilot/internal/calc"
 	"taxpilot/internal/forms"
 	"taxpilot/internal/interview"
+	"taxpilot/internal/llm"
 	"taxpilot/internal/state"
 	"taxpilot/internal/tui"
 )
 
 // InterviewView is the Bubble Tea model for the interview screen.
 type InterviewView struct {
-	engine       *interview.Engine
-	input        string // current text input
-	err          string // error message to display
-	helpText     string // contextual help text shown after "?" command
-	aiHelpText   string // RAG-powered explanation shown after "??" command
-	aiLoading    bool   // true while waiting for AI explanation
-	done         bool   // all questions answered
-	taxYear      int
-	stateCode    string
-	width        int
-	height       int
+	engine     *interview.Engine
+	input      string // current text input
+	err        string // error message to display
+	helpText   string // contextual help text shown after "?" command
+	aiHelpText string // RAG-powered explanation shown after "??" command
+	aiLoading  bool   // true while waiting for AI explanation
+	done       bool   // all questions answered
+	taxYear    int
+	stateCode  string
+	width      int
+	height     int
+
+	// Cursor position within input (0 = before first char, len(input) = after last)
+	cursor int
+
+	// Input history (Up/Down arrow to recall previous inputs)
+	history    []string // past inputs, newest last
+	historyIdx int      // -1 = not browsing; 0..len-1 = browsing position
+	historyBuf string   // saves current input when entering history mode
 
 	// Calculator sub-mode
 	calcMode      bool               // true when calculator is active
@@ -42,9 +51,10 @@ type InterviewView struct {
 // NewInterviewView creates a new InterviewView with the given engine.
 func NewInterviewView(engine *interview.Engine, taxYear int, stateCode string) InterviewView {
 	return InterviewView{
-		engine:    engine,
-		taxYear:   taxYear,
-		stateCode: stateCode,
+		engine:     engine,
+		taxYear:    taxYear,
+		stateCode:  stateCode,
+		historyIdx: -1,
 	}
 }
 
@@ -64,7 +74,7 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tui.ExplanationResponseMsg:
 		m.aiLoading = false
 		if msg.Err != nil {
-			m.aiHelpText = "Error loading explanation: " + msg.Err.Error()
+			m.aiHelpText = "Error: " + msg.Err.Error() + " (press ↑ then Enter to retry)"
 		} else {
 			m.aiHelpText = msg.Explanation
 		}
@@ -73,7 +83,7 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tui.WhyAskedResponseMsg:
 		m.aiLoading = false
 		if msg.Err != nil {
-			m.aiHelpText = "Error loading explanation: " + msg.Err.Error()
+			m.aiHelpText = "Error: " + msg.Err.Error() + " (press ↑ then Enter to retry)"
 		} else {
 			m.aiHelpText = msg.Explanation
 		}
@@ -82,9 +92,49 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tui.CADiffResponseMsg:
 		m.aiLoading = false
 		if msg.Err != nil {
-			m.aiHelpText = "Error loading explanation: " + msg.Err.Error()
+			m.aiHelpText = "Error: " + msg.Err.Error() + " (press ↑ then Enter to retry)"
 		} else {
 			m.aiHelpText = msg.Explanation
+		}
+		return m, nil
+
+	case tui.AIPromptResponseMsg:
+		m.aiLoading = false
+		if msg.Err != nil {
+			m.aiHelpText = "Error: " + msg.Err.Error() + " (press ↑ then Enter to retry)"
+		} else {
+			m.aiHelpText = msg.Answer
+		}
+		return m, nil
+
+	case tui.AIStreamChunkMsg:
+		if msg.Err != nil {
+			m.aiLoading = false
+			m.aiHelpText += "\nError: " + msg.Err.Error() + " (press ↑ then Enter to retry)"
+			return m, nil
+		}
+		if msg.Done {
+			m.aiLoading = false
+			return m, nil
+		}
+		// Append streaming text
+		m.aiHelpText += msg.Text
+		// Chain: read the next chunk from the channel
+		if msg.Ch != nil {
+			ch := msg.Ch
+			return m, func() tea.Msg {
+				raw, ok := <-ch
+				if !ok {
+					return tui.AIStreamChunkMsg{Done: true}
+				}
+				chunk := raw.(llm.StreamChunk)
+				return tui.AIStreamChunkMsg{
+					Text: chunk.Text,
+					Err:  chunk.Err,
+					Done: chunk.Done,
+					Ch:   ch,
+				}
+			}
 		}
 		return m, nil
 
@@ -113,13 +163,56 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.done {
 				return m, nil
 			}
+			// Handle "ai <question>" — free-form AI question about current field
+			if strings.HasPrefix(m.input, "ai ") && len(m.input) > 3 {
+				userQuestion := strings.TrimSpace(m.input[3:])
+				q := m.engine.Current()
+				if q != nil && userQuestion != "" {
+					m.history = append(m.history, m.input)
+					m.historyIdx = -1
+					m.aiLoading = true
+					m.aiHelpText = ""
+					m.input = ""
+					m.cursor = 0
+					// Build context from answered questions
+					answeredKeys := make(map[string]string)
+					for k, v := range m.engine.StrInputs() {
+						answeredKeys[k] = v
+					}
+					for k, v := range m.engine.Inputs() {
+						if _, exists := answeredKeys[k]; !exists {
+							answeredKeys[k] = fmt.Sprintf("%v", v)
+						}
+					}
+					filingStatus := ""
+					if fs, ok := m.engine.StrInputs()[forms.F1040FilingStatus]; ok {
+						filingStatus = fs
+					}
+					return m, func() tea.Msg {
+						return tui.RequestAIPromptMsg{
+							UserQuestion: userQuestion,
+							FieldKey:     q.Key,
+							Label:        q.Prompt,
+							FormName:     q.FormName,
+							FilingStatus: filingStatus,
+							AnsweredKeys: answeredKeys,
+						}
+					}
+				}
+				m.input = ""
+				m.cursor = 0
+				return m, nil
+			}
 			// Handle "??" RAG-powered explanation command
 			if m.input == "??" {
 				q := m.engine.Current()
 				if q != nil {
+					m.history = append(m.history, m.input)
+					m.historyIdx = -1
 					m.aiLoading = true
 					m.aiHelpText = ""
 					m.input = ""
+					m.cursor = 0
 					return m, func() tea.Msg {
 						return tui.RequestExplanationMsg{
 							FieldKey: q.Key,
@@ -129,15 +222,19 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				m.input = ""
+				m.cursor = 0
 				return m, nil
 			}
 			// Handle "why" command — explain why this question is being asked
 			if m.input == "why" {
 				q := m.engine.Current()
 				if q != nil {
+					m.history = append(m.history, m.input)
+					m.historyIdx = -1
 					m.aiLoading = true
 					m.aiHelpText = ""
 					m.input = ""
+					m.cursor = 0
 					// Build answered keys from string inputs
 					answeredKeys := make(map[string]string)
 					for k, v := range m.engine.StrInputs() {
@@ -163,15 +260,19 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				m.input = ""
+				m.cursor = 0
 				return m, nil
 			}
 			// Handle "ca" command — explain CA vs federal difference
 			if m.input == "ca" && m.stateCode == forms.StateCodeCA {
 				q := m.engine.Current()
 				if q != nil {
+					m.history = append(m.history, m.input)
+					m.historyIdx = -1
 					m.aiLoading = true
 					m.aiHelpText = ""
 					m.input = ""
+					m.cursor = 0
 					return m, func() tea.Msg {
 						return tui.RequestCADiffMsg{
 							FieldKey: q.Key,
@@ -180,11 +281,13 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				m.input = ""
+				m.cursor = 0
 				return m, nil
 			}
 			// Handle "skip" command — skip all questions for the current form
 			if m.input == "skip" {
 				m.input = ""
+				m.cursor = 0
 				m.helpText = ""
 				m.aiHelpText = ""
 				skipped := m.engine.SkipForm()
@@ -210,9 +313,36 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
+			// Handle "prior" command — show prior-year value for current question
+			if m.input == "prior" {
+				m.input = ""
+				m.cursor = 0
+				m.helpText = ""
+				m.aiHelpText = ""
+				numCount, strCount := m.engine.PriorYearCount()
+				pyd := m.engine.GetPriorYearDefault()
+				if pyd != nil {
+					display := fmt.Sprintf("Prior year: %s", pyd.PriorValue)
+					if pyd.CANote != "" {
+						display += "\nCA: " + pyd.CANote
+					}
+					m.helpText = display
+				} else if numCount > 0 || strCount > 0 {
+					q := m.engine.Current()
+					fieldKey := ""
+					if q != nil {
+						fieldKey = q.Key
+					}
+					m.helpText = fmt.Sprintf("No prior-year value for field %q. (%d numeric, %d string values loaded from prior year)", fieldKey, numCount, strCount)
+				} else {
+					m.helpText = "No prior-year data loaded. Use --import prior.pdf to load a prior return, or complete a return with TaxPilot to auto-save for next year."
+				}
+				return m, nil
+			}
 			// Handle "calc" command — enter calculator mode
 			if m.input == "calc" {
 				m.input = ""
+				m.cursor = 0
 				m.calcMode = true
 				m.calcInput = ""
 				m.calcResult = ""
@@ -241,8 +371,14 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				m.input = ""
+				m.cursor = 0
 				return m, nil
 			}
+			// Save non-empty input to history for Up-arrow recall
+			if m.input != "" {
+				m.history = append(m.history, m.input)
+			}
+			m.historyIdx = -1
 			// Clear help text on next answer
 			m.helpText = ""
 			m.aiHelpText = ""
@@ -260,6 +396,7 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			m.input = ""
+			m.cursor = 0
 			m.err = ""
 
 			if !m.engine.HasNext() {
@@ -283,18 +420,68 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case tea.KeyBackspace, tea.KeyDelete:
-			if len(m.input) > 0 {
-				m.input = m.input[:len(m.input)-1]
+			if m.cursor > 0 && len(m.input) > 0 {
+				m.input = m.input[:m.cursor-1] + m.input[m.cursor:]
+				m.cursor--
 				m.err = ""
 			}
 			return m, nil
 
 		case tea.KeyLeft:
-			// Go back to previous question (only when input is empty)
 			if m.input == "" {
+				// Go back to previous question when input is empty
 				if m.engine.Back() {
 					m.err = ""
+					m.helpText = ""
+					m.aiHelpText = ""
 				}
+			} else if m.cursor > 0 {
+				// Move cursor left within text
+				m.cursor--
+			}
+			return m, nil
+
+		case tea.KeyRight:
+			if m.input == "" {
+				// Go forward to next question when input is empty
+				if m.engine.Forward() {
+					m.err = ""
+					m.helpText = ""
+					m.aiHelpText = ""
+				}
+			} else if m.cursor < len(m.input) {
+				// Move cursor right within text
+				m.cursor++
+			}
+			return m, nil
+
+		case tea.KeyUp:
+			// Recall previous input from history
+			if len(m.history) > 0 {
+				if m.historyIdx == -1 {
+					// Entering history mode — save current input
+					m.historyBuf = m.input
+					m.historyIdx = len(m.history) - 1
+				} else if m.historyIdx > 0 {
+					m.historyIdx--
+				}
+				m.input = m.history[m.historyIdx]
+				m.cursor = len(m.input)
+			}
+			return m, nil
+
+		case tea.KeyDown:
+			// Navigate forward in history
+			if m.historyIdx >= 0 {
+				if m.historyIdx < len(m.history)-1 {
+					m.historyIdx++
+					m.input = m.history[m.historyIdx]
+				} else {
+					// Past the end — restore the original input
+					m.historyIdx = -1
+					m.input = m.historyBuf
+				}
+				m.cursor = len(m.input)
 			}
 			return m, nil
 
@@ -310,12 +497,14 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.saveState()
 				return m, tea.Quit
 			}
-			m.input += key
+			m.input = m.input[:m.cursor] + key + m.input[m.cursor:]
+			m.cursor += len(key)
 			m.err = ""
 			return m, nil
 
 		case tea.KeySpace:
-			m.input += " "
+			m.input = m.input[:m.cursor] + " " + m.input[m.cursor:]
+			m.cursor++
 			return m, nil
 		}
 	}
@@ -339,6 +528,7 @@ func (m InterviewView) updateCalcMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Empty input + result available: use the result as the field value
 			m.calcMode = false
 			m.input = fmt.Sprintf("%.2f", m.calcResultVal)
+			m.cursor = len(m.input)
 			m.calcInput = ""
 			m.calcResult = ""
 			m.calcHasResult = false
@@ -441,12 +631,12 @@ func (m InterviewView) View() string {
 	cp := interview.GetContextualPrompt(q.Key, q.Prompt, m.stateCode)
 
 	// Question prompt (use contextual prompt instead of raw prompt)
-	prompt := tui.PromptStyle.Width(contentW).Render(cp.Prompt)
+	prompt := tui.PromptStyle.Render(cp.Prompt)
 
 	// Contextual help text below the prompt
 	var contextHelp string
 	if cp.HelpText != "" {
-		contextHelp = tui.HelpStyle.Width(contentW).Render(cp.HelpText)
+		contextHelp = tui.HelpStyle.Render(cp.HelpText)
 	}
 
 	// CA-specific note
@@ -455,8 +645,16 @@ func (m InterviewView) View() string {
 		caNote = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#E5C07B")).
 			Italic(true).
-			Width(contentW).
 			Render("CA: " + cp.CANote)
+	}
+
+	// Current answer (shown when navigating back to an answered question)
+	var currentAnswer string
+	if ans := m.engine.CurrentAnswer(); ans != "" {
+		currentAnswer = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#98C379")).
+			Bold(true).
+			Render("Current answer: " + ans)
 	}
 
 	// User-triggered help text (from "?" command)
@@ -465,23 +663,26 @@ func (m InterviewView) View() string {
 		userHelp = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#98C379")).
 			Italic(true).
-			Width(contentW).
 			Render(m.helpText)
 	}
 
-	// AI-powered explanation (from "??" command)
+	// AI-powered explanation (from "??" command or streaming)
 	var aiHelp string
-	if m.aiLoading {
+	if m.aiLoading && m.aiHelpText != "" {
+		// Streaming in progress — show accumulated text with a blinking cursor
+		aiHelp = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#56B6C2")).
+			Italic(true).
+			Render(m.aiHelpText + "▍")
+	} else if m.aiLoading {
 		aiHelp = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#E5C07B")).
 			Italic(true).
-			Width(contentW).
 			Render("Loading AI explanation...")
 	} else if m.aiHelpText != "" {
 		aiHelp = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#56B6C2")).
 			Italic(true).
-			Width(contentW).
 			Render(m.aiHelpText)
 	}
 
@@ -489,16 +690,15 @@ func (m InterviewView) View() string {
 	var priorYearBlock string
 	pyd := m.engine.GetPriorYearDefault()
 	if pyd != nil {
-		priorYearBlock = tui.SuccessStyle.Width(contentW).Render(
+		priorYearBlock = tui.SuccessStyle.Render(
 			fmt.Sprintf("Last year: %s", pyd.PriorValue),
-		) + "\n" + tui.HelpStyle.Width(contentW).Render(
+		) + "\n" + tui.HelpStyle.Render(
 			"Press Enter to keep last year's value, or type a new one",
 		)
 		if pyd.CANote != "" {
 			priorYearBlock += "\n" + lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#E5C07B")).
 				Italic(true).
-				Width(contentW).
 				Render("CA: "+pyd.CANote)
 		}
 	}
@@ -517,10 +717,12 @@ func (m InterviewView) View() string {
 		optionsBlock = strings.Join(lines, "\n")
 	}
 
-	// Input area
-	cursor := tui.HighlightStyle.Render("▸ ")
-	inputLine := cursor + tui.InputStyle.Render(m.input) +
-		tui.HighlightStyle.Render("█")
+	// Input area with cursor at the correct position
+	cursorPrefix := tui.HighlightStyle.Render("▸ ")
+	beforeCursor := tui.InputStyle.Render(m.input[:m.cursor])
+	cursorChar := tui.HighlightStyle.Render("█")
+	afterCursor := tui.InputStyle.Render(m.input[m.cursor:])
+	inputLine := cursorPrefix + beforeCursor + cursorChar + afterCursor
 
 	// Error message
 	var errBlock string
@@ -528,46 +730,78 @@ func (m InterviewView) View() string {
 		errBlock = tui.ErrorStyle.Render("⚠ " + m.err)
 	}
 
-	// Help text — wrap into multiple lines to fit terminal width
-	helpItems := []string{
-		"Enter: submit", "←: go back", "skip: skip form",
-		"?: help", "??: AI explain", "why: why asked",
-		"calc: calculator", "q: save & quit",
+	// Help table — aligned columns of key/action pairs
+	type helpEntry struct {
+		key, action string
+	}
+	helpEntries := []helpEntry{
+		{"Enter", "submit"},
+		{"←/→", "navigate/cursor"},
+		{"↑↓", "history"},
+		{"skip", "skip form"},
+		{"?", "help"},
+		{"??", "AI explain"},
+		{"why", "why asked"},
+		{"ai <q>", "ask AI"},
+		{"calc", "calculator"},
+		{"prior", "last year"},
+		{"q", "save & quit"},
 	}
 	if m.stateCode == forms.StateCodeCA {
-		helpItems = append(helpItems, "ca: CA diff")
+		helpEntries = append(helpEntries, helpEntry{"ca", "CA diff"})
 	}
-	sep := "  |  "
-	var helpLines []string
-	line := ""
-	for i, item := range helpItems {
-		candidate := line
-		if candidate != "" {
-			candidate += sep
-		}
-		candidate += item
-		if line != "" && lipgloss.Width(candidate) > contentW {
-			helpLines = append(helpLines, line)
-			line = item
-		} else {
-			if i > 0 && line != "" {
-				line += sep
-			}
-			line += item
-		}
-	}
-	if line != "" {
-		helpLines = append(helpLines, line)
-	}
-	help := tui.HelpStyle.Render(strings.Join(helpLines, "\n"))
 
-	// Compose layout
+	// Find the max key and action widths for alignment
+	maxKeyW := 0
+	maxActW := 0
+	for _, e := range helpEntries {
+		if w := lipgloss.Width(e.key); w > maxKeyW {
+			maxKeyW = w
+		}
+		if w := lipgloss.Width(e.action); w > maxActW {
+			maxActW = w
+		}
+	}
+
+	keyStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#61AFEF")).
+		Bold(true).
+		Width(maxKeyW).
+		Align(lipgloss.Right)
+	actionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#626262")).
+		Italic(true).
+		Width(maxActW)
+	sepStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#444444"))
+
+	// Each cell: key + " " + action + gap between columns
+	cellWidth := maxKeyW + 1 + maxActW + 3 // key + space + action + " | "
+	cols := contentW / cellWidth
+	if cols < 2 {
+		cols = 2
+	}
+	if cols > len(helpEntries) {
+		cols = len(helpEntries)
+	}
+
+	var helpLines []string
+	for i := 0; i < len(helpEntries); i += cols {
+		var cells []string
+		for j := 0; j < cols && i+j < len(helpEntries); j++ {
+			e := helpEntries[i+j]
+			cells = append(cells, keyStyle.Render(e.key)+" "+actionStyle.Render(e.action))
+		}
+		helpLines = append(helpLines, strings.Join(cells, sepStyle.Render(" · ")))
+	}
+	help := strings.Join(helpLines, "\n")
+
+	// Compose layout — use single blank lines for separation
 	parts := []string{
 		progress,
 		bar,
 		"",
 		formContext,
-		"",
 		prompt,
 	}
 	if contextHelp != "" {
@@ -576,6 +810,9 @@ func (m InterviewView) View() string {
 	if caNote != "" {
 		parts = append(parts, caNote)
 	}
+	if currentAnswer != "" {
+		parts = append(parts, currentAnswer)
+	}
 	if priorYearBlock != "" {
 		parts = append(parts, priorYearBlock)
 	}
@@ -583,10 +820,10 @@ func (m InterviewView) View() string {
 		parts = append(parts, optionsBlock)
 	}
 	if userHelp != "" {
-		parts = append(parts, "", userHelp)
+		parts = append(parts, userHelp)
 	}
 	if aiHelp != "" {
-		parts = append(parts, "", aiHelp)
+		parts = append(parts, aiHelp)
 	}
 	parts = append(parts, "", inputLine)
 	if errBlock != "" {

@@ -182,17 +182,18 @@ type FieldValueType int
 const (
 	NumericValue FieldValueType = iota // default: numeric/currency
 	StringValue                        // text input (names, SSN, EIN, etc.)
+	IntegerValue                       // whole number (counts, not currency)
 )
 
 // FieldDef defines a single field on a tax form.
 type FieldDef struct {
 	Line       string
 	Type       FieldType
-	ValueType  FieldValueType          // NumericValue or StringValue
+	ValueType  FieldValueType // NumericValue or StringValue
 	Label      string
 	Prompt     string                  // human-readable question (for UserInput)
-	DependsOn  []string               // field keys this depends on (form_id:line format)
-	Options    []string               // for enum-type UserInput fields
+	DependsOn  []string                // field keys this depends on (form_id:line format)
+	Options    []string                // for enum-type UserInput fields
 	Compute    func(DepValues) float64 // for Computed/FederalRef/Lookup fields
 	ComputeStr func(DepValues) string  // for string-valued computed fields
 }

@@ -46,51 +46,52 @@ var contextualPrompts = map[string]ContextualPrompt{
 	},
 
 	// --- W-2 (US employers only) ---
-	"w2:1:employer_name": {
+	// Keys use 2-part format (form_id:line) to match engine-generated keys.
+	"w2:employer_name": {
 		Prompt:   "Who is your US employer?",
 		HelpText: "Enter the employer name exactly as shown on your W-2 (Box c). W-2 forms are issued by US employers only. If your employer is foreign, skip this form and enter your wages in the foreign wages section.",
 	},
-	"w2:1:employer_ein": {
+	"w2:employer_ein": {
 		Prompt:   "What is the employer's EIN?",
 		HelpText: "The 9-digit Employer Identification Number from your W-2 (Box b). Format: XX-XXXXXXX. If your employer is a foreign entity without a US EIN, enter FOREIGN.",
 	},
-	"w2:1:wages": {
+	"w2:wages": {
 		Prompt:   "What were your total wages from this employer?",
 		HelpText: "This is Box 1 on your W-2: Wages, tips, and other compensation. This is your gross pay minus pre-tax deductions (401k, health insurance, etc.).",
 		CANote:   "If your CA wages (Box 16) differ from federal wages (Box 1), we'll ask about that separately.",
 		IRCRef:   "IRC §61(a)",
 		CARef:    "R&TC §17071",
 	},
-	"w2:1:federal_tax_withheld": {
+	"w2:federal_tax_withheld": {
 		Prompt:   "How much federal income tax was withheld?",
 		HelpText: "W-2 Box 2. This is the amount your employer sent to the IRS on your behalf throughout the year.",
 		IRCRef:   "IRC §3402",
 	},
-	"w2:1:ss_wages": {
+	"w2:ss_wages": {
 		Prompt:   "What were your Social Security wages?",
 		HelpText: "W-2 Box 3. Usually the same as Box 1, but may differ if you have pre-tax deductions that are subject to Social Security tax.",
 		IRCRef:   "IRC §3121",
 	},
-	"w2:1:ss_tax_withheld": {
+	"w2:ss_tax_withheld": {
 		Prompt:   "How much Social Security tax was withheld?",
 		HelpText: "W-2 Box 4. Should be 6.2% of Box 3 (capped at the Social Security wage base of $176,100 for 2025).",
 	},
-	"w2:1:medicare_wages": {
+	"w2:medicare_wages": {
 		Prompt:   "What were your Medicare wages?",
 		HelpText: "W-2 Box 5. Usually the same as Box 1. There is no cap on Medicare wages.",
 		IRCRef:   "IRC §3101",
 	},
-	"w2:1:medicare_tax_withheld": {
+	"w2:medicare_tax_withheld": {
 		Prompt:   "How much Medicare tax was withheld?",
 		HelpText: "W-2 Box 6. Should be 1.45% of Box 5 (plus 0.9% Additional Medicare Tax on wages over $200,000).",
 	},
-	"w2:1:state_wages": {
+	"w2:state_wages": {
 		Prompt:   "What were your state wages?",
 		HelpText: "W-2 Box 16. This is your California taxable wages. Usually the same as Box 1 (federal wages).",
 		CANote:   "If different from federal wages, this is typically due to items taxed differently by California.",
 		CARef:    "R&TC §17071",
 	},
-	"w2:1:state_tax_withheld": {
+	"w2:state_tax_withheld": {
 		Prompt:   "How much California state tax was withheld?",
 		HelpText: "W-2 Box 17. This is the amount your employer sent to the California FTB on your behalf.",
 	},
@@ -143,92 +144,92 @@ var contextualPrompts = map[string]ContextualPrompt{
 	},
 
 	// --- 1099-INT fields ---
-	"1099int:1:payer_name": {
+	"1099int:payer_name": {
 		Prompt:   "Who is the US payer for your 1099-INT?",
 		HelpText: "Enter the name of the US bank or institution that issued a 1099-INT. Only US financial institutions issue 1099-INT forms. If all your interest is from foreign banks, skip this form — foreign interest is entered separately on Schedule B.",
 	},
-	"1099int:1:payer_tin": {
+	"1099int:payer_tin": {
 		Prompt:   "What is the payer's TIN?",
 		HelpText: "The 9-digit Taxpayer Identification Number from your 1099-INT. Format: XX-XXXXXXX.",
 	},
-	"1099int:1:interest_income": {
+	"1099int:interest_income": {
 		Prompt:   "What was your interest income?",
 		HelpText: "1099-INT Box 1. This is your total taxable interest earned during the year.",
 		IRCRef:   "IRC §61(a)(4)",
 	},
-	"1099int:1:early_withdrawal_penalty": {
+	"1099int:early_withdrawal_penalty": {
 		Prompt:   "Was there an early withdrawal penalty?",
 		HelpText: "1099-INT Box 2. Penalty for early withdrawal of a time deposit (e.g., CD). Enter 0 if none.",
 	},
-	"1099int:1:us_savings_bond_interest": {
+	"1099int:us_savings_bond_interest": {
 		Prompt:   "Any interest on U.S. Savings Bonds or Treasury obligations?",
 		HelpText: "1099-INT Box 3. This interest is taxable federally but exempt from state tax in most states.",
 		CANote:   "California does not tax interest on U.S. government obligations. This will be subtracted on Schedule CA.",
 		IRCRef:   "IRC §103",
 		CARef:    "R&TC §17133",
 	},
-	"1099int:1:federal_tax_withheld": {
+	"1099int:federal_tax_withheld": {
 		Prompt:   "Was any federal tax withheld on interest?",
 		HelpText: "1099-INT Box 4. Usually $0 unless backup withholding applied.",
 	},
-	"1099int:1:tax_exempt_interest": {
+	"1099int:tax_exempt_interest": {
 		Prompt:   "Any tax-exempt interest?",
 		HelpText: "1099-INT Box 8. Interest from municipal bonds. Federally exempt but may be subject to state tax.",
 		CANote:   "Only interest from California municipal bonds is exempt from CA tax. Out-of-state muni interest is taxable in CA.",
 		IRCRef:   "IRC §103",
 		CARef:    "R&TC §17133.5",
 	},
-	"1099int:1:private_activity_bond_interest": {
+	"1099int:private_activity_bond_interest": {
 		Prompt:   "Any specified private activity bond interest?",
 		HelpText: "1099-INT Box 9. This may be subject to the Alternative Minimum Tax (AMT). Enter 0 if none.",
 	},
 
 	// --- 1099-DIV fields (US payers only) ---
-	"1099div:1:payer_name": {
+	"1099div:payer_name": {
 		Prompt:   "Who is the US payer for your 1099-DIV?",
 		HelpText: "Enter the name of the US brokerage or fund company that issued a 1099-DIV. Only US financial institutions issue 1099-DIV forms. If all your dividends are from foreign sources, skip this form — foreign dividends are reported directly on Schedule B and Form 1040.",
 	},
-	"1099div:1:payer_tin": {
+	"1099div:payer_tin": {
 		Prompt:   "What is the payer's TIN?",
 		HelpText: "The 9-digit Taxpayer Identification Number from your 1099-DIV. Format: XX-XXXXXXX.",
 	},
-	"1099div:1:ordinary_dividends": {
+	"1099div:ordinary_dividends": {
 		Prompt:   "What were your total ordinary dividends?",
 		HelpText: "1099-DIV Box 1a. This includes both qualified and non-qualified dividends.",
 		IRCRef:   "IRC §61(a)(7)",
 	},
-	"1099div:1:qualified_dividends": {
+	"1099div:qualified_dividends": {
 		Prompt:   "How much of that was qualified dividends?",
 		HelpText: "1099-DIV Box 1b. Qualified dividends are taxed at lower capital gains rates. This is a subset of Box 1a.",
 		CANote:   "California taxes qualified dividends as ordinary income \u2014 there is no preferential rate.",
 		IRCRef:   "IRC §1(h)(11)",
 		CARef:    "R&TC §17041 (taxed as ordinary)",
 	},
-	"1099div:1:total_capital_gain": {
+	"1099div:total_capital_gain": {
 		Prompt:   "Any capital gain distributions?",
 		HelpText: "1099-DIV Box 2a. Long-term capital gain distributions from mutual funds. Enter 0 if none.",
 	},
-	"1099div:1:section_1250_gain": {
+	"1099div:section_1250_gain": {
 		Prompt:   "Any unrecaptured Section 1250 gain?",
 		HelpText: "1099-DIV Box 2b. Gain from depreciation on real property in a fund. Usually 0. Enter 0 if none.",
 	},
-	"1099div:1:section_199a_dividends": {
+	"1099div:section_199a_dividends": {
 		Prompt:   "Any Section 199A dividends?",
 		HelpText: "1099-DIV Box 5. REIT dividends that may qualify for the 20% QBI deduction. Enter 0 if none.",
 		CANote:   "California does not allow the Section 199A (QBI) deduction.",
 		IRCRef:   "IRC §199A",
 		CARef:    "R&TC (not allowed)",
 	},
-	"1099div:1:federal_tax_withheld": {
+	"1099div:federal_tax_withheld": {
 		Prompt:   "Was any federal tax withheld on dividends?",
 		HelpText: "1099-DIV Box 4. Usually $0 unless backup withholding applied.",
 	},
-	"1099div:1:exempt_interest_dividends": {
+	"1099div:exempt_interest_dividends": {
 		Prompt:   "Any exempt-interest dividends?",
 		HelpText: "1099-DIV Box 12. Tax-exempt dividends from a mutual fund holding municipal bonds. Enter 0 if none.",
 		CANote:   "Only the portion from California municipal bonds is exempt from CA tax.",
 	},
-	"1099div:1:private_activity_bond_dividends": {
+	"1099div:private_activity_bond_dividends": {
 		Prompt:   "Any specified private activity bond interest dividends?",
 		HelpText: "1099-DIV Box 13. May be subject to AMT. Enter 0 if none.",
 	},
@@ -272,22 +273,22 @@ var contextualPrompts = map[string]ContextualPrompt{
 	},
 
 	// --- 1099-NEC fields (US payers only) ---
-	"1099nec:1:payer_name": {
+	"1099nec:payer_name": {
 		Prompt:   "Who is the US payer for your 1099-NEC?",
 		HelpText: "Enter the name of the US client or company that issued a 1099-NEC. Only US entities issue 1099-NEC forms. If all your contractor income is from foreign clients, skip this form — foreign self-employment income is entered separately.",
 	},
-	"1099nec:1:payer_tin": {
+	"1099nec:payer_tin": {
 		Prompt:   "What is the payer's TIN?",
 		HelpText: "The 9-digit Taxpayer Identification Number from your 1099-NEC. Format: XX-XXXXXXX.",
 	},
-	"1099nec:1:nonemployee_compensation": {
+	"1099nec:nonemployee_compensation": {
 		Prompt:   "How much nonemployee compensation did you receive?",
 		HelpText: "1099-NEC Box 1. This is income for work you performed as an independent contractor. It is subject to self-employment tax.",
 		CANote:   "California generally conforms to federal treatment of self-employment income.",
 		IRCRef:   "IRC §61(a)(1)",
 		CARef:    "R&TC §17071",
 	},
-	"1099nec:1:federal_tax_withheld": {
+	"1099nec:federal_tax_withheld": {
 		Prompt:   "Was any federal tax withheld on this 1099-NEC?",
 		HelpText: "1099-NEC Box 4. Usually $0 unless backup withholding applied.",
 	},
@@ -338,44 +339,44 @@ var contextualPrompts = map[string]ContextualPrompt{
 	},
 
 	// --- 1099-B fields (US brokers only) ---
-	"1099b:1:description": {
+	"1099b:description": {
 		Prompt:   "Describe the security you sold (from a US broker):",
 		HelpText: "Enter a short description like \"100 sh AAPL\" or \"VTSAX mutual fund.\" Only US brokers issue 1099-B forms. If you sold securities through a foreign brokerage, skip this form — those sales are reported directly on Form 8949.",
 	},
-	"1099b:1:date_acquired": {
+	"1099b:date_acquired": {
 		Prompt:   "When did you acquire this security?",
 		HelpText: "Enter the date in MM/DD/YYYY format, or VARIOUS if acquired over multiple dates. Holdings over 1 year qualify for lower long-term capital gains rates.",
 	},
-	"1099b:1:date_sold": {
+	"1099b:date_sold": {
 		Prompt:   "When did you sell this security?",
 		HelpText: "Enter the date in MM/DD/YYYY format from your 1099-B.",
 	},
-	"1099b:1:proceeds": {
+	"1099b:proceeds": {
 		Prompt:   "What were the proceeds from this sale?",
 		HelpText: "1099-B Box 1d. The total amount you received from the sale, before commissions.",
 		IRCRef:   "IRC §1001",
 		CARef:    "R&TC §18031",
 	},
-	"1099b:1:cost_basis": {
+	"1099b:cost_basis": {
 		Prompt:   "What was the cost basis?",
 		HelpText: "1099-B Box 1e. Your original purchase price plus commissions. If basis was not reported to the IRS, check your brokerage statements.",
 		IRCRef:   "IRC §1001",
 		CARef:    "R&TC §18031",
 	},
-	"1099b:1:wash_sale_loss": {
+	"1099b:wash_sale_loss": {
 		Prompt:   "Any wash sale loss disallowed?",
 		HelpText: "1099-B Box 1g. If you bought substantially identical securities within 30 days of selling at a loss, the loss is disallowed. Enter 0 if none.",
 	},
-	"1099b:1:federal_tax_withheld": {
+	"1099b:federal_tax_withheld": {
 		Prompt:   "Was any federal tax withheld?",
 		HelpText: "1099-B Box 4. Usually $0 unless backup withholding applied.",
 	},
-	"1099b:1:term": {
+	"1099b:term": {
 		Prompt:   "Was this a short-term or long-term holding?",
 		HelpText: "Short-term: held 1 year or less (taxed as ordinary income). Long-term: held more than 1 year (taxed at preferential rates of 0%, 15%, or 20%).",
 		CANote:   "California taxes capital gains as ordinary income \u2014 there is no preferential long-term rate.",
 	},
-	"1099b:1:basis_reported": {
+	"1099b:basis_reported": {
 		Prompt:   "Was the cost basis reported to the IRS?",
 		HelpText: "Check Box 12 on your 1099-B. Most brokers report basis for stocks purchased after 2011.",
 	},

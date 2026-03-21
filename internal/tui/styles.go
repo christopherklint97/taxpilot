@@ -6,8 +6,7 @@ var (
 	// TitleStyle is used for bold, colored headers.
 	TitleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#4A90D9")).
-			MarginBottom(1)
+			Foreground(lipgloss.Color("#4A90D9"))
 
 	// PromptStyle is used for question text shown to the user.
 	PromptStyle = lipgloss.NewStyle().

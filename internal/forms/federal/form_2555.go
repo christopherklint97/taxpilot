@@ -21,9 +21,9 @@ func init() { forms.RegisterForm(Form2555) }
 // added back on Schedule CA.
 func Form2555() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           forms.FormF2555,
-		Name:         "Form 2555 — Foreign Earned Income",
-		Jurisdiction: forms.Federal,
+		ID:            forms.FormF2555,
+		Name:          "Form 2555 — Foreign Earned Income",
+		Jurisdiction:  forms.Federal,
 		TaxYears:      []int{2025},
 		QuestionGroup: forms.GroupExpat,
 		QuestionOrder: 4,
@@ -32,111 +32,112 @@ func Form2555() *forms.FormDef {
 
 			// Foreign country of residence
 			{
-				Line:   "foreign_country",
-				Type:   forms.UserInput,
+				Line:      "foreign_country",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Foreign country of residence",
-				Prompt: "What country do you live in?",
+				Label:     "Foreign country of residence",
+				Prompt:    "What country do you live in?",
 			},
 			// Foreign address
 			{
-				Line:   "foreign_address",
-				Type:   forms.UserInput,
+				Line:      "foreign_address",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Foreign address",
-				Prompt: "What is your foreign address?",
+				Label:     "Foreign address",
+				Prompt:    "What is your foreign address?",
 			},
 			// Foreign employer name
 			{
-				Line:   "employer_name_2555",
-				Type:   forms.UserInput,
+				Line:      "employer_name_2555",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Employer name (foreign)",
-				Prompt: "What is your foreign employer's name?",
+				Label:     "Employer name (foreign)",
+				Prompt:    "What is your foreign employer's name?",
 			},
 			// Is employer foreign?
 			{
-				Line:    "employer_foreign",
-				Type:    forms.UserInput,
+				Line:      "employer_foreign",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:   "Is your employer a foreign entity?",
-				Prompt:  "Is your employer a foreign (non-US) entity?",
-				Options: forms.YesNoOptions,
+				Label:     "Is your employer a foreign entity?",
+				Prompt:    "Is your employer a foreign (non-US) entity?",
+				Options:   forms.YesNoOptions,
 			},
 			// Self-employed abroad?
 			{
-				Line:    "self_employed_abroad",
-				Type:    forms.UserInput,
+				Line:      "self_employed_abroad",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:   "Self-employed abroad",
-				Prompt:  "Are you self-employed in your foreign country?",
-				Options: forms.YesNoOptions,
+				Label:     "Self-employed abroad",
+				Prompt:    "Are you self-employed in your foreign country?",
+				Options:   forms.YesNoOptions,
 			},
 
 			// --- Part II: Qualifying Test ---
 
 			// Which qualifying test
 			{
-				Line:    "qualifying_test",
-				Type:    forms.UserInput,
+				Line:      "qualifying_test",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:   "Qualifying test for FEIE",
-				Prompt:  "Which qualifying test do you meet for the Foreign Earned Income Exclusion?",
-				Options: forms.QualifyingTestOptions,
+				Label:     "Qualifying test for FEIE",
+				Prompt:    "Which qualifying test do you meet for the Foreign Earned Income Exclusion?",
+				Options:   forms.QualifyingTestOptions,
 			},
 
 			// --- Bona Fide Residence Test fields ---
 
 			// BFRT start date
 			{
-				Line:   "bfrt_start_date",
-				Type:   forms.UserInput,
+				Line:      "bfrt_start_date",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Bona fide residence start date",
-				Prompt: "When did your bona fide residence in a foreign country begin? (MM/DD/YYYY)",
+				Label:     "Bona fide residence start date",
+				Prompt:    "When did your bona fide residence in a foreign country begin? (MM/DD/YYYY)",
 			},
 			// BFRT end date
 			{
-				Line:   "bfrt_end_date",
-				Type:   forms.UserInput,
+				Line:      "bfrt_end_date",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Bona fide residence end date",
-				Prompt: "When did (or will) your bona fide residence end? (MM/DD/YYYY or 'continuing')",
+				Label:     "Bona fide residence end date",
+				Prompt:    "When did (or will) your bona fide residence end? (MM/DD/YYYY or 'continuing')",
 			},
 			// BFRT full tax year?
 			{
-				Line:    "bfrt_full_year",
-				Type:    forms.UserInput,
+				Line:      "bfrt_full_year",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:   "Bona fide resident for full tax year",
-				Prompt:  "Were you a bona fide resident of a foreign country for the entire tax year?",
-				Options: forms.YesNoOptions,
+				Label:     "Bona fide resident for full tax year",
+				Prompt:    "Were you a bona fide resident of a foreign country for the entire tax year?",
+				Options:   forms.YesNoOptions,
 			},
 
 			// --- Physical Presence Test fields ---
 
 			// PPT days in foreign country
 			{
-				Line:   "ppt_days_present",
-				Type:   forms.UserInput,
-				Label:  "Days physically present in foreign country",
-				Prompt: "How many days were you physically present in a foreign country during the 12-month qualifying period?",
+				Line:      "ppt_days_present",
+				Type:      forms.UserInput,
+				ValueType: forms.IntegerValue,
+				Label:     "Days physically present in foreign country",
+				Prompt:    "How many days were you physically present in a foreign country during the 12-month qualifying period?",
 			},
 			// PPT period start
 			{
-				Line:   "ppt_period_start",
-				Type:   forms.UserInput,
+				Line:      "ppt_period_start",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Physical presence period start",
-				Prompt: "What is the start date of your 12-month qualifying period? (MM/DD/YYYY)",
+				Label:     "Physical presence period start",
+				Prompt:    "What is the start date of your 12-month qualifying period? (MM/DD/YYYY)",
 			},
 			// PPT period end
 			{
-				Line:   "ppt_period_end",
-				Type:   forms.UserInput,
+				Line:      "ppt_period_end",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Physical presence period end",
-				Prompt: "What is the end date of your 12-month qualifying period? (MM/DD/YYYY)",
+				Label:     "Physical presence period end",
+				Prompt:    "What is the end date of your 12-month qualifying period? (MM/DD/YYYY)",
 			},
 
 			// --- Part III: Foreign Earned Income ---
@@ -150,11 +151,11 @@ func Form2555() *forms.FormDef {
 			},
 			// Currency code
 			{
-				Line:   "currency_code",
-				Type:   forms.UserInput,
+				Line:      "currency_code",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Foreign currency code",
-				Prompt: "What currency were you paid in? (e.g., SEK, EUR, GBP)",
+				Label:     "Foreign currency code",
+				Prompt:    "What currency were you paid in? (e.g., SEK, EUR, GBP)",
 			},
 			// Exchange rate
 			{

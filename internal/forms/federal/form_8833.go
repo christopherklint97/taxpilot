@@ -23,44 +23,44 @@ func init() { forms.RegisterForm(Form8833) }
 // Failure to disclose carries a $1,000 penalty per position.
 func Form8833() *forms.FormDef {
 	return &forms.FormDef{
-		ID:           forms.FormF8833,
-		Name:         "Form 8833 — Treaty-Based Return Position Disclosure",
-		Jurisdiction: forms.Federal,
+		ID:            forms.FormF8833,
+		Name:          "Form 8833 — Treaty-Based Return Position Disclosure",
+		Jurisdiction:  forms.Federal,
 		TaxYears:      []int{2025},
 		QuestionGroup: forms.GroupExpat,
 		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// Treaty country
 			{
-				Line:   "treaty_country",
-				Type:   forms.UserInput,
+				Line:      "treaty_country",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Treaty country",
-				Prompt: "Which country's tax treaty are you relying on?",
+				Label:     "Treaty country",
+				Prompt:    "Which country's tax treaty are you relying on?",
 			},
 			// Treaty article
 			{
-				Line:   "treaty_article",
-				Type:   forms.UserInput,
+				Line:      "treaty_article",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Treaty article number",
-				Prompt: "Which article of the tax treaty applies (e.g., 'Article 18 — Pensions')?",
+				Label:     "Treaty article number",
+				Prompt:    "Which article of the tax treaty applies (e.g., 'Article 18 — Pensions')?",
 			},
 			// IRC provision being overridden
 			{
-				Line:   "irc_provision",
-				Type:   forms.UserInput,
+				Line:      "irc_provision",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "IRC provision being overridden",
-				Prompt: "Which IRC section is modified by the treaty position (e.g., 'IRC §61' or 'IRC §871')?",
+				Label:     "IRC provision being overridden",
+				Prompt:    "Which IRC section is modified by the treaty position (e.g., 'IRC §61' or 'IRC §871')?",
 			},
 			// Explanation of the treaty-based position
 			{
-				Line:   "treaty_position_explanation",
-				Type:   forms.UserInput,
+				Line:      "treaty_position_explanation",
+				Type:      forms.UserInput,
 				ValueType: forms.StringValue,
-				Label:  "Explanation of treaty-based position",
-				Prompt: "Briefly explain your treaty-based return position:",
+				Label:     "Explanation of treaty-based position",
+				Prompt:    "Briefly explain your treaty-based return position:",
 			},
 			// Amount of income subject to treaty treatment
 			{
@@ -71,10 +71,11 @@ func Form8833() *forms.FormDef {
 			},
 			// Number of treaty positions being disclosed
 			{
-				Line:   "num_positions",
-				Type:   forms.UserInput,
-				Label:  "Number of treaty positions disclosed",
-				Prompt: "How many separate treaty positions are you disclosing?",
+				Line:      "num_positions",
+				Type:      forms.UserInput,
+				ValueType: forms.IntegerValue,
+				Label:     "Number of treaty positions disclosed",
+				Prompt:    "How many separate treaty positions are you disclosing?",
 			},
 
 			// --- Computed fields ---

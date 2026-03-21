@@ -45,12 +45,13 @@ type Engine struct {
 
 // Question represents a single question to ask the user.
 type Question struct {
-	Key      string   // field key like "1040:filing_status"
-	Label    string   // human-readable label
-	Prompt   string   // question text to show user
-	Options  []string // for enum fields (filing status, etc.)
-	IsString bool     // true for string inputs (names, SSN, EIN)
-	FormName string   // which form this belongs to
+	Key       string   // field key like "1040:filing_status"
+	Label     string   // human-readable label
+	Prompt    string   // question text to show user
+	Options   []string // for enum fields (filing status, etc.)
+	IsString  bool     // true for string inputs (names, SSN, EIN)
+	IsInteger bool     // true for whole-number inputs (counts, not currency)
+	FormName  string   // which form this belongs to
 }
 
 // isStringField checks whether a field should be treated as string input
@@ -205,6 +206,30 @@ func (e *Engine) AcceptDefault() error {
 	return nil
 }
 
+// SetPriorYear attaches prior-year data to an existing engine.
+// This is used when resuming a session (--continue) to enable the "prior" command.
+func (e *Engine) SetPriorYear(priorNumeric map[string]float64, priorStr map[string]string, stateCode string) {
+	e.stateCode = stateCode
+	e.priorYear = make(map[string]float64)
+	for k, v := range priorNumeric {
+		e.priorYear[k] = v
+	}
+	e.priorYearStr = make(map[string]string)
+	for k, v := range priorStr {
+		e.priorYearStr[k] = v
+	}
+}
+
+// HasPriorYearData returns true if any prior-year data is loaded.
+func (e *Engine) HasPriorYearData() bool {
+	return len(e.priorYear) > 0 || len(e.priorYearStr) > 0
+}
+
+// PriorYearCount returns the number of numeric and string prior-year values loaded.
+func (e *Engine) PriorYearCount() (numeric int, str int) {
+	return len(e.priorYear), len(e.priorYearStr)
+}
+
 // formatCurrency formats a float as "$1,234.00" for display within the engine.
 func formatCurrency(amount float64) string {
 	negative := amount < 0
@@ -275,12 +300,13 @@ func (e *Engine) buildQuestions() {
 			isStr := isStringField(&field)
 
 			q := Question{
-				Key:      key,
-				Label:    field.Label,
-				Prompt:   field.Prompt,
-				Options:  field.Options,
-				IsString: isStr,
-				FormName: form.Name,
+				Key:       key,
+				Label:     field.Label,
+				Prompt:    field.Prompt,
+				Options:   field.Options,
+				IsString:  isStr,
+				IsInteger: field.ValueType == forms.IntegerValue,
+				FormName:  form.Name,
 			}
 
 			group := form.QuestionGroup
@@ -621,6 +647,51 @@ func (e *Engine) Back() bool {
 	}
 	e.current--
 	return true
+}
+
+// Forward moves to the next question, but only if the current question is
+// already answered. Returns false if the current question is unanswered or
+// we're already at the end.
+func (e *Engine) Forward() bool {
+	if e.current >= len(e.questions) {
+		return false
+	}
+	if !e.isAnswered(&e.questions[e.current]) {
+		return false
+	}
+	e.current++
+	return true
+}
+
+// CurrentAnswer returns the existing answer for the current question, or
+// empty string if unanswered. For enum fields, returns the human-readable
+// option. For numeric fields, returns the formatted number.
+func (e *Engine) CurrentAnswer() string {
+	if e.current >= len(e.questions) {
+		return ""
+	}
+	q := &e.questions[e.current]
+
+	// Check string/enum answers first
+	if q.IsString || len(q.Options) > 0 {
+		if sv, ok := e.strInputs[q.Key]; ok && sv != "" {
+			return sv
+		}
+	}
+
+	// Check numeric answers
+	if nv, ok := e.inputs[q.Key]; ok {
+		// Skip the numeric placeholder for string fields
+		if q.IsString {
+			return ""
+		}
+		if q.IsInteger {
+			return fmt.Sprintf("%d", int64(nv))
+		}
+		return formatCurrency(nv)
+	}
+
+	return ""
 }
 
 // Solve runs the dependency graph solver with all collected inputs.

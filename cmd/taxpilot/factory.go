@@ -71,6 +71,7 @@ func (f *factory) ViewFactory() tui.ViewFactory {
 		vf.Explain = f.explain
 		vf.ExplainWhy = f.explainWhy
 		vf.ExplainCADiff = f.explainCADiff
+		vf.AskAI = f.askAI
 	}
 
 	return vf
@@ -78,6 +79,14 @@ func (f *factory) ViewFactory() tui.ViewFactory {
 
 func (f *factory) makeInterview(msg tui.StartInterviewMsg) (tea.Model, error) {
 	registry := interview.SetupRegistry()
+
+	// Debug: log factory prior-year state
+	debugPriorYear("makeInterview entry", f.priorNumeric, f.priorString)
+
+	// Resolve prior-year data: saved TaxPilot state first, then --import fallback
+	priorNumeric, priorStr := f.resolvePriorYear(msg.TaxYear)
+
+	debugPriorYear("after resolvePriorYear", priorNumeric, priorStr)
 
 	var engine *interview.Engine
 	var err error
@@ -91,12 +100,19 @@ func (f *factory) makeInterview(msg tui.StartInterviewMsg) (tea.Model, error) {
 		if err != nil {
 			return nil, err
 		}
+		if priorNumeric != nil {
+			engine.SetPriorYear(priorNumeric, priorStr, ret.State)
+			n, s := engine.PriorYearCount()
+			debugLog("SetPriorYear called: engine now has %d numeric, %d string", n, s)
+		} else {
+			debugLog("priorNumeric is nil — NOT calling SetPriorYear")
+		}
 		view := views.NewInterviewView(engine, ret.TaxYear, ret.State)
 		return view, nil
 	}
 
-	if f.priorNumeric != nil {
-		engine, err = interview.NewEngineWithPriorYear(registry, msg.TaxYear, f.priorNumeric, f.priorString, msg.StateCode)
+	if priorNumeric != nil {
+		engine, err = interview.NewEngineWithPriorYear(registry, msg.TaxYear, priorNumeric, priorStr, msg.StateCode)
 	} else {
 		engine, err = interview.NewEngine(registry, msg.TaxYear)
 	}
@@ -106,6 +122,26 @@ func (f *factory) makeInterview(msg tui.StartInterviewMsg) (tea.Model, error) {
 
 	view := views.NewInterviewView(engine, msg.TaxYear, msg.StateCode)
 	return view, nil
+}
+
+// resolvePriorYear returns prior-year data with priority:
+// 1. Saved TaxPilot state from prior year (~/.taxpilot/state_YYYY.json)
+// 2. Imported PDF data (--import flag)
+func (f *factory) resolvePriorYear(taxYear int) (map[string]float64, map[string]string) {
+	// First priority: saved TaxPilot state from prior year
+	if priorRet, err := state.LoadPriorYear(taxYear); err == nil {
+		ctx := state.ExtractPriorYearContext(priorRet)
+		if len(ctx.AllValues) > 0 || len(ctx.AllStrValues) > 0 {
+			return ctx.AllValues, ctx.AllStrValues
+		}
+	}
+
+	// Second priority: imported PDF data
+	if f.priorNumeric != nil {
+		return f.priorNumeric, f.priorString
+	}
+
+	return nil, nil
 }
 
 func (f *factory) makeSummary(msg tui.ShowSummaryMsg) tea.Model {
@@ -160,31 +196,60 @@ func (f *factory) makeReview(msg tui.ShowReviewMsg) tea.Model {
 	return views.NewReviewView(msg)
 }
 
+// readFirstChunk reads the first chunk from a streaming channel and returns
+// it as an AIStreamChunkMsg. The channel is wrapped in an interface{} channel
+// so the tui package doesn't need to import llm.
+func readFirstChunk(ch <-chan llm.StreamChunk) tui.AIStreamChunkMsg {
+	chunk, ok := <-ch
+	if !ok {
+		return tui.AIStreamChunkMsg{Done: true}
+	}
+	// Wrap the llm channel into an interface{} channel for the view
+	wrapped := make(chan interface{}, cap(ch)+1)
+	go func() {
+		defer close(wrapped)
+		for c := range ch {
+			wrapped <- c
+		}
+	}()
+	return tui.AIStreamChunkMsg{
+		Text: chunk.Text,
+		Err:  chunk.Err,
+		Done: chunk.Done,
+		Ch:   wrapped,
+	}
+}
+
 func (f *factory) explain(msg tui.RequestExplanationMsg) tea.Msg {
 	jurisdiction := knowledge.JurisdictionFederal
 	if len(msg.FormName) >= 2 && msg.FormName[:2] == "ca" {
 		jurisdiction = knowledge.JurisdictionCA
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	result, err := f.rag.QueryForField(ctx, msg.FieldKey, msg.Label, jurisdiction)
-	return tui.ExplanationResponseMsg{
-		Explanation: result,
-		Err:         err,
+	ctx := context.Background()
+	ch, err := f.rag.QueryForFieldStream(ctx, msg.FieldKey, msg.Label, jurisdiction)
+	if err != nil {
+		return tui.ExplanationResponseMsg{Err: err}
 	}
+	return readFirstChunk(ch)
 }
 
 func (f *factory) explainWhy(msg tui.RequestWhyAskedMsg) tea.Msg {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	result, err := f.explainer.ExplainWhyAsked(ctx, msg.FieldKey, msg.Label, msg.FilingStatus, msg.AnsweredKeys)
-	return tui.WhyAskedResponseMsg{
-		Explanation: result,
-		Err:         err,
+	ctx := context.Background()
+	ch, err := f.explainer.ExplainWhyAskedStream(ctx, msg.FieldKey, msg.Label, msg.FilingStatus, msg.AnsweredKeys)
+	if err != nil {
+		return tui.WhyAskedResponseMsg{Err: err}
 	}
+	return readFirstChunk(ch)
+}
+
+func (f *factory) askAI(msg tui.RequestAIPromptMsg) tea.Msg {
+	ctx := context.Background()
+	ch, err := f.explainer.AskAboutFieldStream(ctx, msg.UserQuestion, msg.FieldKey, msg.Label, msg.FormName, msg.FilingStatus, msg.AnsweredKeys)
+	if err != nil {
+		return tui.AIPromptResponseMsg{Err: err}
+	}
+	return readFirstChunk(ch)
 }
 
 func (f *factory) explainCADiff(msg tui.RequestCADiffMsg) tea.Msg {
@@ -195,14 +260,12 @@ func (f *factory) explainCADiff(msg tui.RequestCADiffMsg) tea.Msg {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	result, err := f.explainer.ExplainCADifference(ctx, diff.Area, diff.Federal, diff.California)
-	return tui.CADiffResponseMsg{
-		Explanation: result,
-		Err:         err,
+	ctx := context.Background()
+	ch, err := f.explainer.ExplainCADifferenceStream(ctx, diff.Area, diff.Federal, diff.California)
+	if err != nil {
+		return tui.CADiffResponseMsg{Err: err}
 	}
+	return readFirstChunk(ch)
 }
 
 func (f *factory) exportPDF(msg tui.ExportPDFMsg) tea.Msg {
@@ -269,5 +332,52 @@ func (f *factory) submitEFile(msg tui.EFileSubmitMsg) tea.Msg {
 	return tui.EFileResultMsg{
 		FederalResult: fedResult,
 		CAResult:      caResult,
+	}
+}
+
+// debugLog writes a line to ~/.taxpilot/debug.log for troubleshooting.
+func debugLog(format string, args ...interface{}) {
+	home, _ := os.UserHomeDir()
+	logPath := filepath.Join(home, ".taxpilot", "debug.log")
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	line := fmt.Sprintf(format, args...)
+	fmt.Fprintf(f, "[%s] %s\n", time.Now().Format("15:04:05"), line)
+}
+
+// debugPriorYear logs the state of prior-year data maps.
+func debugPriorYear(label string, numeric map[string]float64, str map[string]string) {
+	if numeric == nil && str == nil {
+		debugLog("%s: numeric=nil, str=nil", label)
+		return
+	}
+	numLen := 0
+	strLen := 0
+	if numeric != nil {
+		numLen = len(numeric)
+	}
+	if str != nil {
+		strLen = len(str)
+	}
+	debugLog("%s: numeric=%d values, str=%d values", label, numLen, strLen)
+	// Log first few keys as sample
+	count := 0
+	for k, v := range numeric {
+		if count >= 5 {
+			break
+		}
+		debugLog("  numeric[%s] = %v", k, v)
+		count++
+	}
+	count = 0
+	for k, v := range str {
+		if count >= 5 {
+			break
+		}
+		debugLog("  str[%s] = %q", k, v)
+		count++
 	}
 }

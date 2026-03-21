@@ -6,7 +6,7 @@ import tea "github.com/charmbracelet/bubbletea"
 type ViewName int
 
 const (
-	ViewWelcome   ViewName = iota
+	ViewWelcome ViewName = iota
 	ViewInterview
 	ViewSummary
 	ViewExport
@@ -48,6 +48,10 @@ type ViewFactory struct {
 	// ExplainCADiff triggers a CA vs federal difference explanation.
 	// Called when RequestCADiffMsg is received. May be nil if no LLM is configured.
 	ExplainCADiff func(msg RequestCADiffMsg) tea.Msg
+
+	// AskAI handles a free-form user question about the current field.
+	// Called when RequestAIPromptMsg is received. May be nil if no LLM is configured.
+	AskAI func(msg RequestAIPromptMsg) tea.Msg
 
 	// ExportPDF exports filled PDFs for the return.
 	// Called when ExportPDFMsg is received. May be nil.
@@ -195,6 +199,19 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, func() tea.Msg {
 			return CADiffResponseMsg{
 				Explanation: "AI explanations are not available. Set OPENROUTER_API_KEY to enable them.",
+			}
+		}
+
+	case RequestAIPromptMsg:
+		if a.factory.AskAI != nil {
+			fn := a.factory.AskAI
+			return a, func() tea.Msg {
+				return fn(msg)
+			}
+		}
+		return a, func() tea.Msg {
+			return AIPromptResponseMsg{
+				Answer: "AI is not available. Set OPENROUTER_API_KEY to enable it.",
 			}
 		}
 

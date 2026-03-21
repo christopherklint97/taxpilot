@@ -31,6 +31,40 @@ func DefaultStorePath() string {
 	return filepath.Join(home, ".taxpilot", "state.json")
 }
 
+// YearStorePath returns ~/.taxpilot/state_YYYY.json for a specific tax year.
+func YearStorePath(year int) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".taxpilot", fmt.Sprintf("state_%d.json", year))
+}
+
+// LoadPriorYear attempts to load the prior year's completed state.
+// It looks for ~/.taxpilot/state_<currentYear-1>.json first,
+// then falls back to state.json if it's from the prior year.
+func LoadPriorYear(currentYear int) (*TaxReturn, error) {
+	priorYear := currentYear - 1
+
+	// Try year-specific file first
+	yearPath := YearStorePath(priorYear)
+	if ret, err := Load(yearPath); err == nil && ret.TaxYear == priorYear {
+		return ret, nil
+	}
+
+	// Fall back to default state.json if it's from prior year
+	defaultPath := DefaultStorePath()
+	ret, err := Load(defaultPath)
+	if err != nil {
+		return nil, fmt.Errorf("no prior-year data found for %d", priorYear)
+	}
+	if ret.TaxYear == priorYear {
+		return ret, nil
+	}
+
+	return nil, fmt.Errorf("no prior-year data found for %d", priorYear)
+}
+
 // Save persists a TaxReturn to the given path as JSON.
 func Save(path string, ret *TaxReturn) error {
 	ret.LastUpdated = time.Now().UTC().Format(time.RFC3339)
@@ -48,6 +82,15 @@ func Save(path string, ret *TaxReturn) error {
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
+
+	// Also save a year-specific copy for prior-year lookups in future years
+	if ret.Complete && ret.TaxYear > 0 {
+		yearPath := YearStorePath(ret.TaxYear)
+		if yearPath != path {
+			_ = os.WriteFile(yearPath, data, 0o644)
+		}
+	}
+
 	return nil
 }
 

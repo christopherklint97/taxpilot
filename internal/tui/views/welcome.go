@@ -71,10 +71,12 @@ func (m WelcomeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.priorYearLoaded = true
 		m.priorFormNames = appendUniqueStrings(m.priorFormNames, msg.FormNames)
+		numValues := len(msg.NumericValues)
+		strValues := len(msg.StringValues)
 		if msg.TaxYear > 0 {
-			m.priorYearLabel = fmt.Sprintf("%d return loaded (%d forms)", msg.TaxYear, len(m.priorFormNames))
+			m.priorYearLabel = fmt.Sprintf("%d return loaded (%d forms, %d values)", msg.TaxYear, len(m.priorFormNames), numValues+strValues)
 		} else {
-			m.priorYearLabel = fmt.Sprintf("%d forms loaded", len(m.priorFormNames))
+			m.priorYearLabel = fmt.Sprintf("%d forms loaded (%d values)", len(m.priorFormNames), numValues+strValues)
 		}
 		m.loadingPriorYear = false
 		m.filePathInput = ""

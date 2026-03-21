@@ -128,6 +128,177 @@ func (e *Explainer) ExplainWhyAsked(ctx context.Context, fieldKey, label string,
 	return e.cachedChat(ctx, messages)
 }
 
+// AskAboutField answers a free-form user question in the context of the
+// current interview field and previously answered questions.
+func (e *Explainer) AskAboutField(ctx context.Context, userQuestion, fieldKey, label, formName, filingStatus string, answeredSoFar map[string]string) (string, error) {
+	var sb strings.Builder
+	fmt.Fprintf(&sb,
+		"The user is filling out their tax return and is currently on this question:\nForm: %s\nField: %s\nQuestion: %s\nFiling status: %s\n",
+		formName, fieldKey, label, filingStatus,
+	)
+
+	if len(answeredSoFar) > 0 {
+		sb.WriteString("\nContext — answers so far:\n")
+		count := 0
+		for k, v := range answeredSoFar {
+			if v == "" || v == "0" {
+				continue
+			}
+			fmt.Fprintf(&sb, "  %s = %s\n", k, v)
+			count++
+			if count >= 100 {
+				sb.WriteString("  ... (truncated)\n")
+				break
+			}
+		}
+	}
+
+	fmt.Fprintf(&sb, "\nThe user asks: %s", userQuestion)
+
+	messages := []Message{
+		{Role: "system", Content: interviewSystemPrompt},
+		{Role: "user", Content: sb.String()},
+	}
+
+	// Don't cache free-form questions — each is unique
+	return e.client.Chat(ctx, messages)
+}
+
+// ExplainFieldStream streams a field explanation. Returns cached result as a
+// closed single-element channel, or a live stream channel.
+func (e *Explainer) ExplainFieldStream(ctx context.Context, fieldKey, label, formName string, priorValue string) (<-chan StreamChunk, error) {
+	userContent := fmt.Sprintf(
+		"Explain this tax form field to the user.\nForm: %s\nField key: %s\nLabel: %s",
+		formName, fieldKey, label,
+	)
+	if priorValue != "" {
+		userContent += fmt.Sprintf("\nLast year's value: %s", priorValue)
+	}
+
+	messages := []Message{
+		{Role: "system", Content: interviewSystemPrompt},
+		{Role: "user", Content: userContent},
+	}
+
+	return e.cachedStream(ctx, messages)
+}
+
+// ExplainWhyAskedStream streams a "why asked" explanation.
+func (e *Explainer) ExplainWhyAskedStream(ctx context.Context, fieldKey, label string, filingStatus string, answeredSoFar map[string]string) (<-chan StreamChunk, error) {
+	var sb strings.Builder
+	fmt.Fprintf(&sb,
+		"The user is being asked this question during their tax interview.\nField key: %s\nLabel: %s\nFiling status: %s\n",
+		fieldKey, label, filingStatus,
+	)
+
+	if len(answeredSoFar) > 0 {
+		sb.WriteString("Context — answers so far:\n")
+		for k, v := range answeredSoFar {
+			fmt.Fprintf(&sb, "  %s = %s\n", k, v)
+		}
+	}
+
+	sb.WriteString("\nExplain briefly why this question is needed to complete their return.")
+
+	messages := []Message{
+		{Role: "system", Content: interviewSystemPrompt},
+		{Role: "user", Content: sb.String()},
+	}
+
+	return e.cachedStream(ctx, messages)
+}
+
+// ExplainCADifferenceStream streams a CA vs federal difference explanation.
+func (e *Explainer) ExplainCADifferenceStream(ctx context.Context, area, federalTreatment, caTreatment string) (<-chan StreamChunk, error) {
+	userContent := fmt.Sprintf(
+		"Explain this California vs. federal tax difference to the user.\nArea: %s\nFederal treatment: %s\nCalifornia treatment: %s",
+		area, federalTreatment, caTreatment,
+	)
+
+	messages := []Message{
+		{Role: "system", Content: explainerSystemPrompt + "\n\n" + caAdjustmentsContext},
+		{Role: "user", Content: userContent},
+	}
+
+	return e.cachedStream(ctx, messages)
+}
+
+// AskAboutFieldStream streams a free-form AI answer.
+func (e *Explainer) AskAboutFieldStream(ctx context.Context, userQuestion, fieldKey, label, formName, filingStatus string, answeredSoFar map[string]string) (<-chan StreamChunk, error) {
+	var sb strings.Builder
+	fmt.Fprintf(&sb,
+		"The user is filling out their tax return and is currently on this question:\nForm: %s\nField: %s\nQuestion: %s\nFiling status: %s\n",
+		formName, fieldKey, label, filingStatus,
+	)
+
+	if len(answeredSoFar) > 0 {
+		sb.WriteString("\nContext — answers so far:\n")
+		count := 0
+		for k, v := range answeredSoFar {
+			if v == "" || v == "0" {
+				continue
+			}
+			fmt.Fprintf(&sb, "  %s = %s\n", k, v)
+			count++
+			if count >= 100 {
+				sb.WriteString("  ... (truncated)\n")
+				break
+			}
+		}
+	}
+
+	fmt.Fprintf(&sb, "\nThe user asks: %s", userQuestion)
+
+	messages := []Message{
+		{Role: "system", Content: interviewSystemPrompt},
+		{Role: "user", Content: sb.String()},
+	}
+
+	// Don't cache free-form questions
+	return e.client.ChatStream(ctx, messages)
+}
+
+// cachedStream checks the cache and returns a fake channel for cache hits,
+// or a real streaming channel for cache misses.
+func (e *Explainer) cachedStream(ctx context.Context, messages []Message) (<-chan StreamChunk, error) {
+	key := e.cache.HashKey(messages)
+
+	if cached, ok := e.cache.Get(key); ok {
+		ch := make(chan StreamChunk, 2)
+		ch <- StreamChunk{Text: cached}
+		ch <- StreamChunk{Done: true}
+		close(ch)
+		return ch, nil
+	}
+
+	liveCh, err := e.client.ChatStream(ctx, messages)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap the live channel to capture the full response for caching.
+	cacheCh := make(chan StreamChunk, 8)
+	go func() {
+		defer close(cacheCh)
+		var full strings.Builder
+		for chunk := range liveCh {
+			cacheCh <- chunk
+			if chunk.Text != "" {
+				full.WriteString(chunk.Text)
+			}
+			if chunk.Done || chunk.Err != nil {
+				if chunk.Err == nil && full.Len() > 0 {
+					e.cache.Set(key, full.String())
+					_ = e.cache.Save()
+				}
+				return
+			}
+		}
+	}()
+
+	return cacheCh, nil
+}
+
 // cachedChat checks the cache before calling the LLM, then caches the result.
 func (e *Explainer) cachedChat(ctx context.Context, messages []Message) (string, error) {
 	key := e.cache.HashKey(messages)

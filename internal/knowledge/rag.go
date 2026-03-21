@@ -118,6 +118,43 @@ Your role is to explain tax concepts in plain English using the provided tax cod
 - When California treatment differs from federal, explain both
 - If the provided references don't cover the question, say so honestly`
 
+// QueryForFieldStream is like QueryForField but returns a streaming channel.
+func (r *RAG) QueryForFieldStream(ctx context.Context, fieldKey, label string, jurisdiction Jurisdiction) (<-chan llm.StreamChunk, error) {
+	query := label + " " + fieldKey
+	results := r.store.Search(query, jurisdiction, 3)
+
+	if jurisdiction == JurisdictionCA {
+		federalResults := r.store.Search(query, JurisdictionFederal, 2)
+		results = append(results, federalResults...)
+	}
+
+	if len(results) > 5 {
+		results = results[:5]
+	}
+
+	if len(results) == 0 {
+		messages := []llm.Message{
+			{Role: "system", Content: ragSystemPrompt},
+			{Role: "user", Content: fmt.Sprintf("Explain the tax form field '%s' (key: %s) in plain English. What does it mean and why is it needed on the tax return?", label, fieldKey)},
+		}
+		return r.client.ChatStream(ctx, messages)
+	}
+
+	contextText := FormatContext(results)
+	systemPrompt := ragSystemPrompt + "\n\n" + ragContextPrefix + contextText
+
+	userContent := fmt.Sprintf(
+		"The user needs help understanding a tax form field.\nField key: %s\nField label: %s\n\nUsing the provided tax code references, explain what this field means and why it matters.",
+		fieldKey, label,
+	)
+
+	messages := []llm.Message{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: userContent},
+	}
+	return r.client.ChatStream(ctx, messages)
+}
+
 const ragContextPrefix = `Use the following tax code references to inform your answer:
 
 `
