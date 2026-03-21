@@ -44,9 +44,9 @@ func ScheduleC() *forms.FormDef {
 				Line:      "1",
 				Type:      forms.Computed,
 				Label:     "Gross receipts or sales",
-				DependsOn: []string{"1099nec:*:nonemployee_compensation"},
+				DependsOn: []string{forms.F1099NECWildcardComp},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAll("1099nec:*:nonemployee_compensation")
+					return dv.SumAll(forms.F1099NECWildcardComp)
 				},
 			},
 			// Line 4: Cost of goods sold (deferred)
@@ -64,9 +64,9 @@ func ScheduleC() *forms.FormDef {
 				Line:      "5",
 				Type:      forms.Computed,
 				Label:     "Gross profit",
-				DependsOn: []string{"schedule_c:1", "schedule_c:4"},
+				DependsOn: []string{forms.SchedCLine1, "schedule_c:4"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_c:1") - dv.Get("schedule_c:4")
+					return dv.Get(forms.SchedCLine1) - dv.Get("schedule_c:4")
 				},
 			},
 			// Line 7: Gross income
@@ -74,9 +74,9 @@ func ScheduleC() *forms.FormDef {
 				Line:      "7",
 				Type:      forms.Computed,
 				Label:     "Gross income",
-				DependsOn: []string{"schedule_c:5"},
+				DependsOn: []string{forms.SchedCLine5},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_c:5")
+					return dv.Get(forms.SchedCLine5)
 				},
 			},
 
@@ -137,15 +137,15 @@ func ScheduleC() *forms.FormDef {
 				Line:      "28",
 				Type:      forms.Computed,
 				Label:     "Total expenses",
-				DependsOn: []string{"schedule_c:8", "schedule_c:10", "schedule_c:17", "schedule_c:18", "schedule_c:22", "schedule_c:25", "schedule_c:27"},
+				DependsOn: []string{forms.SchedCLine8, forms.SchedCLine10, forms.SchedCLine17, forms.SchedCLine18, forms.SchedCLine22, forms.SchedCLine25, forms.SchedCLine27},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_c:8") +
-						dv.Get("schedule_c:10") +
-						dv.Get("schedule_c:17") +
-						dv.Get("schedule_c:18") +
-						dv.Get("schedule_c:22") +
-						dv.Get("schedule_c:25") +
-						dv.Get("schedule_c:27")
+					return dv.Get(forms.SchedCLine8) +
+						dv.Get(forms.SchedCLine10) +
+						dv.Get(forms.SchedCLine17) +
+						dv.Get(forms.SchedCLine18) +
+						dv.Get(forms.SchedCLine22) +
+						dv.Get(forms.SchedCLine25) +
+						dv.Get(forms.SchedCLine27)
 				},
 			},
 
@@ -156,9 +156,9 @@ func ScheduleC() *forms.FormDef {
 				Line:      "31",
 				Type:      forms.Computed,
 				Label:     "Net profit or (loss)",
-				DependsOn: []string{"schedule_c:7", "schedule_c:28"},
+				DependsOn: []string{forms.SchedCLine7, forms.SchedCLine28},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("schedule_c:7")-dv.Get("schedule_c:28"))
+					return math.Max(0, dv.Get(forms.SchedCLine7)-dv.Get(forms.SchedCLine28))
 				},
 			},
 		},

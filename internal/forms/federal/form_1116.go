@@ -26,7 +26,7 @@ func Form1116() *forms.FormDef {
 		Name:         "Form 1116 — Foreign Tax Credit",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "expat",
+		QuestionGroup: forms.GroupExpat,
 		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// --- Part I: Taxable Income from Sources Outside the US ---
@@ -92,11 +92,11 @@ func Form1116() *forms.FormDef {
 				Line:      "7",
 				Type:      forms.Computed,
 				Label:     "Net foreign source taxable income",
-				DependsOn: []string{"form_1116:foreign_source_income", "form_1116:foreign_source_deductions"},
+				DependsOn: []string{forms.F1116ForeignSourceIncome, forms.F1116ForeignSourceDeduct},
 				Compute: func(dv forms.DepValues) float64 {
 					return math.Max(0,
-						dv.Get("form_1116:foreign_source_income")-
-							dv.Get("form_1116:foreign_source_deductions"))
+						dv.Get(forms.F1116ForeignSourceIncome)-
+							dv.Get(forms.F1116ForeignSourceDeduct))
 				},
 			},
 			// Line 15: Total foreign taxes paid or accrued
@@ -104,10 +104,10 @@ func Form1116() *forms.FormDef {
 				Line:      "15",
 				Type:      forms.Computed,
 				Label:     "Total foreign taxes paid or accrued",
-				DependsOn: []string{"form_1116:foreign_tax_paid_income", "form_1116:foreign_tax_paid_other"},
+				DependsOn: []string{forms.F1116ForeignTaxPaidIncome, forms.F1116ForeignTaxPaidOther},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_1116:foreign_tax_paid_income") +
-						dv.Get("form_1116:foreign_tax_paid_other")
+					return dv.Get(forms.F1116ForeignTaxPaidIncome) +
+						dv.Get(forms.F1116ForeignTaxPaidOther)
 				},
 			},
 			// Line 20: US tax on worldwide income (from 1040 line 16)
@@ -115,9 +115,9 @@ func Form1116() *forms.FormDef {
 				Line:      "20",
 				Type:      forms.Computed,
 				Label:     "US tax liability",
-				DependsOn: []string{"1040:16"},
+				DependsOn: []string{forms.F1040Line16},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:16")
+					return dv.Get(forms.F1040Line16)
 				},
 			},
 			// Line 21: Foreign tax credit limitation
@@ -126,11 +126,11 @@ func Form1116() *forms.FormDef {
 				Line:      "21",
 				Type:      forms.Computed,
 				Label:     "Foreign tax credit limitation",
-				DependsOn: []string{"form_1116:20", "form_1116:7", "1040:15"},
+				DependsOn: []string{"form_1116:20", forms.F1116Line7, forms.F1040Line15},
 				Compute: func(dv forms.DepValues) float64 {
 					usTax := dv.Get("form_1116:20")
-					foreignSource := dv.Get("form_1116:7")
-					worldwideTaxable := dv.Get("1040:15")
+					foreignSource := dv.Get(forms.F1116Line7)
+					worldwideTaxable := dv.Get(forms.F1040Line15)
 
 					if worldwideTaxable <= 0 || usTax <= 0 {
 						return 0
@@ -146,10 +146,10 @@ func Form1116() *forms.FormDef {
 				Line:      "22",
 				Type:      forms.Computed,
 				Label:     "Foreign tax credit allowed",
-				DependsOn: []string{"form_1116:15", "form_1116:21"},
+				DependsOn: []string{forms.F1116Line15, forms.F1116Line21},
 				Compute: func(dv forms.DepValues) float64 {
-					taxesPaid := dv.Get("form_1116:15")
-					limitation := dv.Get("form_1116:21")
+					taxesPaid := dv.Get(forms.F1116Line15)
+					limitation := dv.Get(forms.F1116Line21)
 					return math.Min(taxesPaid, limitation)
 				},
 			},
@@ -158,10 +158,10 @@ func Form1116() *forms.FormDef {
 				Line:      "carryforward",
 				Type:      forms.Computed,
 				Label:     "Foreign tax credit carryforward",
-				DependsOn: []string{"form_1116:15", "form_1116:21"},
+				DependsOn: []string{forms.F1116Line15, forms.F1116Line21},
 				Compute: func(dv forms.DepValues) float64 {
-					taxesPaid := dv.Get("form_1116:15")
-					limitation := dv.Get("form_1116:21")
+					taxesPaid := dv.Get(forms.F1116Line15)
+					limitation := dv.Get(forms.F1116Line21)
 					return math.Max(0, taxesPaid-limitation)
 				},
 			},

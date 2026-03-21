@@ -13,6 +13,10 @@ const (
 	F1040LastName     = "1040:last_name"
 	F1040SSN          = "1040:ssn"
 
+	// Foreign wages
+	F1040ForeignWages    = "1040:foreign_wages"
+	F1040ForeignEmployer = "1040:foreign_employer"
+
 	// Income
 	F1040Line1a = "1040:1a"
 	F1040Line1z = "1040:1z"
@@ -110,9 +114,12 @@ const (
 	SchedBLine4  = "schedule_b:4"
 	SchedBLine5  = "schedule_b:5"
 	SchedBLine6  = "schedule_b:6"
-	SchedBLine7a = "schedule_b:7a"
-	SchedBLine7b = "schedule_b:7b"
-	SchedBLine8  = "schedule_b:8"
+	SchedBForeignInterest      = "schedule_b:foreign_interest"
+	SchedBForeignInterestPayer = "schedule_b:foreign_interest_payer"
+	SchedBLine7a               = "schedule_b:7a"
+	SchedBLine7b               = "schedule_b:7b"
+	SchedBLine8                = "schedule_b:8"
+	SchedBFBARRequired         = "schedule_b:fbar_required"
 )
 
 // --- Schedule C Field Keys ---

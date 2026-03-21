@@ -13,25 +13,25 @@ func F1099B() *forms.FormDef {
 		Name:         "1099-B Proceeds From Broker Transactions",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "income_1099",
+		QuestionGroup: forms.GroupIncome1099,
 		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			{
-				Line:   "description",
+				Line:   forms.LineDescription,
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Description of property",
 				Prompt: "Describe the security sold (e.g., \"100 sh AAPL\"):",
 			},
 			{
-				Line:   "date_acquired",
+				Line:   forms.LineDateAcquired,
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Date acquired",
 				Prompt: "When did you acquire this security (MM/DD/YYYY or VARIOUS)?",
 			},
 			{
-				Line:   "date_sold",
+				Line:   forms.LineDateSold,
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Date sold",
@@ -75,7 +75,7 @@ func F1099B() *forms.FormDef {
 				ValueType: forms.StringValue,
 				Label:   "Basis reported to IRS",
 				Prompt:  "Was cost basis reported to the IRS by your broker?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 		},
 	}

@@ -65,9 +65,9 @@ func Schedule2() *forms.FormDef {
 				Line:      "3",
 				Type:      forms.Computed,
 				Label:     "Total Part I additional taxes",
-				DependsOn: []string{"schedule_2:1", "schedule_2:2"},
+				DependsOn: []string{forms.Sched2Line1, "schedule_2:2"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_2:1") + dv.Get("schedule_2:2")
+					return dv.Get(forms.Sched2Line1) + dv.Get("schedule_2:2")
 				},
 			},
 
@@ -78,9 +78,9 @@ func Schedule2() *forms.FormDef {
 				Line:      "6",
 				Type:      forms.Computed,
 				Label:     "Self-employment tax",
-				DependsOn: []string{"schedule_se:6"},
+				DependsOn: []string{forms.SchedSELine6},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_se:6")
+					return dv.Get(forms.SchedSELine6)
 				},
 			},
 			// Line 12: Additional Medicare Tax (0.9% on wages + SE income above threshold)
@@ -88,14 +88,14 @@ func Schedule2() *forms.FormDef {
 				Line:      "12",
 				Type:      forms.Computed,
 				Label:     "Additional Medicare Tax",
-				DependsOn: []string{"1040:filing_status", "w2:*:medicare_wages", "schedule_se:3"},
+				DependsOn: []string{forms.F1040FilingStatus, forms.W2WildcardMedicareWages, forms.SchedSELine3},
 				Compute: func(dv forms.DepValues) float64 {
-					fs := dv.GetString("1040:filing_status")
+					fs := dv.GetString(forms.F1040FilingStatus)
 					threshold := getAddlMedicareThreshold(fs)
 
 					// Combined Medicare wages + SE earnings
-					medicareWages := dv.SumAll("w2:*:medicare_wages")
-					seEarnings := dv.Get("schedule_se:3")
+					medicareWages := dv.SumAll(forms.W2WildcardMedicareWages)
+					seEarnings := dv.Get(forms.SchedSELine3)
 					totalEarned := medicareWages + seEarnings
 
 					excess := totalEarned - threshold
@@ -119,18 +119,18 @@ func Schedule2() *forms.FormDef {
 				Line:      "18",
 				Type:      forms.Computed,
 				Label:     "Net investment income tax",
-				DependsOn: []string{"1040:filing_status", "1040:11", "1040:2b", "1040:3b", "schedule_d:16"},
+				DependsOn: []string{forms.F1040FilingStatus, forms.F1040Line11, forms.F1040Line2b, forms.F1040Line3b, forms.SchedDLine16},
 				Compute: func(dv forms.DepValues) float64 {
-					fs := dv.GetString("1040:filing_status")
+					fs := dv.GetString(forms.F1040FilingStatus)
 					threshold := getNIITThreshold(fs)
 
-					magi := dv.Get("1040:11") // AGI (MAGI ≈ AGI for most filers)
+					magi := dv.Get(forms.F1040Line11) // AGI (MAGI ≈ AGI for most filers)
 					if magi <= threshold {
 						return 0
 					}
 
 					// Net investment income = interest + dividends + capital gains
-					nii := dv.Get("1040:2b") + dv.Get("1040:3b") + dv.Get("schedule_d:16")
+					nii := dv.Get(forms.F1040Line2b) + dv.Get(forms.F1040Line3b) + dv.Get(forms.SchedDLine16)
 					if nii <= 0 {
 						return 0
 					}
@@ -146,9 +146,9 @@ func Schedule2() *forms.FormDef {
 				Line:      "17c",
 				Type:      forms.Computed,
 				Label:     "Additional tax on HSA distributions",
-				DependsOn: []string{"form_8889:17b"},
+				DependsOn: []string{forms.F8889Line17b},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8889:17b")
+					return dv.Get(forms.F8889Line17b)
 				},
 			},
 			// Line 21: Total Part II other taxes
@@ -156,12 +156,12 @@ func Schedule2() *forms.FormDef {
 				Line:      "21",
 				Type:      forms.Computed,
 				Label:     "Total other taxes",
-				DependsOn: []string{"schedule_2:6", "schedule_2:12", "schedule_2:17c", "schedule_2:18"},
+				DependsOn: []string{forms.Sched2Line6, forms.Sched2Line12, forms.Sched2Line17c, forms.Sched2Line18},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_2:6") +
-						dv.Get("schedule_2:12") +
-						dv.Get("schedule_2:17c") +
-						dv.Get("schedule_2:18")
+					return dv.Get(forms.Sched2Line6) +
+						dv.Get(forms.Sched2Line12) +
+						dv.Get(forms.Sched2Line17c) +
+						dv.Get(forms.Sched2Line18)
 				},
 			},
 		},
@@ -170,9 +170,9 @@ func Schedule2() *forms.FormDef {
 
 func getNIITThreshold(fs string) float64 {
 	switch fs {
-	case "mfj", "qss":
+	case forms.FilingMFJ, forms.FilingQSS:
 		return niitMFJ
-	case "mfs":
+	case forms.FilingMFS:
 		return niitMFS
 	default: // single, hoh
 		return niitSingle
@@ -181,9 +181,9 @@ func getNIITThreshold(fs string) float64 {
 
 func getAddlMedicareThreshold(fs string) float64 {
 	switch fs {
-	case "mfj":
+	case forms.FilingMFJ:
 		return addlMedicareMFJ
-	case "mfs":
+	case forms.FilingMFS:
 		return addlMedicareMFS
 	default: // single, hoh, qss
 		return addlMedicareSingle

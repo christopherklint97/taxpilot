@@ -28,7 +28,7 @@ func ScheduleCA() *forms.FormDef {
 		Name:         "Schedule CA (540) — California Adjustments",
 		Jurisdiction: forms.StateCA,
 		TaxYears:      []int{2025},
-		QuestionGroup: "ca",
+		QuestionGroup: forms.GroupCA,
 		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// ===================================================================
@@ -40,9 +40,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "2_col_a",
 				Type:      forms.FederalRef,
 				Label:     "Federal taxable interest",
-				DependsOn: []string{"1040:2b"},
+				DependsOn: []string{forms.F1040Line2b},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:2b")
+					return dv.Get(forms.F1040Line2b)
 				},
 			},
 			// Line 2, Column B: Interest subtractions (U.S. obligation interest
@@ -51,9 +51,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "2_col_b",
 				Type:      forms.Computed,
 				Label:     "Interest subtractions (U.S. obligations exempt in CA)",
-				DependsOn: []string{"1099int:*:us_savings_bond_interest"},
+				DependsOn: []string{forms.F1099INTWildcardUSBond},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAll("1099int:*:us_savings_bond_interest")
+					return dv.SumAll(forms.F1099INTWildcardUSBond)
 				},
 			},
 			// Line 2, Column C: Interest additions (out-of-state muni bond
@@ -74,9 +74,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "3_col_a",
 				Type:      forms.FederalRef,
 				Label:     "Federal ordinary dividends",
-				DependsOn: []string{"1040:3b"},
+				DependsOn: []string{forms.F1040Line3b},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:3b")
+					return dv.Get(forms.F1040Line3b)
 				},
 			},
 			// Line 3, Column B: Dividend subtractions (CA generally conforms)
@@ -107,9 +107,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "7_col_a",
 				Type:      forms.FederalRef,
 				Label:     "Federal capital gain or (loss)",
-				DependsOn: []string{"1040:7"},
+				DependsOn: []string{forms.F1040Line7},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:7")
+					return dv.Get(forms.F1040Line7)
 				},
 			},
 			// Line 7, Column B: Capital gain subtractions
@@ -165,9 +165,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "15_col_c",
 				Type:      forms.Computed,
 				Label:     "HSA deduction add-back (CA does not allow)",
-				DependsOn: []string{"form_8889:9"},
+				DependsOn: []string{forms.F8889Line9},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8889:9")
+					return dv.Get(forms.F8889Line9)
 				},
 			},
 
@@ -178,9 +178,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "8d_col_c",
 				Type:      forms.Computed,
 				Label:     "Foreign earned income exclusion add-back (CA does not allow FEIE)",
-				DependsOn: []string{"form_2555:total_exclusion"},
+				DependsOn: []string{forms.F2555TotalExclusion},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_2555:total_exclusion")
+					return dv.Get(forms.F2555TotalExclusion)
 				},
 			},
 			// Line 8d, Column B: Foreign housing deduction subtraction
@@ -193,9 +193,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "8d_col_c_housing",
 				Type:      forms.Computed,
 				Label:     "Foreign housing deduction add-back (CA does not allow)",
-				DependsOn: []string{"form_2555:housing_deduction"},
+				DependsOn: []string{forms.F2555HousingDeduction},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_2555:housing_deduction")
+					return dv.Get(forms.F2555HousingDeduction)
 				},
 			},
 
@@ -224,9 +224,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "5a_col_b",
 				Type:      forms.Computed,
 				Label:     "State income tax subtraction (not deductible in CA)",
-				DependsOn: []string{"schedule_a:5a"},
+				DependsOn: []string{forms.SchedALine5a},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_a:5a")
+					return dv.Get(forms.SchedALine5a)
 				},
 			},
 
@@ -237,9 +237,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "5e_col_b",
 				Type:      forms.Computed,
 				Label:     "Federal SALT subtraction (CA recomputes without cap)",
-				DependsOn: []string{"schedule_a:5e"},
+				DependsOn: []string{forms.SchedALine5e},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_a:5e")
+					return dv.Get(forms.SchedALine5e)
 				},
 			},
 
@@ -250,10 +250,10 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "5e_col_c",
 				Type:      forms.Computed,
 				Label:     "CA SALT addition (property taxes only, no cap)",
-				DependsOn: []string{"schedule_a:5b", "schedule_a:5c"},
+				DependsOn: []string{forms.SchedALine5b, forms.SchedALine5c},
 				Compute: func(dv forms.DepValues) float64 {
 					// CA SALT = property taxes only (no state income tax, no cap)
-					return dv.Get("schedule_a:5b") + dv.Get("schedule_a:5c")
+					return dv.Get(forms.SchedALine5b) + dv.Get(forms.SchedALine5c)
 				},
 			},
 
@@ -285,9 +285,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "ca_itemized",
 				Type:      forms.Computed,
 				Label:     "California itemized deductions",
-				DependsOn: []string{"schedule_a:17", "ca_schedule_ca:itemized_sub", "ca_schedule_ca:itemized_add"},
+				DependsOn: []string{forms.SchedALine17, "ca_schedule_ca:itemized_sub", "ca_schedule_ca:itemized_add"},
 				Compute: func(dv forms.DepValues) float64 {
-					federal := dv.Get("schedule_a:17")
+					federal := dv.Get(forms.SchedALine17)
 					sub := dv.Get("ca_schedule_ca:itemized_sub")
 					add := dv.Get("ca_schedule_ca:itemized_add")
 					result := federal - sub + add
@@ -307,9 +307,9 @@ func ScheduleCA() *forms.FormDef {
 				Line:      "37_col_a",
 				Type:      forms.FederalRef,
 				Label:     "Federal amounts (from Form 1040)",
-				DependsOn: []string{"1040:11"},
+				DependsOn: []string{forms.F1040Line11},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:11")
+					return dv.Get(forms.F1040Line11)
 				},
 			},
 			// Line 37, Column B: Total subtractions
@@ -341,8 +341,8 @@ func ScheduleCA() *forms.FormDef {
 					"ca_schedule_ca:2_col_c",
 					"ca_schedule_ca:3_col_c",
 					"ca_schedule_ca:7_col_c",
-					"ca_schedule_ca:8d_col_c",
-					"ca_schedule_ca:8d_col_c_housing",
+					forms.SchedCALine8dColC,
+					forms.SchedCALine8dColCHousing,
 					"ca_schedule_ca:12_col_c",
 					"ca_schedule_ca:15_col_c",
 				},
@@ -350,8 +350,8 @@ func ScheduleCA() *forms.FormDef {
 					return dv.Get("ca_schedule_ca:2_col_c") +
 						dv.Get("ca_schedule_ca:3_col_c") +
 						dv.Get("ca_schedule_ca:7_col_c") +
-						dv.Get("ca_schedule_ca:8d_col_c") +
-						dv.Get("ca_schedule_ca:8d_col_c_housing") +
+						dv.Get(forms.SchedCALine8dColC) +
+						dv.Get(forms.SchedCALine8dColCHousing) +
 						dv.Get("ca_schedule_ca:12_col_c") +
 						dv.Get("ca_schedule_ca:15_col_c")
 				},

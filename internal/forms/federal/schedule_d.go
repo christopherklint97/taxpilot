@@ -19,7 +19,7 @@ func ScheduleD() *forms.FormDef {
 		Name:         "Schedule D — Capital Gains and Losses",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "income_1099",
+		QuestionGroup: forms.GroupIncome1099,
 		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			// --- Part I: Short-Term Capital Gains and Losses ---
@@ -30,9 +30,9 @@ func ScheduleD() *forms.FormDef {
 				Line:      "1",
 				Type:      forms.Computed,
 				Label:     "Short-term from Form 8949",
-				DependsOn: []string{"form_8949:st_gain_loss"},
+				DependsOn: []string{forms.F8949STGainLossKey},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8949:st_gain_loss")
+					return dv.Get(forms.F8949STGainLossKey)
 				},
 			},
 			// Line 7: Net short-term capital gain or (loss)
@@ -40,9 +40,9 @@ func ScheduleD() *forms.FormDef {
 				Line:      "7",
 				Type:      forms.Computed,
 				Label:     "Net short-term capital gain or (loss)",
-				DependsOn: []string{"schedule_d:1"},
+				DependsOn: []string{forms.SchedDLine1},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_d:1")
+					return dv.Get(forms.SchedDLine1)
 				},
 			},
 
@@ -54,9 +54,9 @@ func ScheduleD() *forms.FormDef {
 				Line:      "8",
 				Type:      forms.Computed,
 				Label:     "Long-term from Form 8949",
-				DependsOn: []string{"form_8949:lt_gain_loss"},
+				DependsOn: []string{forms.F8949LTGainLossKey},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8949:lt_gain_loss")
+					return dv.Get(forms.F8949LTGainLossKey)
 				},
 			},
 			// Line 13: Capital gain distributions (from 1099-DIV Box 2a)
@@ -64,9 +64,9 @@ func ScheduleD() *forms.FormDef {
 				Line:      "13",
 				Type:      forms.Computed,
 				Label:     "Capital gain distributions",
-				DependsOn: []string{"1099div:*:total_capital_gain"},
+				DependsOn: []string{forms.F1099DIVWildcardCapGain},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAll("1099div:*:total_capital_gain")
+					return dv.SumAll(forms.F1099DIVWildcardCapGain)
 				},
 			},
 			// Line 15: Net long-term capital gain or (loss)
@@ -74,9 +74,9 @@ func ScheduleD() *forms.FormDef {
 				Line:      "15",
 				Type:      forms.Computed,
 				Label:     "Net long-term capital gain or (loss)",
-				DependsOn: []string{"schedule_d:8", "schedule_d:13"},
+				DependsOn: []string{forms.SchedDLine8, forms.SchedDLine13},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_d:8") + dv.Get("schedule_d:13")
+					return dv.Get(forms.SchedDLine8) + dv.Get(forms.SchedDLine13)
 				},
 			},
 
@@ -87,9 +87,9 @@ func ScheduleD() *forms.FormDef {
 				Line:      "16",
 				Type:      forms.Computed,
 				Label:     "Net capital gain or (loss)",
-				DependsOn: []string{"schedule_d:7", "schedule_d:15"},
+				DependsOn: []string{forms.SchedDLine7, forms.SchedDLine15},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_d:7") + dv.Get("schedule_d:15")
+					return dv.Get(forms.SchedDLine7) + dv.Get(forms.SchedDLine15)
 				},
 			},
 		},

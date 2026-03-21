@@ -19,17 +19,17 @@ func F540() *forms.FormDef {
 		Name:         "California Resident Income Tax Return",
 		Jurisdiction: forms.StateCA,
 		TaxYears:      []int{2025},
-		QuestionGroup: "ca",
+		QuestionGroup: forms.GroupCA,
 		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// Filing status — references the federal filing status from Form 1040
 			{
-				Line:      "filing_status",
+				Line:      forms.LineFilingStatus,
 				Type:      forms.FederalRef,
 				Label:     "Filing status (from federal return)",
-				DependsOn: []string{"1040:filing_status"},
+				DependsOn: []string{forms.F1040FilingStatus},
 				ComputeStr: func(dv forms.DepValues) string {
-					return dv.GetString("1040:filing_status")
+					return dv.GetString(forms.F1040FilingStatus)
 				},
 			},
 
@@ -40,9 +40,9 @@ func F540() *forms.FormDef {
 				Line:      "7",
 				Type:      forms.Computed,
 				Label:     "Wages, salaries, tips (CA)",
-				DependsOn: []string{"w2:*:state_wages"},
+				DependsOn: []string{forms.W2WildcardStateWages},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAll("w2:*:state_wages")
+					return dv.SumAll(forms.W2WildcardStateWages)
 				},
 			},
 			// Line 13: Federal AGI (from Form 1040 line 11)
@@ -50,9 +50,9 @@ func F540() *forms.FormDef {
 				Line:      "13",
 				Type:      forms.FederalRef,
 				Label:     "Federal adjusted gross income",
-				DependsOn: []string{"1040:11"},
+				DependsOn: []string{forms.F1040Line11},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:11")
+					return dv.Get(forms.F1040Line11)
 				},
 			},
 			// Line 14: CA subtractions from Schedule CA
@@ -70,9 +70,9 @@ func F540() *forms.FormDef {
 				Line:      "15",
 				Type:      forms.Computed,
 				Label:     "California additions (from Schedule CA)",
-				DependsOn: []string{"ca_schedule_ca:37_col_c"},
+				DependsOn: []string{forms.SchedCALine37ColC},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("ca_schedule_ca:37_col_c")
+					return dv.Get(forms.SchedCALine37ColC)
 				},
 			},
 			// Line 17: California AGI = federal AGI - subtractions + additions
@@ -80,9 +80,9 @@ func F540() *forms.FormDef {
 				Line:      "17",
 				Type:      forms.Computed,
 				Label:     "California adjusted gross income",
-				DependsOn: []string{"ca_540:13", "ca_540:14", "ca_540:15"},
+				DependsOn: []string{forms.CA540Line13, forms.CA540Line14, forms.CA540Line15},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("ca_540:13") - dv.Get("ca_540:14") + dv.Get("ca_540:15")
+					return dv.Get(forms.CA540Line13) - dv.Get(forms.CA540Line14) + dv.Get(forms.CA540Line15)
 				},
 			},
 
@@ -106,9 +106,9 @@ func F540() *forms.FormDef {
 				Line:      "19",
 				Type:      forms.Computed,
 				Label:     "California taxable income",
-				DependsOn: []string{"ca_540:17", "ca_540:18"},
+				DependsOn: []string{forms.CA540Line17, forms.CA540Line18},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("ca_540:17")-dv.Get("ca_540:18"))
+					return math.Max(0, dv.Get(forms.CA540Line17)-dv.Get(forms.CA540Line18))
 				},
 			},
 
@@ -119,10 +119,10 @@ func F540() *forms.FormDef {
 				Line:      "31",
 				Type:      forms.Computed,
 				Label:     "California tax",
-				DependsOn: []string{"ca_540:19", "ca_540:filing_status"},
+				DependsOn: []string{forms.CA540Line19, "ca_540:filing_status"},
 				Compute: func(dv forms.DepValues) float64 {
 					fs := taxmath.FilingStatus(dv.GetString("ca_540:filing_status"))
-					taxableIncome := dv.Get("ca_540:19")
+					taxableIncome := dv.Get(forms.CA540Line19)
 					// Use bracket computation only (not ComputeTax which includes
 					// mental health tax — that is computed separately on line 36).
 					brackets := taxmath.GetBrackets(dv.TaxYear(), taxmath.StateCA, fs)
@@ -149,9 +149,9 @@ func F540() *forms.FormDef {
 				Line:      "35",
 				Type:      forms.Computed,
 				Label:     "Net tax (after exemption credits)",
-				DependsOn: []string{"ca_540:31", "ca_540:32"},
+				DependsOn: []string{forms.CA540Line31, forms.CA540Line32},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("ca_540:31")-dv.Get("ca_540:32"))
+					return math.Max(0, dv.Get(forms.CA540Line31)-dv.Get(forms.CA540Line32))
 				},
 			},
 			// Line 36: Mental Health Services Tax (1% on taxable income > $1M)
@@ -159,9 +159,9 @@ func F540() *forms.FormDef {
 				Line:      "36",
 				Type:      forms.Computed,
 				Label:     "Mental Health Services Tax",
-				DependsOn: []string{"ca_540:19"},
+				DependsOn: []string{forms.CA540Line19},
 				Compute: func(dv forms.DepValues) float64 {
-					return taxmath.GetCAMentalHealthTax(dv.Get("ca_540:19"))
+					return taxmath.GetCAMentalHealthTax(dv.Get(forms.CA540Line19))
 				},
 			},
 			// Line 40: Total CA tax (includes health coverage penalty from Form 3853)
@@ -169,9 +169,9 @@ func F540() *forms.FormDef {
 				Line:      "40",
 				Type:      forms.Computed,
 				Label:     "Total California tax",
-				DependsOn: []string{"ca_540:35", "ca_540:36", "form_3853:7"},
+				DependsOn: []string{forms.CA540Line35, forms.CA540Line36, "form_3853:7"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("ca_540:35") + dv.Get("ca_540:36") + dv.Get("form_3853:7")
+					return dv.Get(forms.CA540Line35) + dv.Get(forms.CA540Line36) + dv.Get("form_3853:7")
 				},
 			},
 
@@ -182,9 +182,9 @@ func F540() *forms.FormDef {
 				Line:      "71",
 				Type:      forms.Computed,
 				Label:     "California income tax withheld",
-				DependsOn: []string{"w2:*:state_tax_withheld"},
+				DependsOn: []string{forms.W2WildcardStateTaxWH},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAll("w2:*:state_tax_withheld")
+					return dv.SumAll(forms.W2WildcardStateTaxWH)
 				},
 			},
 			// Line 74: Total payments and credits (includes CalEITC from Form 3514)
@@ -192,9 +192,9 @@ func F540() *forms.FormDef {
 				Line:      "74",
 				Type:      forms.Computed,
 				Label:     "Total payments and credits",
-				DependsOn: []string{"ca_540:71", "form_3514:7"},
+				DependsOn: []string{forms.CA540Line71, "form_3514:7"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("ca_540:71") + dv.Get("form_3514:7")
+					return dv.Get(forms.CA540Line71) + dv.Get("form_3514:7")
 				},
 			},
 
@@ -205,9 +205,9 @@ func F540() *forms.FormDef {
 				Line:      "91",
 				Type:      forms.Computed,
 				Label:     "Overpayment (refund)",
-				DependsOn: []string{"ca_540:74", "ca_540:40"},
+				DependsOn: []string{forms.CA540Line74, forms.CA540Line40},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("ca_540:74")-dv.Get("ca_540:40"))
+					return math.Max(0, dv.Get(forms.CA540Line74)-dv.Get(forms.CA540Line40))
 				},
 			},
 			// Line 93: Amount you owe
@@ -215,9 +215,9 @@ func F540() *forms.FormDef {
 				Line:      "93",
 				Type:      forms.Computed,
 				Label:     "Amount you owe",
-				DependsOn: []string{"ca_540:40", "ca_540:74"},
+				DependsOn: []string{forms.CA540Line40, forms.CA540Line74},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("ca_540:40")-dv.Get("ca_540:74"))
+					return math.Max(0, dv.Get(forms.CA540Line40)-dv.Get(forms.CA540Line74))
 				},
 			},
 		},

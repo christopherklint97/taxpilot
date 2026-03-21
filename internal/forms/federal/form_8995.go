@@ -39,9 +39,9 @@ func Form8995() *forms.FormDef {
 				Line:      "1",
 				Type:      forms.Computed,
 				Label:     "Total qualified business income",
-				DependsOn: []string{"schedule_c:31"},
+				DependsOn: []string{forms.SchedCLine31},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_c:31")
+					return dv.Get(forms.SchedCLine31)
 				},
 			},
 			// Line 2: Qualified REIT dividends (Section 199A dividends from 1099-DIV)
@@ -49,9 +49,9 @@ func Form8995() *forms.FormDef {
 				Line:      "2",
 				Type:      forms.Computed,
 				Label:     "Qualified REIT dividends and PTP income",
-				DependsOn: []string{"1099div:*:section_199a_dividends"},
+				DependsOn: []string{forms.F1099DIVWildcardSec199a},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAll("1099div:*:section_199a_dividends")
+					return dv.SumAll(forms.F1099DIVWildcardSec199a)
 				},
 			},
 			// Line 3: Combinable qualified business income (line 1 + line 2)
@@ -69,9 +69,9 @@ func Form8995() *forms.FormDef {
 				Line:      "4",
 				Type:      forms.Computed,
 				Label:     "QBI component (20% of qualified income)",
-				DependsOn: []string{"form_8995:3"},
+				DependsOn: []string{forms.F8995Line3},
 				Compute: func(dv forms.DepValues) float64 {
-					qbi := dv.Get("form_8995:3")
+					qbi := dv.Get(forms.F8995Line3)
 					if qbi <= 0 {
 						return 0
 					}
@@ -84,9 +84,9 @@ func Form8995() *forms.FormDef {
 				Line:      "5",
 				Type:      forms.Computed,
 				Label:     "Taxable income before QBI deduction",
-				DependsOn: []string{"1040:11", "1040:12"},
+				DependsOn: []string{forms.F1040Line11, forms.F1040Line12},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("1040:11")-dv.Get("1040:12"))
+					return math.Max(0, dv.Get(forms.F1040Line11)-dv.Get(forms.F1040Line12))
 				},
 			},
 			// Line 6: Net capital gain (from Schedule D line 16, if positive)
@@ -94,9 +94,9 @@ func Form8995() *forms.FormDef {
 				Line:      "6",
 				Type:      forms.Computed,
 				Label:     "Net capital gain",
-				DependsOn: []string{"schedule_d:16"},
+				DependsOn: []string{forms.SchedDLine16},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("schedule_d:16"))
+					return math.Max(0, dv.Get(forms.SchedDLine16))
 				},
 			},
 			// Line 7: Line 5 minus line 6 (not less than 0)
@@ -104,9 +104,9 @@ func Form8995() *forms.FormDef {
 				Line:      "7",
 				Type:      forms.Computed,
 				Label:     "Taxable income minus net capital gain",
-				DependsOn: []string{"form_8995:5", "form_8995:6"},
+				DependsOn: []string{forms.F8995Line5, "form_8995:6"},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("form_8995:5")-dv.Get("form_8995:6"))
+					return math.Max(0, dv.Get(forms.F8995Line5)-dv.Get("form_8995:6"))
 				},
 			},
 			// Line 8: Income limitation (20% of line 7)
@@ -125,10 +125,10 @@ func Form8995() *forms.FormDef {
 				Line:      "10",
 				Type:      forms.Computed,
 				Label:     "Qualified business income deduction",
-				DependsOn: []string{"form_8995:4", "form_8995:5", "form_8995:8", "1040:filing_status"},
+				DependsOn: []string{forms.F8995Line4, forms.F8995Line5, forms.F8995Line8, forms.F1040FilingStatus},
 				Compute: func(dv forms.DepValues) float64 {
-					taxableIncome := dv.Get("form_8995:5")
-					fs := taxmath.FilingStatus(dv.GetString("1040:filing_status"))
+					taxableIncome := dv.Get(forms.F8995Line5)
+					fs := taxmath.FilingStatus(dv.GetString(forms.F1040FilingStatus))
 					threshold := getQBIThreshold(fs)
 
 					// If above threshold, simplified form doesn't apply
@@ -136,8 +136,8 @@ func Form8995() *forms.FormDef {
 						return 0
 					}
 
-					qbiComponent := dv.Get("form_8995:4")
-					incomeLimit := dv.Get("form_8995:8")
+					qbiComponent := dv.Get(forms.F8995Line4)
+					incomeLimit := dv.Get(forms.F8995Line8)
 					return math.Max(0, math.Min(qbiComponent, incomeLimit))
 				},
 			},
@@ -147,7 +147,7 @@ func Form8995() *forms.FormDef {
 
 func getQBIThreshold(fs taxmath.FilingStatus) float64 {
 	switch fs {
-	case "mfj", "qss":
+	case taxmath.FilingStatus(forms.FilingMFJ), taxmath.FilingStatus(forms.FilingQSS):
 		return qbiThresholdMFJ
 	default: // single, hoh, mfs
 		return qbiThresholdSingle

@@ -6,28 +6,30 @@ func init() { forms.RegisterForm(W2) }
 
 // W2 returns the FormDef for a W-2 Wage and Tax Statement.
 // This captures both federal and state boxes from a single W-2.
+// W-2 forms are issued by US employers only. Foreign employers do not issue W-2s;
+// foreign wages are entered separately on Form 1040.
 func W2() *forms.FormDef {
 	return &forms.FormDef{
 		ID:           forms.FormW2,
-		Name:         "W-2 Wage and Tax Statement",
+		Name:         "W-2 Wage and Tax Statement (US employers only)",
 		Jurisdiction: forms.Federal, // W-2 is federally defined but contains state info
 		TaxYears:      []int{2025},
-		QuestionGroup: "income_w2",
+		QuestionGroup: forms.GroupIncomeW2,
 		QuestionOrder: 2,
 		Fields: []forms.FieldDef{
 			{
-				Line:   "employer_name",
+				Line:   forms.LineEmployerName,
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Employer name",
-				Prompt: "What is the employer's name?",
+				Prompt: "What is the US employer's name? (Skip this form if your employer is foreign — foreign wages are entered separately)",
 			},
 			{
-				Line:   "employer_ein",
+				Line:   forms.LineEmployerEIN,
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Employer EIN",
-				Prompt: "What is the employer's EIN (XX-XXXXXXX)? Enter FOREIGN if no US EIN.",
+				Prompt: "What is the employer's EIN (XX-XXXXXXX)?",
 			},
 			{
 				Line:   "wages",

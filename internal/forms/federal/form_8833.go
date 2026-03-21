@@ -27,7 +27,7 @@ func Form8833() *forms.FormDef {
 		Name:         "Form 8833 — Treaty-Based Return Position Disclosure",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "expat",
+		QuestionGroup: forms.GroupExpat,
 		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// Treaty country
@@ -84,9 +84,9 @@ func Form8833() *forms.FormDef {
 				Line:      "treaty_claimed",
 				Type:      forms.Computed,
 				Label:     "Treaty position claimed",
-				DependsOn: []string{"form_8833:treaty_amount"},
+				DependsOn: []string{forms.F8833TreatyAmount},
 				Compute: func(dv forms.DepValues) float64 {
-					if dv.Get("form_8833:treaty_amount") > 0 {
+					if dv.Get(forms.F8833TreatyAmount) > 0 {
 						return 1
 					}
 					return 0

@@ -27,7 +27,7 @@ func Form8949() *forms.FormDef {
 		Name:         "Form 8949 — Sales and Other Dispositions of Capital Assets",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "income_1099",
+		QuestionGroup: forms.GroupIncome1099,
 		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			// --- Part I: Short-Term ---
@@ -37,9 +37,9 @@ func Form8949() *forms.FormDef {
 				Line:      "st_proceeds",
 				Type:      forms.Computed,
 				Label:     "Short-term total proceeds",
-				DependsOn: []string{"1099b:*:proceeds", "1099b:*:term"},
+				DependsOn: []string{forms.F1099BWildcardProceeds, forms.F1099BWildcardTerm},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAllWhere("1099b:*:proceeds", "1099b:*:term", "short")
+					return dv.SumAllWhere(forms.F1099BWildcardProceeds, forms.F1099BWildcardTerm, "short")
 				},
 			},
 			// Total short-term cost basis
@@ -47,9 +47,9 @@ func Form8949() *forms.FormDef {
 				Line:      "st_basis",
 				Type:      forms.Computed,
 				Label:     "Short-term total cost basis",
-				DependsOn: []string{"1099b:*:cost_basis", "1099b:*:term"},
+				DependsOn: []string{forms.F1099BWildcardBasis, forms.F1099BWildcardTerm},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAllWhere("1099b:*:cost_basis", "1099b:*:term", "short")
+					return dv.SumAllWhere(forms.F1099BWildcardBasis, forms.F1099BWildcardTerm, "short")
 				},
 			},
 			// Total short-term wash sale adjustments
@@ -57,9 +57,9 @@ func Form8949() *forms.FormDef {
 				Line:      "st_wash",
 				Type:      forms.Computed,
 				Label:     "Short-term wash sale adjustments",
-				DependsOn: []string{"1099b:*:wash_sale_loss", "1099b:*:term"},
+				DependsOn: []string{forms.F1099BWildcardWashSale, forms.F1099BWildcardTerm},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAllWhere("1099b:*:wash_sale_loss", "1099b:*:term", "short")
+					return dv.SumAllWhere(forms.F1099BWildcardWashSale, forms.F1099BWildcardTerm, "short")
 				},
 			},
 			// Short-term gain or loss
@@ -67,9 +67,9 @@ func Form8949() *forms.FormDef {
 				Line:      "st_gain_loss",
 				Type:      forms.Computed,
 				Label:     "Short-term gain or (loss)",
-				DependsOn: []string{"form_8949:st_proceeds", "form_8949:st_basis", "form_8949:st_wash"},
+				DependsOn: []string{forms.F8949STProceedsKey, forms.F8949STBasisKey, forms.F8949STWashKey},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8949:st_proceeds") - dv.Get("form_8949:st_basis") + dv.Get("form_8949:st_wash")
+					return dv.Get(forms.F8949STProceedsKey) - dv.Get(forms.F8949STBasisKey) + dv.Get(forms.F8949STWashKey)
 				},
 			},
 
@@ -80,9 +80,9 @@ func Form8949() *forms.FormDef {
 				Line:      "lt_proceeds",
 				Type:      forms.Computed,
 				Label:     "Long-term total proceeds",
-				DependsOn: []string{"1099b:*:proceeds", "1099b:*:term"},
+				DependsOn: []string{forms.F1099BWildcardProceeds, forms.F1099BWildcardTerm},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAllWhere("1099b:*:proceeds", "1099b:*:term", "long")
+					return dv.SumAllWhere(forms.F1099BWildcardProceeds, forms.F1099BWildcardTerm, "long")
 				},
 			},
 			// Total long-term cost basis
@@ -90,9 +90,9 @@ func Form8949() *forms.FormDef {
 				Line:      "lt_basis",
 				Type:      forms.Computed,
 				Label:     "Long-term total cost basis",
-				DependsOn: []string{"1099b:*:cost_basis", "1099b:*:term"},
+				DependsOn: []string{forms.F1099BWildcardBasis, forms.F1099BWildcardTerm},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAllWhere("1099b:*:cost_basis", "1099b:*:term", "long")
+					return dv.SumAllWhere(forms.F1099BWildcardBasis, forms.F1099BWildcardTerm, "long")
 				},
 			},
 			// Total long-term wash sale adjustments
@@ -100,9 +100,9 @@ func Form8949() *forms.FormDef {
 				Line:      "lt_wash",
 				Type:      forms.Computed,
 				Label:     "Long-term wash sale adjustments",
-				DependsOn: []string{"1099b:*:wash_sale_loss", "1099b:*:term"},
+				DependsOn: []string{forms.F1099BWildcardWashSale, forms.F1099BWildcardTerm},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAllWhere("1099b:*:wash_sale_loss", "1099b:*:term", "long")
+					return dv.SumAllWhere(forms.F1099BWildcardWashSale, forms.F1099BWildcardTerm, "long")
 				},
 			},
 			// Long-term gain or loss
@@ -110,9 +110,9 @@ func Form8949() *forms.FormDef {
 				Line:      "lt_gain_loss",
 				Type:      forms.Computed,
 				Label:     "Long-term gain or (loss)",
-				DependsOn: []string{"form_8949:lt_proceeds", "form_8949:lt_basis", "form_8949:lt_wash"},
+				DependsOn: []string{forms.F8949LTProceedsKey, forms.F8949LTBasisKey, forms.F8949LTWashKey},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8949:lt_proceeds") - dv.Get("form_8949:lt_basis") + dv.Get("form_8949:lt_wash")
+					return dv.Get(forms.F8949LTProceedsKey) - dv.Get(forms.F8949LTBasisKey) + dv.Get(forms.F8949LTWashKey)
 				},
 			},
 		},

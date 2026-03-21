@@ -18,7 +18,7 @@ func Form3853() *forms.FormDef {
 		Name:         "Form 3853 — Health Coverage Exemptions and Individual Shared Responsibility Penalty",
 		Jurisdiction: forms.StateCA,
 		TaxYears:      []int{2025},
-		QuestionGroup: "ca",
+		QuestionGroup: forms.GroupCA,
 		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// Line 1: Full-year coverage (yes/no)
@@ -27,7 +27,7 @@ func Form3853() *forms.FormDef {
 				Type:    forms.UserInput,
 				Label:   "Full-year qualifying health coverage",
 				Prompt:  "Did you have qualifying health coverage for all 12 months of 2025?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 			// Line 2: Months without coverage (0-12)
 			{
@@ -42,16 +42,16 @@ func Form3853() *forms.FormDef {
 				Type:    forms.UserInput,
 				Label:   "Exemption from health coverage requirement",
 				Prompt:  "Did you have an exemption from the health coverage requirement?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 			// Line 4: Applicable household income (CA AGI from Form 540)
 			{
 				Line:      "4",
 				Type:      forms.Computed,
 				Label:     "Applicable household income",
-				DependsOn: []string{"ca_540:17"},
+				DependsOn: []string{forms.CA540Line17},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("ca_540:17")
+					return dv.Get(forms.CA540Line17)
 				},
 			},
 			// Line 5: Penalty per month
@@ -59,12 +59,12 @@ func Form3853() *forms.FormDef {
 				Line:      "5",
 				Type:      forms.Computed,
 				Label:     "Penalty per month",
-				DependsOn: []string{"form_3853:1", "form_3853:3", "form_3853:4"},
+				DependsOn: []string{forms.F3853Line1, forms.F3853Line3, "form_3853:4"},
 				Compute: func(dv forms.DepValues) float64 {
-					if dv.GetString("form_3853:1") == "yes" {
+					if dv.GetString(forms.F3853Line1) == forms.OptionYes {
 						return 0 // full coverage, no penalty
 					}
-					if dv.GetString("form_3853:3") == "yes" {
+					if dv.GetString(forms.F3853Line3) == forms.OptionYes {
 						return 0 // exempt from requirement
 					}
 
@@ -90,15 +90,15 @@ func Form3853() *forms.FormDef {
 				Line:      "6",
 				Type:      forms.Computed,
 				Label:     "Total penalty",
-				DependsOn: []string{"form_3853:1", "form_3853:2", "form_3853:3", "form_3853:5"},
+				DependsOn: []string{forms.F3853Line1, forms.F3853Line2, forms.F3853Line3, "form_3853:5"},
 				Compute: func(dv forms.DepValues) float64 {
-					if dv.GetString("form_3853:1") == "yes" {
+					if dv.GetString(forms.F3853Line1) == forms.OptionYes {
 						return 0
 					}
-					if dv.GetString("form_3853:3") == "yes" {
+					if dv.GetString(forms.F3853Line3) == forms.OptionYes {
 						return 0
 					}
-					months := dv.Get("form_3853:2")
+					months := dv.Get(forms.F3853Line2)
 					perMonth := dv.Get("form_3853:5")
 					total := months * perMonth
 					// Cap at $10,800/year (12 * $900)

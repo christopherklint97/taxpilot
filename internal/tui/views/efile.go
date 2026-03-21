@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"taxpilot/internal/efile"
+	"taxpilot/internal/forms"
 	"taxpilot/internal/tui"
 )
 
@@ -117,7 +118,7 @@ func (m EFileView) handleReview(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "v", "enter":
 		// Run validation
-		includeCA := m.state == "CA" && !m.federalOnly
+		includeCA := m.state == forms.StateCodeCA && !m.federalOnly
 		report := efile.ValidateFull(m.results, m.strResults, m.taxYear, includeCA)
 		m.validation = report
 		m.step = StepValidation
@@ -176,7 +177,7 @@ func (m EFileView) handlePIN(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			// If also filing CA, get CA PIN next
-			if m.state == "CA" && !m.federalOnly {
+			if m.state == forms.StateCodeCA && !m.federalOnly {
 				m.pinInput = ""
 				m.pinField = "ca"
 				return m, nil
@@ -289,7 +290,7 @@ func (m EFileView) viewReview() string {
 			"\u2550\u2550\u2550 Federal Return \u2550\u2550\u2550",
 		))
 		sections = append(sections, formatLine("Taxpayer",
-			m.strResults["1040:first_name"]+" "+m.strResults["1040:last_name"]))
+			m.strResults[forms.F1040FirstName]+" "+m.strResults[forms.F1040LastName]))
 		sections = append(sections, formatMoney("AGI", m.results["1040:11"]))
 		sections = append(sections, formatMoney("Total Tax", m.results["1040:24"]))
 		sections = append(sections, formatMoney("Withholding", m.results["1040:25d"]))
@@ -306,7 +307,7 @@ func (m EFileView) viewReview() string {
 	}
 
 	// CA summary
-	if m.state == "CA" && !m.federalOnly {
+	if m.state == forms.StateCodeCA && !m.federalOnly {
 		sections = append(sections, tui.HighlightStyle.Render(
 			"\u2550\u2550\u2550 California Return \u2550\u2550\u2550",
 		))
@@ -440,7 +441,7 @@ func (m EFileView) viewConfirm() string {
 		sections = append(sections, fmt.Sprintf("  Federal: %s (PIN set)",
 			tui.SuccessStyle.Render("\u2713")))
 	}
-	if m.state == "CA" && !m.federalOnly {
+	if m.state == forms.StateCodeCA && !m.federalOnly {
 		sections = append(sections, fmt.Sprintf("  California: %s (PIN set)",
 			tui.SuccessStyle.Render("\u2713")))
 	}

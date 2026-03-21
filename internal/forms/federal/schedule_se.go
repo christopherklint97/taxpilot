@@ -31,15 +31,15 @@ func ScheduleSE() *forms.FormDef {
 		QuestionOrder: 5,
 		Fields: []forms.FieldDef{
 			// Line 2: Net earnings from self-employment (from Schedule C)
-			forms.RefField("2", "Net earnings from self-employment", "schedule_c:31"),
+			forms.RefField("2", "Net earnings from self-employment", forms.SchedCLine31),
 			// Line 3: 92.35% of line 2 (if > $400)
 			{
 				Line:      "3",
 				Type:      forms.Computed,
 				Label:     "Self-employment earnings subject to tax",
-				DependsOn: []string{"schedule_se:2"},
+				DependsOn: []string{forms.SchedSELine2},
 				Compute: func(dv forms.DepValues) float64 {
-					net := dv.Get("schedule_se:2")
+					net := dv.Get(forms.SchedSELine2)
 					if net < 400 {
 						return 0 // SE tax only applies if >= $400
 					}
@@ -53,13 +53,13 @@ func ScheduleSE() *forms.FormDef {
 				Line:      "4",
 				Type:      forms.Computed,
 				Label:     "Social Security tax",
-				DependsOn: []string{"schedule_se:3", "w2:*:ss_wages"},
+				DependsOn: []string{forms.SchedSELine3, forms.W2WildcardSSWages},
 				Compute: func(dv forms.DepValues) float64 {
-					seEarnings := dv.Get("schedule_se:3")
+					seEarnings := dv.Get(forms.SchedSELine3)
 					if seEarnings <= 0 {
 						return 0
 					}
-					w2SSWages := dv.SumAll("w2:*:ss_wages")
+					w2SSWages := dv.SumAll(forms.W2WildcardSSWages)
 					remainingBase := math.Max(0, ssWageBase2025-w2SSWages)
 					taxableForSS := math.Min(seEarnings, remainingBase)
 					return taxableForSS * ssTaxRate2025
@@ -70,9 +70,9 @@ func ScheduleSE() *forms.FormDef {
 				Line:      "5",
 				Type:      forms.Computed,
 				Label:     "Medicare tax",
-				DependsOn: []string{"schedule_se:3"},
+				DependsOn: []string{forms.SchedSELine3},
 				Compute: func(dv forms.DepValues) float64 {
-					seEarnings := dv.Get("schedule_se:3")
+					seEarnings := dv.Get(forms.SchedSELine3)
 					if seEarnings <= 0 {
 						return 0
 					}
@@ -80,15 +80,15 @@ func ScheduleSE() *forms.FormDef {
 				},
 			},
 			// Line 6: Total self-employment tax
-			forms.SumField("6", "Self-employment tax", "schedule_se:4", "schedule_se:5"),
+			forms.SumField("6", "Self-employment tax", forms.SchedSELine4, forms.SchedSELine5),
 			// Line 7: Deductible part (50% of SE tax — goes to Schedule 1 line 16)
 			{
 				Line:      "7",
 				Type:      forms.Computed,
 				Label:     "Deductible part of self-employment tax",
-				DependsOn: []string{"schedule_se:6"},
+				DependsOn: []string{forms.SchedSELine6},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_se:6") * 0.5
+					return dv.Get(forms.SchedSELine6) * 0.5
 				},
 			},
 		},

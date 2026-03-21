@@ -152,15 +152,15 @@ func roundToInt(f float64) int {
 //	5 = Qualifying Surviving Spouse/RDP
 func filingStatusCode(fs string) string {
 	switch fs {
-	case "single":
+	case forms.FilingSingle:
 		return "1"
-	case "mfj":
+	case forms.FilingMFJ:
 		return "2"
-	case "mfs":
+	case forms.FilingMFS:
 		return "3"
-	case "hoh":
+	case forms.FilingHOH:
 		return "4"
-	case "qss":
+	case forms.FilingQSS:
 		return "5"
 	default:
 		return "1" // default to single

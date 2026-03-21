@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"taxpilot/internal/forms"
 	"taxpilot/internal/tui"
 )
 
@@ -106,9 +107,9 @@ func (m SummaryView) View() string {
 	sections = append(sections, header)
 
 	// Taxpayer info
-	firstName := m.strResults["1040:first_name"]
-	lastName := m.strResults["1040:last_name"]
-	filingStatus := formatOptionLabel(m.strResults["1040:filing_status"])
+	firstName := m.strResults[forms.F1040FirstName]
+	lastName := m.strResults[forms.F1040LastName]
+	filingStatus := formatOptionLabel(m.strResults[forms.F1040FilingStatus])
 	if firstName != "" || lastName != "" {
 		sections = append(sections,
 			tui.PromptStyle.Render(fmt.Sprintf("Taxpayer: %s %s", firstName, lastName)),
@@ -143,7 +144,7 @@ func (m SummaryView) View() string {
 	}
 
 	// State section (CA)
-	if m.state == "CA" {
+	if m.state == forms.StateCodeCA {
 		sections = append(sections, "")
 		sections = append(sections, tui.HighlightStyle.Render(
 			"═══ California Return (Form 540) ═══",

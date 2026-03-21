@@ -67,16 +67,16 @@ func Form8889() *forms.FormDef {
 				Line:      "6",
 				Type:      forms.Computed,
 				Label:     "HSA contribution limit",
-				DependsOn: []string{"form_8889:1", "form_8889:5"},
+				DependsOn: []string{forms.F8889Line1, forms.F8889Line5},
 				Compute: func(dv forms.DepValues) float64 {
-					coverageType := dv.GetString("form_8889:1")
+					coverageType := dv.GetString(forms.F8889Line1)
 					var limit float64
 					if coverageType == "family" {
 						limit = hsaFamily2025
 					} else {
 						limit = hsaSelfOnly2025
 					}
-					catchUp := math.Min(dv.Get("form_8889:5"), hsaCatchUp)
+					catchUp := math.Min(dv.Get(forms.F8889Line5), hsaCatchUp)
 					return limit + catchUp
 				},
 			},
@@ -85,11 +85,11 @@ func Form8889() *forms.FormDef {
 				Line:      "9",
 				Type:      forms.Computed,
 				Label:     "HSA deduction",
-				DependsOn: []string{"form_8889:2", "form_8889:3", "form_8889:6"},
+				DependsOn: []string{forms.F8889Line2, forms.F8889Line3, forms.F8889Line6},
 				Compute: func(dv forms.DepValues) float64 {
-					contributions := dv.Get("form_8889:2")
-					employer := dv.Get("form_8889:3")
-					limit := dv.Get("form_8889:6")
+					contributions := dv.Get(forms.F8889Line2)
+					employer := dv.Get(forms.F8889Line3)
+					limit := dv.Get(forms.F8889Line6)
 
 					// Total contributions (yours + employer) can't exceed limit
 					total := contributions + employer
@@ -122,9 +122,9 @@ func Form8889() *forms.FormDef {
 				Line:      "15",
 				Type:      forms.Computed,
 				Label:     "Taxable HSA distributions",
-				DependsOn: []string{"form_8889:14a", "form_8889:14c"},
+				DependsOn: []string{forms.F8889Line14a, forms.F8889Line14c},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("form_8889:14a")-dv.Get("form_8889:14c"))
+					return math.Max(0, dv.Get(forms.F8889Line14a)-dv.Get(forms.F8889Line14c))
 				},
 			},
 			// Line 17b: Additional 20% tax on non-qualified distributions
@@ -132,9 +132,9 @@ func Form8889() *forms.FormDef {
 				Line:      "17b",
 				Type:      forms.Computed,
 				Label:     "Additional tax on non-qualified HSA distributions (20%)",
-				DependsOn: []string{"form_8889:15"},
+				DependsOn: []string{forms.F8889Line15},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8889:15") * hsaPenaltyRate
+					return dv.Get(forms.F8889Line15) * hsaPenaltyRate
 				},
 			},
 		},

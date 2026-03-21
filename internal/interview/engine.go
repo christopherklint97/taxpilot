@@ -138,7 +138,7 @@ func (e *Engine) GetPriorYearDefault() *PriorYearDefault {
 	if q.IsString || len(q.Options) > 0 {
 		if sv, ok := e.priorYearStr[q.Key]; ok && sv != "" {
 			canote := ""
-			if e.stateCode == "CA" {
+			if e.stateCode == forms.StateCodeCA {
 				canote = GetCAPreFillNote(q.Key, e.priorYear, e.priorYearStr)
 			}
 			return &PriorYearDefault{
@@ -155,7 +155,7 @@ func (e *Engine) GetPriorYearDefault() *PriorYearDefault {
 	// Check numeric prior-year values
 	if nv, ok := e.priorYear[q.Key]; ok {
 		canote := ""
-		if e.stateCode == "CA" {
+		if e.stateCode == forms.StateCodeCA {
 			canote = GetCAPreFillNote(q.Key, e.priorYear, e.priorYearStr)
 		}
 		return &PriorYearDefault{
@@ -249,6 +249,7 @@ func (e *Engine) buildQuestions() {
 	// Special buckets for sub-ordering within input form groups
 	var employerInfo []Question
 	var w2Financial []Question
+	var foreignWages []Question
 	var f1099intInfo []Question
 	var f1099intFinancial []Question
 	var f1099divInfo []Question
@@ -257,6 +258,8 @@ func (e *Engine) buildQuestions() {
 	var f1099necFinancial []Question
 	var f1099bInfo []Question
 	var f1099bFinancial []Question
+	var schedBForeignInterest []Question
+	var schedBForeignAccounts []Question
 
 	// Group-based buckets keyed by QuestionGroup
 	groupBuckets := make(map[string][]Question)
@@ -283,12 +286,14 @@ func (e *Engine) buildQuestions() {
 			group := form.QuestionGroup
 
 			// Special sub-ordering for personal identification fields
-			if group == "personal" {
+			if group == forms.GroupPersonal {
 				switch {
-				case field.Line == "filing_status":
+				case field.Line == forms.LineFilingStatus:
 					filingStatus = append(filingStatus, q)
-				case field.Line == "first_name" || field.Line == "last_name" || field.Line == "ssn":
+				case field.Line == forms.LineFirstName || field.Line == forms.LineLastName || field.Line == forms.LineSSN:
 					personalInfo = append(personalInfo, q)
+				case field.Line == forms.LineForeignWages || field.Line == forms.LineForeignEmployer:
+					foreignWages = append(foreignWages, q)
 				default:
 					// Other personal fields go into the general personal bucket
 					groupBuckets[group] = append(groupBuckets[group], q)
@@ -298,9 +303,9 @@ func (e *Engine) buildQuestions() {
 			}
 
 			// Special sub-ordering for W-2 employer info
-			if group == "income_w2" {
+			if group == forms.GroupIncomeW2 {
 				switch {
-				case field.Line == "employer_name" || field.Line == "employer_ein":
+				case field.Line == forms.LineEmployerName || field.Line == forms.LineEmployerEIN:
 					employerInfo = append(employerInfo, q)
 				default:
 					w2Financial = append(w2Financial, q)
@@ -309,31 +314,37 @@ func (e *Engine) buildQuestions() {
 			}
 
 			// Special sub-ordering for 1099 payer info
-			if group == "income_1099" {
+			if group == forms.GroupIncome1099 {
 				switch form.ID {
 				case forms.Form1099INT:
-					if field.Line == "payer_name" || field.Line == "payer_tin" {
+					if field.Line == forms.LinePayerName || field.Line == forms.LinePayerTIN {
 						f1099intInfo = append(f1099intInfo, q)
 					} else {
 						f1099intFinancial = append(f1099intFinancial, q)
 					}
 				case forms.Form1099DIV:
-					if field.Line == "payer_name" || field.Line == "payer_tin" {
+					if field.Line == forms.LinePayerName || field.Line == forms.LinePayerTIN {
 						f1099divInfo = append(f1099divInfo, q)
 					} else {
 						f1099divFinancial = append(f1099divFinancial, q)
 					}
 				case forms.Form1099NEC:
-					if field.Line == "payer_name" || field.Line == "payer_tin" {
+					if field.Line == forms.LinePayerName || field.Line == forms.LinePayerTIN {
 						f1099necInfo = append(f1099necInfo, q)
 					} else {
 						f1099necFinancial = append(f1099necFinancial, q)
 					}
 				case forms.Form1099B:
-					if field.Line == "description" || field.Line == "date_acquired" || field.Line == "date_sold" {
+					if field.Line == forms.LineDescription || field.Line == forms.LineDateAcquired || field.Line == forms.LineDateSold {
 						f1099bInfo = append(f1099bInfo, q)
 					} else {
 						f1099bFinancial = append(f1099bFinancial, q)
+					}
+				case forms.FormScheduleB:
+					if strings.HasPrefix(field.Line, forms.LineForeignInterest) {
+						schedBForeignInterest = append(schedBForeignInterest, q)
+					} else {
+						schedBForeignAccounts = append(schedBForeignAccounts, q)
 					}
 				default:
 					groupBuckets[group] = append(groupBuckets[group], q)
@@ -354,13 +365,13 @@ func (e *Engine) buildQuestions() {
 	}
 
 	// Order personal info: first_name, last_name, ssn
-	personalInfo = sortByLineOrder(personalInfo, []string{"first_name", "last_name", "ssn"})
+	personalInfo = sortByLineOrder(personalInfo, []string{forms.LineFirstName, forms.LineLastName, forms.LineSSN})
 	// Order employer/payer info
-	employerInfo = sortByLineOrder(employerInfo, []string{"employer_name", "employer_ein"})
-	f1099intInfo = sortByLineOrder(f1099intInfo, []string{"payer_name", "payer_tin"})
-	f1099divInfo = sortByLineOrder(f1099divInfo, []string{"payer_name", "payer_tin"})
-	f1099necInfo = sortByLineOrder(f1099necInfo, []string{"payer_name", "payer_tin"})
-	f1099bInfo = sortByLineOrder(f1099bInfo, []string{"description", "date_acquired", "date_sold"})
+	employerInfo = sortByLineOrder(employerInfo, []string{forms.LineEmployerName, forms.LineEmployerEIN})
+	f1099intInfo = sortByLineOrder(f1099intInfo, []string{forms.LinePayerName, forms.LinePayerTIN})
+	f1099divInfo = sortByLineOrder(f1099divInfo, []string{forms.LinePayerName, forms.LinePayerTIN})
+	f1099necInfo = sortByLineOrder(f1099necInfo, []string{forms.LinePayerName, forms.LinePayerTIN})
+	f1099bInfo = sortByLineOrder(f1099bInfo, []string{forms.LineDescription, forms.LineDateAcquired, forms.LineDateSold})
 
 	// Build the final question list: special buckets first, then group-based
 	e.questions = nil
@@ -373,6 +384,10 @@ func (e *Engine) buildQuestions() {
 	e.questions = append(e.questions, employerInfo...)
 	e.questions = append(e.questions, w2Financial...)
 
+	// Foreign wages (after W-2, for people with foreign employers)
+	foreignWages = sortByLineOrder(foreignWages, []string{forms.LineForeignWages, forms.LineForeignEmployer})
+	e.questions = append(e.questions, foreignWages...)
+
 	// 1099 group (special sub-ordering)
 	e.questions = append(e.questions, f1099intInfo...)
 	e.questions = append(e.questions, f1099intFinancial...)
@@ -383,6 +398,12 @@ func (e *Engine) buildQuestions() {
 	e.questions = append(e.questions, f1099bInfo...)
 	e.questions = append(e.questions, f1099bFinancial...)
 
+	// Schedule B: foreign interest (after 1099s), then foreign accounts
+	schedBForeignInterest = sortByLineOrder(schedBForeignInterest, []string{forms.LineForeignInterest, forms.LineForeignInterestPayer})
+	e.questions = append(e.questions, schedBForeignInterest...)
+	schedBForeignAccounts = sortByLineOrder(schedBForeignAccounts, []string{"7a", "7b", "8"})
+	e.questions = append(e.questions, schedBForeignAccounts...)
+
 	// Remaining groups sorted by QuestionOrder
 	type groupEntry struct {
 		name  string
@@ -392,7 +413,7 @@ func (e *Engine) buildQuestions() {
 	var groups []groupEntry
 	for name, qs := range groupBuckets {
 		// Skip groups already handled via special buckets
-		if name == "personal" || name == "income_w2" || name == "income_1099" {
+		if name == forms.GroupPersonal || name == forms.GroupIncomeW2 || name == forms.GroupIncome1099 {
 			// These may have overflow questions from the general personal bucket
 			e.questions = append(e.questions, qs...)
 			continue
@@ -563,6 +584,34 @@ func resolveOption(input string, options []string) (string, error) {
 	}
 
 	return "", fmt.Errorf("invalid option %q — choose from: %s", input, strings.Join(options, ", "))
+}
+
+// SkipForm skips all remaining questions that belong to the same form as the
+// current question. For input forms like 1099-INT, this lets the user say
+// "I don't have this form" and move on. Skipped fields get zero/empty defaults.
+// Returns the number of questions skipped, or 0 if there's nothing to skip.
+func (e *Engine) SkipForm() int {
+	if e.current >= len(e.questions) {
+		return 0
+	}
+
+	currentForm := e.questions[e.current].FormName
+	skipped := 0
+
+	for e.current < len(e.questions) && e.questions[e.current].FormName == currentForm {
+		q := &e.questions[e.current]
+		// Fill with zero/empty so the solver doesn't complain about missing inputs
+		if q.IsString || len(q.Options) > 0 {
+			e.strInputs[q.Key] = ""
+			e.inputs[q.Key] = 0
+		} else {
+			e.inputs[q.Key] = 0
+		}
+		e.current++
+		skipped++
+	}
+
+	return skipped
 }
 
 // Back moves to the previous question. Returns false if already at the first question.

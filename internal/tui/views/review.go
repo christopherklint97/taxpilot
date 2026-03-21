@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"taxpilot/internal/efile"
+	"taxpilot/internal/forms"
 	"taxpilot/internal/tui"
 )
 
@@ -47,7 +48,7 @@ type ReviewView struct {
 
 // NewReviewView creates a ReviewView with the given data.
 func NewReviewView(msg tui.ShowReviewMsg) ReviewView {
-	includeCA := msg.State == "CA"
+	includeCA := msg.State == forms.StateCodeCA
 	validation := efile.ValidateFull(msg.Results, msg.StrInputs, msg.TaxYear, includeCA)
 
 	return ReviewView{
@@ -234,9 +235,9 @@ func (m ReviewView) renderOverview() []string {
 	var lines []string
 
 	// Taxpayer info
-	firstName := m.strResults["1040:first_name"]
-	lastName := m.strResults["1040:last_name"]
-	filingStatus := formatOptionLabel(m.strResults["1040:filing_status"])
+	firstName := m.strResults[forms.F1040FirstName]
+	lastName := m.strResults[forms.F1040LastName]
+	filingStatus := formatOptionLabel(m.strResults[forms.F1040FilingStatus])
 	if firstName != "" || lastName != "" {
 		lines = append(lines, tui.PromptStyle.Render(fmt.Sprintf("Taxpayer: %s %s", firstName, lastName)))
 	}
@@ -261,7 +262,7 @@ func (m ReviewView) renderOverview() []string {
 	}
 
 	// CA summary
-	if m.state == "CA" {
+	if m.state == forms.StateCodeCA {
 		lines = append(lines, "")
 		lines = append(lines, tui.HighlightStyle.Render("--- California (Form 540) ---"))
 		lines = append(lines, formatMoney("CA AGI", m.results["ca_540:17"]))
@@ -596,7 +597,7 @@ func (m ReviewView) renderFederalDetail() []string {
 func (m ReviewView) renderCADetail() []string {
 	var lines []string
 
-	if m.state != "CA" {
+	if m.state != forms.StateCodeCA {
 		lines = append(lines, "No California return data. State is set to: "+m.state)
 		return lines
 	}
@@ -710,7 +711,7 @@ func (m ReviewView) renderPriorYearComparison() []string {
 	}
 
 	// Add CA fields if applicable
-	if m.state == "CA" {
+	if m.state == forms.StateCodeCA {
 		comparisonFields = append(comparisonFields, []struct {
 			key   string
 			label string

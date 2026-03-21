@@ -18,7 +18,7 @@ func Schedule1() *forms.FormDef {
 		Name:         "Schedule 1 — Additional Income and Adjustments to Income",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "income_w2",
+		QuestionGroup: forms.GroupIncomeW2,
 		QuestionOrder: 2,
 		Fields: []forms.FieldDef{
 			// --- Part I: Additional Income ---
@@ -48,9 +48,9 @@ func Schedule1() *forms.FormDef {
 				Line:      "3",
 				Type:      forms.Computed,
 				Label:     "Business income or (loss)",
-				DependsOn: []string{"schedule_c:31"},
+				DependsOn: []string{forms.SchedCLine31},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_c:31")
+					return dv.Get(forms.SchedCLine31)
 				},
 			},
 			// Line 7: Capital gain or (loss) — from Schedule D line 16
@@ -58,9 +58,9 @@ func Schedule1() *forms.FormDef {
 				Line:      "7",
 				Type:      forms.Computed,
 				Label:     "Capital gain or (loss)",
-				DependsOn: []string{"schedule_d:16"},
+				DependsOn: []string{forms.SchedDLine16},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_d:16")
+					return dv.Get(forms.SchedDLine16)
 				},
 			},
 			// Line 8d: Foreign earned income exclusion (from Form 2555)
@@ -68,9 +68,9 @@ func Schedule1() *forms.FormDef {
 				Line:      "8d",
 				Type:      forms.Computed,
 				Label:     "Foreign earned income exclusion (Form 2555)",
-				DependsOn: []string{"form_2555:total_exclusion"},
+				DependsOn: []string{forms.F2555TotalExclusion},
 				Compute: func(dv forms.DepValues) float64 {
-					return -dv.Get("form_2555:total_exclusion")
+					return -dv.Get(forms.F2555TotalExclusion)
 				},
 			},
 			// Line 10: Total additional income (sum of Part I lines)
@@ -78,13 +78,13 @@ func Schedule1() *forms.FormDef {
 				Line:      "10",
 				Type:      forms.Computed,
 				Label:     "Total additional income",
-				DependsOn: []string{"schedule_1:1", "schedule_1:2a", "schedule_1:3", "schedule_1:7", "schedule_1:8d"},
+				DependsOn: []string{forms.Sched1Line1, "schedule_1:2a", forms.Sched1Line3, forms.Sched1Line7, forms.Sched1Line8d},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_1:1") +
+					return dv.Get(forms.Sched1Line1) +
 						dv.Get("schedule_1:2a") +
-						dv.Get("schedule_1:3") +
-						dv.Get("schedule_1:7") +
-						dv.Get("schedule_1:8d")
+						dv.Get(forms.Sched1Line3) +
+						dv.Get(forms.Sched1Line7) +
+						dv.Get(forms.Sched1Line8d)
 				},
 			},
 
@@ -105,9 +105,9 @@ func Schedule1() *forms.FormDef {
 				Line:      "15",
 				Type:      forms.Computed,
 				Label:     "HSA deduction",
-				DependsOn: []string{"form_8889:9"},
+				DependsOn: []string{forms.F8889Line9},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8889:9")
+					return dv.Get(forms.F8889Line9)
 				},
 			},
 			// Line 16: Self-employment tax deduction (from Schedule SE line 7)
@@ -115,9 +115,9 @@ func Schedule1() *forms.FormDef {
 				Line:      "16",
 				Type:      forms.Computed,
 				Label:     "Deductible part of self-employment tax",
-				DependsOn: []string{"schedule_se:7"},
+				DependsOn: []string{forms.SchedSELine7},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_se:7")
+					return dv.Get(forms.SchedSELine7)
 				},
 			},
 			// Line 20: IRA deduction (deferred)
@@ -145,9 +145,9 @@ func Schedule1() *forms.FormDef {
 				Line:      "24",
 				Type:      forms.Computed,
 				Label:     "Penalty on early withdrawal of savings",
-				DependsOn: []string{"1099int:*:early_withdrawal_penalty"},
+				DependsOn: []string{forms.F1099INTWildcardPenalty},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.SumAll("1099int:*:early_withdrawal_penalty")
+					return dv.SumAll(forms.F1099INTWildcardPenalty)
 				},
 			},
 			// Line 26: Total adjustments (sum of Part II lines)
@@ -155,14 +155,14 @@ func Schedule1() *forms.FormDef {
 				Line:      "26",
 				Type:      forms.Computed,
 				Label:     "Total adjustments to income",
-				DependsOn: []string{"schedule_1:11", "schedule_1:15", "schedule_1:16", "schedule_1:20", "schedule_1:21", "schedule_1:24"},
+				DependsOn: []string{"schedule_1:11", forms.Sched1Line15, forms.Sched1Line16, "schedule_1:20", "schedule_1:21", forms.Sched1Line24},
 				Compute: func(dv forms.DepValues) float64 {
 					return dv.Get("schedule_1:11") +
-						dv.Get("schedule_1:15") +
-						dv.Get("schedule_1:16") +
+						dv.Get(forms.Sched1Line15) +
+						dv.Get(forms.Sched1Line16) +
 						dv.Get("schedule_1:20") +
 						dv.Get("schedule_1:21") +
-						dv.Get("schedule_1:24")
+						dv.Get(forms.Sched1Line24)
 				},
 			},
 		},

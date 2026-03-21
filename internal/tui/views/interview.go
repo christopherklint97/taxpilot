@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"taxpilot/internal/calc"
+	"taxpilot/internal/forms"
 	"taxpilot/internal/interview"
 	"taxpilot/internal/state"
 	"taxpilot/internal/tui"
@@ -149,7 +150,7 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					// Get filing status
 					filingStatus := ""
-					if fs, ok := m.engine.StrInputs()["1040:filing_status"]; ok {
+					if fs, ok := m.engine.StrInputs()[forms.F1040FilingStatus]; ok {
 						filingStatus = fs
 					}
 					return m, func() tea.Msg {
@@ -165,7 +166,7 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			// Handle "ca" command — explain CA vs federal difference
-			if m.input == "ca" && m.stateCode == "CA" {
+			if m.input == "ca" && m.stateCode == forms.StateCodeCA {
 				q := m.engine.Current()
 				if q != nil {
 					m.aiLoading = true
@@ -179,6 +180,34 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				m.input = ""
+				return m, nil
+			}
+			// Handle "skip" command — skip all questions for the current form
+			if m.input == "skip" {
+				m.input = ""
+				m.helpText = ""
+				m.aiHelpText = ""
+				skipped := m.engine.SkipForm()
+				if skipped > 0 {
+					m.err = ""
+					if !m.engine.HasNext() {
+						m.done = true
+						results, err := m.engine.Solve()
+						if err != nil {
+							m.err = fmt.Sprintf("Error computing results: %v", err)
+							m.done = false
+							return m, nil
+						}
+						return m, func() tea.Msg {
+							return tui.ShowSummaryMsg{
+								Results:   results,
+								StrInputs: m.engine.StrInputs(),
+								TaxYear:   m.taxYear,
+								State:     m.stateCode,
+							}
+						}
+					}
+				}
 				return m, nil
 			}
 			// Handle "calc" command — enter calculator mode
@@ -204,7 +233,7 @@ func (m InterviewView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if q != nil {
 					cp := interview.GetContextualPrompt(q.Key, q.Prompt, m.stateCode)
 					m.helpText = cp.HelpText
-					if cp.CANote != "" && m.stateCode == "CA" {
+					if cp.CANote != "" && m.stateCode == forms.StateCodeCA {
 						m.helpText += "\n\nCalifornia note: " + cp.CANote
 					}
 					if m.helpText == "" {
@@ -362,7 +391,7 @@ func (m *InterviewView) saveState() {
 	ret := state.NewTaxReturn(m.taxYear, m.stateCode)
 	ret.Inputs = m.engine.Inputs()
 	ret.StrInputs = m.engine.StrInputs()
-	if fs, ok := ret.StrInputs["1040:filing_status"]; ok {
+	if fs, ok := ret.StrInputs[forms.F1040FilingStatus]; ok {
 		ret.FilingStatus = fs
 	}
 	_ = state.Save(state.DefaultStorePath(), ret)
@@ -422,7 +451,7 @@ func (m InterviewView) View() string {
 
 	// CA-specific note
 	var caNote string
-	if cp.CANote != "" && m.stateCode == "CA" {
+	if cp.CANote != "" && m.stateCode == forms.StateCodeCA {
 		caNote = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#E5C07B")).
 			Italic(true).
@@ -501,11 +530,11 @@ func (m InterviewView) View() string {
 
 	// Help text — wrap into multiple lines to fit terminal width
 	helpItems := []string{
-		"Enter: submit", "←: go back", "?: help",
-		"??: AI explain", "why: why asked", "calc: calculator",
-		"q: save & quit",
+		"Enter: submit", "←: go back", "skip: skip form",
+		"?: help", "??: AI explain", "why: why asked",
+		"calc: calculator", "q: save & quit",
 	}
-	if m.stateCode == "CA" {
+	if m.stateCode == forms.StateCodeCA {
 		helpItems = append(helpItems, "ca: CA diff")
 	}
 	sep := "  |  "
@@ -635,15 +664,15 @@ func (m InterviewView) viewCalc() string {
 // formatOptionLabel converts a filing status code to a human-readable label.
 func formatOptionLabel(opt string) string {
 	switch opt {
-	case "single":
+	case forms.FilingSingle:
 		return "Single"
-	case "mfj":
+	case forms.FilingMFJ:
 		return "Married Filing Jointly"
-	case "mfs":
+	case forms.FilingMFS:
 		return "Married Filing Separately"
-	case "hoh":
+	case forms.FilingHOH:
 		return "Head of Household"
-	case "qss":
+	case forms.FilingQSS:
 		return "Qualifying Surviving Spouse"
 	default:
 		return opt

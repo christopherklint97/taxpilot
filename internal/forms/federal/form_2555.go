@@ -25,7 +25,7 @@ func Form2555() *forms.FormDef {
 		Name:         "Form 2555 — Foreign Earned Income",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "expat",
+		QuestionGroup: forms.GroupExpat,
 		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// --- Part I: General Information ---
@@ -61,7 +61,7 @@ func Form2555() *forms.FormDef {
 				ValueType: forms.StringValue,
 				Label:   "Is your employer a foreign entity?",
 				Prompt:  "Is your employer a foreign (non-US) entity?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 			// Self-employed abroad?
 			{
@@ -70,7 +70,7 @@ func Form2555() *forms.FormDef {
 				ValueType: forms.StringValue,
 				Label:   "Self-employed abroad",
 				Prompt:  "Are you self-employed in your foreign country?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 
 			// --- Part II: Qualifying Test ---
@@ -82,7 +82,7 @@ func Form2555() *forms.FormDef {
 				ValueType: forms.StringValue,
 				Label:   "Qualifying test for FEIE",
 				Prompt:  "Which qualifying test do you meet for the Foreign Earned Income Exclusion?",
-				Options: []string{"bona_fide_residence", "physical_presence"},
+				Options: forms.QualifyingTestOptions,
 			},
 
 			// --- Bona Fide Residence Test fields ---
@@ -110,7 +110,7 @@ func Form2555() *forms.FormDef {
 				ValueType: forms.StringValue,
 				Label:   "Bona fide resident for full tax year",
 				Prompt:  "Were you a bona fide resident of a foreign country for the entire tax year?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 
 			// --- Physical Presence Test fields ---
@@ -205,23 +205,23 @@ func Form2555() *forms.FormDef {
 				Line:      "qualifying_days",
 				Type:      forms.Computed,
 				Label:     "Qualifying days",
-				DependsOn: []string{"form_2555:qualifying_test", "form_2555:bfrt_full_year", "form_2555:ppt_days_present"},
+				DependsOn: []string{forms.F2555QualifyingTest, forms.F2555BFRTFullYear, forms.F2555PPTDaysPresent},
 				Compute: func(dv forms.DepValues) float64 {
-					test := dv.GetString("form_2555:qualifying_test")
-					if test == "bona_fide_residence" {
-						fullYear := dv.GetString("form_2555:bfrt_full_year")
-						if fullYear == "yes" {
+					test := dv.GetString(forms.F2555QualifyingTest)
+					if test == forms.QualifyingTestBFRT {
+						fullYear := dv.GetString(forms.F2555BFRTFullYear)
+						if fullYear == forms.OptionYes {
 							return 365
 						}
 						// Partial year BFRT: use PPT days as fallback
-						days := dv.Get("form_2555:ppt_days_present")
+						days := dv.Get(forms.F2555PPTDaysPresent)
 						if days > 0 {
 							return days
 						}
 						return 365 // default to full year if not specified
 					}
 					// Physical presence test
-					return dv.Get("form_2555:ppt_days_present")
+					return dv.Get(forms.F2555PPTDaysPresent)
 				},
 			},
 			// Prorated exclusion
@@ -229,10 +229,10 @@ func Form2555() *forms.FormDef {
 				Line:      "prorated_exclusion",
 				Type:      forms.Computed,
 				Label:     "Prorated exclusion amount",
-				DependsOn: []string{"form_2555:exclusion_limit", "form_2555:qualifying_days"},
+				DependsOn: []string{forms.F2555ExclusionLimit, forms.F2555QualifyingDays},
 				Compute: func(dv forms.DepValues) float64 {
-					limit := dv.Get("form_2555:exclusion_limit")
-					days := int(dv.Get("form_2555:qualifying_days"))
+					limit := dv.Get(forms.F2555ExclusionLimit)
+					days := int(dv.Get(forms.F2555QualifyingDays))
 					return taxmath.ProrateExclusion(limit, days, 365)
 				},
 			},
@@ -241,9 +241,9 @@ func Form2555() *forms.FormDef {
 				Line:      "foreign_income_exclusion",
 				Type:      forms.Computed,
 				Label:     "Foreign earned income exclusion",
-				DependsOn: []string{"form_2555:foreign_earned_income", "form_2555:prorated_exclusion"},
+				DependsOn: []string{forms.F2555ForeignEarnedIncome, "form_2555:prorated_exclusion"},
 				Compute: func(dv forms.DepValues) float64 {
-					income := dv.Get("form_2555:foreign_earned_income")
+					income := dv.Get(forms.F2555ForeignEarnedIncome)
 					limit := dv.Get("form_2555:prorated_exclusion")
 					return math.Min(income, limit)
 				},
@@ -276,9 +276,9 @@ func Form2555() *forms.FormDef {
 				Line:      "housing_qualifying_amount",
 				Type:      forms.Computed,
 				Label:     "Qualifying housing amount",
-				DependsOn: []string{"form_2555:housing_expenses", "form_2555:housing_max", "form_2555:housing_base_amount"},
+				DependsOn: []string{forms.F2555HousingExpenses, "form_2555:housing_max", "form_2555:housing_base_amount"},
 				Compute: func(dv forms.DepValues) float64 {
-					expenses := dv.Get("form_2555:housing_expenses")
+					expenses := dv.Get(forms.F2555HousingExpenses)
 					maxAmt := dv.Get("form_2555:housing_max")
 					baseAmt := dv.Get("form_2555:housing_base_amount")
 					limited := math.Min(expenses, maxAmt)
@@ -290,10 +290,10 @@ func Form2555() *forms.FormDef {
 				Line:      "housing_exclusion",
 				Type:      forms.Computed,
 				Label:     "Foreign housing exclusion",
-				DependsOn: []string{"form_2555:housing_qualifying_amount", "form_2555:employer_provided_housing"},
+				DependsOn: []string{"form_2555:housing_qualifying_amount", forms.F2555EmployerHousing},
 				Compute: func(dv forms.DepValues) float64 {
 					qualifying := dv.Get("form_2555:housing_qualifying_amount")
-					employerProvided := dv.Get("form_2555:employer_provided_housing")
+					employerProvided := dv.Get(forms.F2555EmployerHousing)
 					return math.Min(qualifying, employerProvided)
 				},
 			},
@@ -302,14 +302,14 @@ func Form2555() *forms.FormDef {
 				Line:      "housing_deduction",
 				Type:      forms.Computed,
 				Label:     "Foreign housing deduction (self-employed)",
-				DependsOn: []string{"form_2555:housing_qualifying_amount", "form_2555:housing_exclusion", "form_2555:self_employed_abroad"},
+				DependsOn: []string{"form_2555:housing_qualifying_amount", forms.F2555HousingExclusion, forms.F2555SelfEmployedAbroad},
 				Compute: func(dv forms.DepValues) float64 {
-					selfEmployed := dv.GetString("form_2555:self_employed_abroad")
-					if selfEmployed != "yes" {
+					selfEmployed := dv.GetString(forms.F2555SelfEmployedAbroad)
+					if selfEmployed != forms.OptionYes {
 						return 0
 					}
 					qualifying := dv.Get("form_2555:housing_qualifying_amount")
-					exclusion := dv.Get("form_2555:housing_exclusion")
+					exclusion := dv.Get(forms.F2555HousingExclusion)
 					return math.Max(0, qualifying-exclusion)
 				},
 			},
@@ -321,10 +321,10 @@ func Form2555() *forms.FormDef {
 				Line:      "total_exclusion",
 				Type:      forms.Computed,
 				Label:     "Total foreign earned income and housing exclusion",
-				DependsOn: []string{"form_2555:foreign_income_exclusion", "form_2555:housing_exclusion"},
+				DependsOn: []string{forms.F2555ForeignIncomeExcl, forms.F2555HousingExclusion},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_2555:foreign_income_exclusion") +
-						dv.Get("form_2555:housing_exclusion")
+					return dv.Get(forms.F2555ForeignIncomeExcl) +
+						dv.Get(forms.F2555HousingExclusion)
 				},
 			},
 		},

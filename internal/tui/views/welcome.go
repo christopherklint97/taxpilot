@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"taxpilot/internal/forms"
 	"taxpilot/internal/tui"
 )
 
@@ -150,7 +151,7 @@ func (m WelcomeModel) View() string {
 	titleBlock := tui.TitleStyle.Render(logo)
 
 	stateName := m.state
-	if stateName == "CA" {
+	if stateName == forms.StateCodeCA {
 		stateName = "California"
 	}
 

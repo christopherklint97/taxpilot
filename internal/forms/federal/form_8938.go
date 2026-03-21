@@ -22,7 +22,7 @@ func Form8938() *forms.FormDef {
 		Name:         "Form 8938 — Statement of Specified Foreign Financial Assets",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "expat",
+		QuestionGroup: forms.GroupExpat,
 		QuestionOrder: 4,
 		Fields: []forms.FieldDef{
 			// --- Taxpayer situation ---
@@ -34,7 +34,7 @@ func Form8938() *forms.FormDef {
 				ValueType: forms.StringValue,
 				Label:   "Do you live outside the United States?",
 				Prompt:  "Do you meet the bona fide residence or physical presence test for living abroad?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 
 			// --- Financial account details ---
@@ -137,10 +137,10 @@ func Form8938() *forms.FormDef {
 				Line:      "total_max_value",
 				Type:      forms.Computed,
 				Label:     "Total maximum value of all foreign assets",
-				DependsOn: []string{"form_8938:max_value_accounts", "form_8938:max_value_other"},
+				DependsOn: []string{forms.F8938MaxValueAccounts, forms.F8938MaxValueOther},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8938:max_value_accounts") +
-						dv.Get("form_8938:max_value_other")
+					return dv.Get(forms.F8938MaxValueAccounts) +
+						dv.Get(forms.F8938MaxValueOther)
 				},
 			},
 			// Total year-end value
@@ -148,10 +148,10 @@ func Form8938() *forms.FormDef {
 				Line:      "total_yearend_value",
 				Type:      forms.Computed,
 				Label:     "Total year-end value of all foreign assets",
-				DependsOn: []string{"form_8938:yearend_value_accounts", "form_8938:yearend_value_other"},
+				DependsOn: []string{forms.F8938YearEndAccounts, forms.F8938YearEndOther},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_8938:yearend_value_accounts") +
-						dv.Get("form_8938:yearend_value_other")
+					return dv.Get(forms.F8938YearEndAccounts) +
+						dv.Get(forms.F8938YearEndOther)
 				},
 			},
 			// Year-end threshold (depends on filing status and whether abroad)
@@ -159,12 +159,12 @@ func Form8938() *forms.FormDef {
 				Line:      "threshold_yearend",
 				Type:      forms.Computed,
 				Label:     "FATCA year-end filing threshold",
-				DependsOn: []string{"form_8938:lives_abroad", "1040:filing_status"},
+				DependsOn: []string{forms.F8938LivesAbroad, forms.F1040FilingStatus},
 				Compute: func(dv forms.DepValues) float64 {
 					cfg := taxmath.GetConfigOrDefault(dv.TaxYear())
-					abroad := dv.GetString("form_8938:lives_abroad") == "yes"
-					fs := dv.GetString("1040:filing_status")
-					mfj := fs == "mfj"
+					abroad := dv.GetString(forms.F8938LivesAbroad) == forms.OptionYes
+					fs := dv.GetString(forms.F1040FilingStatus)
+					mfj := fs == forms.FilingMFJ
 
 					if abroad {
 						if mfj {
@@ -183,12 +183,12 @@ func Form8938() *forms.FormDef {
 				Line:      "threshold_anytime",
 				Type:      forms.Computed,
 				Label:     "FATCA any-time filing threshold",
-				DependsOn: []string{"form_8938:lives_abroad", "1040:filing_status"},
+				DependsOn: []string{forms.F8938LivesAbroad, forms.F1040FilingStatus},
 				Compute: func(dv forms.DepValues) float64 {
 					cfg := taxmath.GetConfigOrDefault(dv.TaxYear())
-					abroad := dv.GetString("form_8938:lives_abroad") == "yes"
-					fs := dv.GetString("1040:filing_status")
-					mfj := fs == "mfj"
+					abroad := dv.GetString(forms.F8938LivesAbroad) == forms.OptionYes
+					fs := dv.GetString(forms.F1040FilingStatus)
+					mfj := fs == forms.FilingMFJ
 
 					if abroad {
 						if mfj {
@@ -207,10 +207,10 @@ func Form8938() *forms.FormDef {
 				Line:      "filing_required",
 				Type:      forms.Computed,
 				Label:     "Form 8938 filing required",
-				DependsOn: []string{"form_8938:total_max_value", "form_8938:total_yearend_value", "form_8938:threshold_yearend", "form_8938:threshold_anytime"},
+				DependsOn: []string{forms.F8938TotalMaxValue, forms.F8938TotalYearEndValue, "form_8938:threshold_yearend", "form_8938:threshold_anytime"},
 				Compute: func(dv forms.DepValues) float64 {
-					maxVal := dv.Get("form_8938:total_max_value")
-					yearEnd := dv.Get("form_8938:total_yearend_value")
+					maxVal := dv.Get(forms.F8938TotalMaxValue)
+					yearEnd := dv.Get(forms.F8938TotalYearEndValue)
 					threshYE := dv.Get("form_8938:threshold_yearend")
 					threshAT := dv.Get("form_8938:threshold_anytime")
 

@@ -36,9 +36,9 @@ func ScheduleA() *forms.FormDef {
 				Line:      "2",
 				Type:      forms.Computed,
 				Label:     "AGI (from Form 1040 line 11)",
-				DependsOn: []string{"1040:11"},
+				DependsOn: []string{forms.F1040Line11},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("1040:11")
+					return dv.Get(forms.F1040Line11)
 				},
 			},
 			// Line 3: 7.5% of AGI threshold
@@ -46,9 +46,9 @@ func ScheduleA() *forms.FormDef {
 				Line:      "3",
 				Type:      forms.Computed,
 				Label:     "7.5% of AGI",
-				DependsOn: []string{"schedule_a:2"},
+				DependsOn: []string{forms.SchedALine2},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_a:2") * 0.075
+					return dv.Get(forms.SchedALine2) * 0.075
 				},
 			},
 			// Line 4: Deductible medical expenses (excess over 7.5% AGI)
@@ -56,9 +56,9 @@ func ScheduleA() *forms.FormDef {
 				Line:      "4",
 				Type:      forms.Computed,
 				Label:     "Deductible medical and dental expenses",
-				DependsOn: []string{"schedule_a:1", "schedule_a:3"},
+				DependsOn: []string{forms.SchedALine1, forms.SchedALine3},
 				Compute: func(dv forms.DepValues) float64 {
-					return math.Max(0, dv.Get("schedule_a:1")-dv.Get("schedule_a:3"))
+					return math.Max(0, dv.Get(forms.SchedALine1)-dv.Get(forms.SchedALine3))
 				},
 			},
 
@@ -90,9 +90,9 @@ func ScheduleA() *forms.FormDef {
 				Line:      "5d",
 				Type:      forms.Computed,
 				Label:     "Total state and local taxes",
-				DependsOn: []string{"schedule_a:5a", "schedule_a:5b", "schedule_a:5c"},
+				DependsOn: []string{forms.SchedALine5a, forms.SchedALine5b, forms.SchedALine5c},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_a:5a") + dv.Get("schedule_a:5b") + dv.Get("schedule_a:5c")
+					return dv.Get(forms.SchedALine5a) + dv.Get(forms.SchedALine5b) + dv.Get(forms.SchedALine5c)
 				},
 			},
 			// Line 5e: SALT deduction (capped at $10,000 / $5,000 MFS)
@@ -100,10 +100,10 @@ func ScheduleA() *forms.FormDef {
 				Line:      "5e",
 				Type:      forms.Computed,
 				Label:     "State and local taxes (SALT) deduction",
-				DependsOn: []string{"schedule_a:5d", "1040:filing_status"},
+				DependsOn: []string{forms.SchedALine5d, forms.F1040FilingStatus},
 				Compute: func(dv forms.DepValues) float64 {
-					total := dv.Get("schedule_a:5d")
-					fs := taxmath.FilingStatus(dv.GetString("1040:filing_status"))
+					total := dv.Get(forms.SchedALine5d)
+					fs := taxmath.FilingStatus(dv.GetString(forms.F1040FilingStatus))
 					cap := 10000.0
 					if fs == taxmath.MarriedFilingSep {
 						cap = 5000.0
@@ -136,9 +136,9 @@ func ScheduleA() *forms.FormDef {
 				Line:      "11",
 				Type:      forms.Computed,
 				Label:     "Total interest deduction",
-				DependsOn: []string{"schedule_a:8a", "schedule_a:10"},
+				DependsOn: []string{forms.SchedALine8a, "schedule_a:10"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_a:8a") + dv.Get("schedule_a:10")
+					return dv.Get(forms.SchedALine8a) + dv.Get("schedule_a:10")
 				},
 			},
 
@@ -170,9 +170,9 @@ func ScheduleA() *forms.FormDef {
 				Line:      "15",
 				Type:      forms.Computed,
 				Label:     "Total charitable contributions",
-				DependsOn: []string{"schedule_a:12", "schedule_a:13", "schedule_a:14"},
+				DependsOn: []string{forms.SchedALine12, forms.SchedALine13, forms.SchedALine14},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_a:12") + dv.Get("schedule_a:13") + dv.Get("schedule_a:14")
+					return dv.Get(forms.SchedALine12) + dv.Get(forms.SchedALine13) + dv.Get(forms.SchedALine14)
 				},
 			},
 
@@ -196,12 +196,12 @@ func ScheduleA() *forms.FormDef {
 				Line:      "17",
 				Type:      forms.Computed,
 				Label:     "Total itemized deductions",
-				DependsOn: []string{"schedule_a:4", "schedule_a:5e", "schedule_a:11", "schedule_a:15", "schedule_a:16"},
+				DependsOn: []string{forms.SchedALine4, forms.SchedALine5e, forms.SchedALine11, forms.SchedALine15, "schedule_a:16"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_a:4") +
-						dv.Get("schedule_a:5e") +
-						dv.Get("schedule_a:11") +
-						dv.Get("schedule_a:15") +
+					return dv.Get(forms.SchedALine4) +
+						dv.Get(forms.SchedALine5e) +
+						dv.Get(forms.SchedALine11) +
+						dv.Get(forms.SchedALine15) +
 						dv.Get("schedule_a:16")
 				},
 			},

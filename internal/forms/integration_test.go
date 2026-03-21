@@ -129,6 +129,12 @@ var inputFormDefaults = map[string]interface{}{
 	"form_1116:foreign_tax_paid_income":   0.0,
 	"form_1116:foreign_tax_paid_other":    0.0,
 	"form_1116:accrued_or_paid":           "paid",
+	// Foreign wages defaults (no foreign employer)
+	"1040:foreign_wages":    0.0,
+	"1040:foreign_employer": "none",
+	// Schedule B Part I defaults (no foreign interest)
+	"schedule_b:foreign_interest":       0.0,
+	"schedule_b:foreign_interest_payer": "none",
 	// Schedule B Part III defaults (no foreign accounts)
 	"schedule_b:7a": "no",
 	"schedule_b:7b": "N/A",

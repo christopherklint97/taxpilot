@@ -33,9 +33,22 @@ var contextualPrompts = map[string]ContextualPrompt{
 		Prompt:   "What is your Social Security number?",
 		HelpText: "Format: XXX-XX-XXXX. This is required for filing and is kept secure.",
 	},
+	// --- Foreign Wages (Form 1040) ---
+	forms.F1040ForeignWages: {
+		Prompt:   "How much did you earn in wages from foreign employers in 2025 (in USD)?",
+		HelpText: "Enter wages paid by foreign (non-US) employers that are NOT reported on a US W-2. Convert to USD using the yearly average exchange rate. Enter 0 if you had no foreign employment income. You can use the calc command with currency conversion (e.g., 'calc 500000 SEK').",
+		CANote:   "California taxes all worldwide wages, including foreign-source wages.",
+		IRCRef:   "IRC §61(a)",
+	},
+	forms.F1040ForeignEmployer: {
+		Prompt:   "Who was your foreign employer?",
+		HelpText: "Enter the name and country of your foreign employer(s) (e.g., \"Ericsson AB, Sweden\"). This is reported on Form 1040 line 1a alongside any W-2 wages.",
+	},
+
+	// --- W-2 (US employers only) ---
 	"w2:1:employer_name": {
-		Prompt:   "Who is your employer?",
-		HelpText: "Enter the employer name exactly as shown on your W-2 (Box c).",
+		Prompt:   "Who is your US employer?",
+		HelpText: "Enter the employer name exactly as shown on your W-2 (Box c). W-2 forms are issued by US employers only. If your employer is foreign, skip this form and enter your wages in the foreign wages section.",
 	},
 	"w2:1:employer_ein": {
 		Prompt:   "What is the employer's EIN?",
@@ -131,8 +144,8 @@ var contextualPrompts = map[string]ContextualPrompt{
 
 	// --- 1099-INT fields ---
 	"1099int:1:payer_name": {
-		Prompt:   "Who is the payer for your 1099-INT?",
-		HelpText: "Enter the name of the bank or institution that paid you interest.",
+		Prompt:   "Who is the US payer for your 1099-INT?",
+		HelpText: "Enter the name of the US bank or institution that issued a 1099-INT. Only US financial institutions issue 1099-INT forms. If all your interest is from foreign banks, skip this form — foreign interest is entered separately on Schedule B.",
 	},
 	"1099int:1:payer_tin": {
 		Prompt:   "What is the payer's TIN?",
@@ -483,13 +496,25 @@ var contextualPrompts = map[string]ContextualPrompt{
 		IRCRef:   "IRC §6114/7701(b)",
 	},
 
+	// --- Schedule B Part I (Foreign Interest) ---
+	forms.SchedBForeignInterest: {
+		Prompt:   "How much interest income did you receive from foreign banks or institutions in 2025 (in USD)?",
+		HelpText: "Report interest from foreign bank accounts, pension funds, and other non-US financial institutions. This income is NOT reported on a 1099-INT. Convert to USD using the yearly average exchange rate. Enter 0 if none. You can use the calc command with currency conversion (e.g., 'calc 5000 SEK').",
+		CANote:   "California taxes all worldwide interest income, including foreign-source interest.",
+		IRCRef:   "IRC §61(a)(4)",
+	},
+	forms.SchedBForeignInterestPayer: {
+		Prompt:   "Who paid the foreign interest? (e.g., \"Nordea Bank, Sweden\")",
+		HelpText: "List the foreign bank(s) or institution(s) that paid you interest. This is reported in Part I of Schedule B alongside any 1099-INT payers. Enter 'none' or leave blank if you entered 0 for foreign interest.",
+	},
+
 	// --- Schedule B Part III (Foreign Accounts) ---
-	"schedule_b:7a": {
+	forms.SchedBLine7a: {
 		Prompt:   "Did you have a financial interest in or signature authority over any foreign financial account?",
 		HelpText: "This includes bank accounts, securities accounts, and other financial accounts in a foreign country. If yes and the aggregate value exceeded $10,000, you must file an FBAR (FinCEN 114).",
 		IRCRef:   "31 USC §5314",
 	},
-	"schedule_b:7b": {
+	forms.SchedBLine7b: {
 		Prompt:   "In which countries are your foreign financial accounts located?",
 		HelpText: "List all countries where you have foreign financial accounts.",
 	},
@@ -505,7 +530,7 @@ func GetContextualPrompt(fieldKey string, originalPrompt string, stateCode strin
 			IRCRef:   cp.IRCRef,
 		}
 		// Only include CANote and CARef when filing in California
-		if stateCode == "CA" {
+		if stateCode == forms.StateCodeCA {
 			result.CANote = cp.CANote
 			result.CARef = cp.CARef
 		}

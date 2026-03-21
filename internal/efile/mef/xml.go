@@ -18,11 +18,11 @@ const (
 
 // Filing status codes for MeF.
 var filingStatusCodes = map[string]int{
-	"single": 1,
-	"mfj":    2,
-	"mfs":    3,
-	"hoh":    4,
-	"qss":    5,
+	forms.FilingSingle: 1,
+	forms.FilingMFJ:    2,
+	forms.FilingMFS:    3,
+	forms.FilingHOH:    4,
+	forms.FilingQSS:    5,
 }
 
 // --- XML structure types ---

@@ -262,20 +262,20 @@ func getStr(strValues map[string]string, key string) string {
 func render1040Text(config *FormPDFConfig, values map[string]float64, strValues map[string]string) string {
 	sep := "============================================================"
 
-	filingStatus := getStr(strValues, "1040:filing_status")
-	firstName := getStr(strValues, "1040:first_name")
-	lastName := getStr(strValues, "1040:last_name")
-	ssn := getStr(strValues, "1040:ssn")
+	filingStatus := getStr(strValues, forms.F1040FilingStatus)
+	firstName := getStr(strValues, forms.F1040FirstName)
+	lastName := getStr(strValues, forms.F1040LastName)
+	ssn := getStr(strValues, forms.F1040SSN)
 
 	// Filing status checkboxes
 	statuses := map[string][2]string{
-		"single": {"Single", "single"},
-		"mfj":    {"MFJ", "mfj"},
-		"mfs":    {"MFS", "mfs"},
-		"hoh":    {"HOH", "hoh"},
-		"qss":    {"QSS", "qss"},
+		forms.FilingSingle: {"Single", forms.FilingSingle},
+		forms.FilingMFJ:    {"MFJ", forms.FilingMFJ},
+		forms.FilingMFS:    {"MFS", forms.FilingMFS},
+		forms.FilingHOH:    {"HOH", forms.FilingHOH},
+		forms.FilingQSS:    {"QSS", forms.FilingQSS},
 	}
-	statusOrder := []string{"single", "mfj", "mfs", "hoh", "qss"}
+	statusOrder := []string{forms.FilingSingle, forms.FilingMFJ, forms.FilingMFS, forms.FilingHOH, forms.FilingQSS}
 	var statusParts []string
 	for _, code := range statusOrder {
 		label := statuses[code][0]
@@ -379,7 +379,7 @@ func renderCA540Text(config *FormPDFConfig, values map[string]float64, strValues
 
 	filingStatus := getStr(strValues, "ca_540:filing_status")
 	if filingStatus == "" {
-		filingStatus = getStr(strValues, "1040:filing_status")
+		filingStatus = getStr(strValues, forms.F1040FilingStatus)
 	}
 
 	var b strings.Builder

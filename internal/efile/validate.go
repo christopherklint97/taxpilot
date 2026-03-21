@@ -71,7 +71,7 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	// R0002: Filing status required and valid
 	fs := forms.GetStr(strInputs, forms.F1040FilingStatus)
 	validStatuses := map[string]bool{
-		"single": true, "mfj": true, "mfs": true, "hoh": true, "qss": true,
+		forms.FilingSingle: true, forms.FilingMFJ: true, forms.FilingMFS: true, forms.FilingHOH: true, forms.FilingQSS: true,
 	}
 	if fs == "" || !validStatuses[fs] {
 		report.addResult("R0002", SeverityError, forms.F1040FilingStatus,
@@ -135,14 +135,14 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	// R0011: Form 2555 requires qualifying test
 	if hasForeignIncome {
 		qt := forms.GetStr(strInputs, forms.F2555QualifyingTest)
-		if qt != "bona_fide_residence" && qt != "physical_presence" {
+		if qt != forms.QualifyingTestBFRT && qt != forms.QualifyingTestPPT {
 			report.addResult("R0011", SeverityError, forms.F2555QualifyingTest,
 				"Form 2555 requires a qualifying test (bona_fide_residence or physical_presence)")
 		}
 	}
 
 	// R0012: Physical presence test requires >= 330 days
-	if forms.GetStr(strInputs, forms.F2555QualifyingTest) == "physical_presence" {
+	if forms.GetStr(strInputs, forms.F2555QualifyingTest) == forms.QualifyingTestPPT {
 		days := forms.GetNum(results, forms.F2555QualifyingDays)
 		if days < 330 {
 			report.addResult("R0012", SeverityError, forms.F2555PPTDaysPresent,
@@ -168,7 +168,7 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	}
 
 	// W0005: FBAR reminder if foreign accounts > $10,000
-	if forms.GetStr(strInputs, forms.SchedBLine7a) == "yes" {
+	if forms.GetStr(strInputs, forms.SchedBLine7a) == forms.OptionYes {
 		report.addResult("W0005", SeverityInfo, forms.SchedBLine7a,
 			"You indicated foreign accounts — remember to file FBAR (FinCEN 114) separately at bsaefiling.fincen.treas.gov if aggregate value exceeded $10,000")
 	}
@@ -200,7 +200,7 @@ func ValidateReturn(results map[string]float64, strInputs map[string]string, tax
 	salt := forms.GetNum(results, forms.SchedALine5d)
 	if salt > 0 {
 		cap := 10000.0
-		if fs == "mfs" {
+		if fs == forms.FilingMFS {
 			cap = 5000.0
 		}
 		if salt >= cap {

@@ -11,18 +11,18 @@ func F1099DIV() *forms.FormDef {
 		Name:         "1099-DIV Dividends and Distributions",
 		Jurisdiction: forms.Federal,
 		TaxYears:      []int{2025},
-		QuestionGroup: "income_1099",
+		QuestionGroup: forms.GroupIncome1099,
 		QuestionOrder: 3,
 		Fields: []forms.FieldDef{
 			{
-				Line:   "payer_name",
+				Line:   forms.LinePayerName,
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Payer name",
 				Prompt: "What is the payer's name (from 1099-DIV)?",
 			},
 			{
-				Line:   "payer_tin",
+				Line:   forms.LinePayerTIN,
 				Type:   forms.UserInput,
 				ValueType: forms.StringValue,
 				Label:  "Payer TIN",

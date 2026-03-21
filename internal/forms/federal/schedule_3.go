@@ -28,9 +28,9 @@ func Schedule3() *forms.FormDef {
 				Line:      "1",
 				Type:      forms.Computed,
 				Label:     "Foreign tax credit",
-				DependsOn: []string{"form_1116:22"},
+				DependsOn: []string{forms.F1116Line22},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("form_1116:22")
+					return dv.Get(forms.F1116Line22)
 				},
 			},
 			// Line 2: Child and dependent care credit (deferred)
@@ -58,9 +58,9 @@ func Schedule3() *forms.FormDef {
 				Line:      "8",
 				Type:      forms.Computed,
 				Label:     "Total nonrefundable credits",
-				DependsOn: []string{"schedule_3:1", "schedule_3:2", "schedule_3:3"},
+				DependsOn: []string{forms.Sched3Line1, "schedule_3:2", "schedule_3:3"},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_3:1") +
+					return dv.Get(forms.Sched3Line1) +
 						dv.Get("schedule_3:2") +
 						dv.Get("schedule_3:3")
 				},
@@ -80,9 +80,9 @@ func Schedule3() *forms.FormDef {
 				Line:      "15",
 				Type:      forms.Computed,
 				Label:     "Total other payments",
-				DependsOn: []string{"schedule_3:10"},
+				DependsOn: []string{forms.Sched3Line10},
 				Compute: func(dv forms.DepValues) float64 {
-					return dv.Get("schedule_3:10")
+					return dv.Get(forms.Sched3Line10)
 				},
 			},
 		},

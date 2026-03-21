@@ -38,7 +38,7 @@ func DetectCAScheduleCANeeded(inputs map[string]float64, strInputs map[string]st
 	if inputs["1099int:1:tax_exempt_interest"] > 0 {
 		// If they have tax-exempt interest, check if it's from out-of-state
 		state := strInputs["1099int:1:bond_state"]
-		if state != "" && state != "CA" {
+		if state != "" && state != forms.StateCodeCA {
 			reasons = append(reasons, "Out-of-state municipal bond interest")
 		}
 	}

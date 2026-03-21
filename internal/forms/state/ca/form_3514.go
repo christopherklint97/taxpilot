@@ -17,7 +17,7 @@ func Form3514() *forms.FormDef {
 		Name:         "Form 3514 — California Earned Income Tax Credit",
 		Jurisdiction: forms.StateCA,
 		TaxYears:      []int{2025},
-		QuestionGroup: "ca",
+		QuestionGroup: forms.GroupCA,
 		QuestionOrder: 7,
 		Fields: []forms.FieldDef{
 			// Line 1: Earned income (wages + positive self-employment income)
@@ -25,10 +25,10 @@ func Form3514() *forms.FormDef {
 				Line:      "1",
 				Type:      forms.FederalRef,
 				Label:     "Earned income",
-				DependsOn: []string{"1040:1a", "schedule_c:31"},
+				DependsOn: []string{forms.F1040Line1a, forms.SchedCLine31},
 				Compute: func(dv forms.DepValues) float64 {
-					wages := dv.Get("1040:1a")
-					se := dv.Get("schedule_c:31")
+					wages := dv.Get(forms.F1040Line1a)
+					se := dv.Get(forms.SchedCLine31)
 					if se < 0 {
 						se = 0
 					}
@@ -40,9 +40,9 @@ func Form3514() *forms.FormDef {
 				Line:      "2",
 				Type:      forms.Computed,
 				Label:     "Filing status factor",
-				DependsOn: []string{"1040:filing_status"},
+				DependsOn: []string{forms.F1040FilingStatus},
 				Compute: func(dv forms.DepValues) float64 {
-					fs := dv.GetString("1040:filing_status")
+					fs := dv.GetString(forms.F1040FilingStatus)
 					if fs == "married_filing_jointly" {
 						return 2
 					}
@@ -92,19 +92,19 @@ func Form3514() *forms.FormDef {
 				ValueType: forms.StringValue,
 				Label:   "Qualifying child under age 6",
 				Prompt:  "Do you have a qualifying child under age 6?",
-				Options: []string{"yes", "no"},
+				Options: forms.YesNoOptions,
 			},
 			// Line 6: Young Child Tax Credit ($1,117 if child under 6)
 			{
 				Line:      "6",
 				Type:      forms.Computed,
 				Label:     "Young Child Tax Credit",
-				DependsOn: []string{"form_3514:6_yctc", "form_3514:4"},
+				DependsOn: []string{forms.F3514Line6YCTC, "form_3514:4"},
 				Compute: func(dv forms.DepValues) float64 {
 					if dv.Get("form_3514:4") == 0 {
 						return 0 // over income limit
 					}
-					if dv.GetString("form_3514:6_yctc") == "yes" {
+					if dv.GetString(forms.F3514Line6YCTC) == forms.OptionYes {
 						return 1117
 					}
 					return 0

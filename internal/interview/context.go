@@ -3,6 +3,8 @@ package interview
 import (
 	"fmt"
 	"strings"
+
+	"taxpilot/internal/forms"
 )
 
 // ContextSummary provides a human-readable summary of what's known so far,
@@ -24,7 +26,7 @@ func BuildContextSummary(e *Engine) ContextSummary {
 	}
 
 	// Extract filing status from string inputs
-	if fs, ok := e.strInputs["1040:filing_status"]; ok {
+	if fs, ok := e.strInputs[forms.F1040FilingStatus]; ok {
 		cs.FilingStatus = fs
 	}
 
@@ -60,7 +62,7 @@ func buildPriorYearSummary(e *Engine) string {
 	var parts []string
 
 	// Filing status
-	if fs, ok := e.priorYearStr["1040:filing_status"]; ok && fs != "" {
+	if fs, ok := e.priorYearStr[forms.F1040FilingStatus]; ok && fs != "" {
 		parts = append(parts, formatFilingStatus(fs))
 	}
 
@@ -104,15 +106,15 @@ func formatCompact(amount float64) string {
 // formatFilingStatus converts a filing status code to a readable label.
 func formatFilingStatus(code string) string {
 	switch code {
-	case "single":
+	case forms.FilingSingle:
 		return "Single"
-	case "mfj":
+	case forms.FilingMFJ:
 		return "Married Filing Jointly"
-	case "mfs":
+	case forms.FilingMFS:
 		return "Married Filing Separately"
-	case "hoh":
+	case forms.FilingHOH:
 		return "Head of Household"
-	case "qss":
+	case forms.FilingQSS:
 		return "Qualifying Surviving Spouse"
 	default:
 		return code
@@ -130,7 +132,7 @@ func (cs ContextSummary) FormatForLLM() string {
 
 	if cs.StateCode != "" {
 		stateName := cs.StateCode
-		if cs.StateCode == "CA" {
+		if cs.StateCode == forms.StateCodeCA {
 			stateName = "California"
 		}
 		lines = append(lines, fmt.Sprintf("- State: %s", stateName))

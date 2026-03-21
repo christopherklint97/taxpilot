@@ -243,28 +243,28 @@ func AutoDetectSituations(prior PriorYearData) map[string]bool {
 	// Also check numeric values for additional signals
 	if prior.NumericValues != nil {
 		// If they had HSA contributions last year
-		if prior.NumericValues["form_8889:2"] > 0 {
+		if prior.NumericValues[forms.F8889Line2] > 0 {
 			detected["has_hsa"] = true
 		}
 		// If they had Schedule A total deductions
-		if prior.NumericValues["schedule_a:17"] > 0 {
+		if prior.NumericValues[forms.SchedALine17] > 0 {
 			detected["has_itemized_deductions"] = true
 		}
 		// If they had self-employment income
-		if prior.NumericValues["schedule_c:31"] > 0 || prior.NumericValues["schedule_se:4"] > 0 {
+		if prior.NumericValues[forms.SchedCLine31] > 0 || prior.NumericValues[forms.SchedSELine4] > 0 {
 			detected["has_self_employment"] = true
 		}
 		// If they had foreign earned income
-		if prior.NumericValues["form_2555:foreign_earned_income"] > 0 {
+		if prior.NumericValues[forms.F2555ForeignEarnedIncome] > 0 {
 			detected["lives_abroad"] = true
 			detected["has_foreign_income"] = true
 		}
 		// If they had foreign tax credit
-		if prior.NumericValues["form_1116:foreign_tax_paid_income"] > 0 {
+		if prior.NumericValues[forms.F1116ForeignTaxPaidIncome] > 0 {
 			detected["has_foreign_tax_paid"] = true
 		}
 		// If they had foreign accounts
-		if prior.NumericValues["form_8938:max_value_accounts"] > 0 {
+		if prior.NumericValues[forms.F8938MaxValueAccounts] > 0 {
 			detected["has_foreign_accounts"] = true
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"taxpilot/internal/efile"
 	"taxpilot/internal/efile/ca"
 	"taxpilot/internal/efile/mef"
+	"taxpilot/internal/forms"
 	"taxpilot/internal/interview"
 	"taxpilot/internal/knowledge"
 	"taxpilot/internal/llm"
@@ -245,7 +246,7 @@ func (f *factory) submitEFile(msg tui.EFileSubmitMsg) tea.Msg {
 	}
 
 	// Submit CA
-	if msg.State == "CA" && !msg.FederalOnly && auth != nil {
+	if msg.State == forms.StateCodeCA && !msg.FederalOnly && auth != nil {
 		caXML, err := ca.GenerateReturn(msg.Results, msg.StrInputs, msg.TaxYear)
 		if err != nil {
 			return tui.EFileResultMsg{Err: fmt.Errorf("generate CA XML: %w", err)}
