@@ -15,9 +15,9 @@ type ShowSummaryMsg struct {
 	State      string
 }
 
-// ImportPriorYearMsg tells the App to import a prior-year return.
+// ImportPriorYearMsg tells the App to import prior-year return(s).
 type ImportPriorYearMsg struct {
-	FilePath string
+	FilePaths []string // one or more PDF files or directories
 }
 
 // PriorYearImportedMsg signals that prior-year import is complete.
@@ -25,6 +25,7 @@ type PriorYearImportedMsg struct {
 	NumericValues map[string]float64
 	StringValues  map[string]string
 	TaxYear       int
+	FormNames     []string // human-readable names of parsed forms
 	Err           error
 }
 

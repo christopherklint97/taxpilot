@@ -117,19 +117,30 @@ func (f *factory) makeSummary(msg tui.ShowSummaryMsg) tea.Model {
 }
 
 func (f *factory) importPriorYear(msg tui.ImportPriorYearMsg) tea.Msg {
-	parser := pdf.NewParser()
-	parsed, err := parser.ParseFile(msg.FilePath)
+	merged, formNames, err := pdf.ParseMultipleFiles(msg.FilePaths)
 	if err != nil {
 		return tui.PriorYearImportedMsg{Err: err}
 	}
 
-	f.priorNumeric = parsed.Fields
-	f.priorString = parsed.StrFields
+	// Merge into any existing prior-year data (incremental imports).
+	if f.priorNumeric == nil {
+		f.priorNumeric = make(map[string]float64)
+	}
+	if f.priorString == nil {
+		f.priorString = make(map[string]string)
+	}
+	for k, v := range merged.Fields {
+		f.priorNumeric[k] = v
+	}
+	for k, v := range merged.StrFields {
+		f.priorString[k] = v
+	}
 
 	return tui.PriorYearImportedMsg{
-		NumericValues: parsed.Fields,
-		StringValues:  parsed.StrFields,
-		TaxYear:       parsed.TaxYear,
+		NumericValues: f.priorNumeric,
+		StringValues:  f.priorString,
+		TaxYear:       merged.TaxYear,
+		FormNames:     formNames,
 	}
 }
 

@@ -22,10 +22,11 @@ type WelcomeModel struct {
 	state            string
 	width            int
 	height           int
-	priorYearLoaded  bool   // true if prior-year data is available
-	priorYearLabel   string // e.g. "2024 return loaded"
-	loadingPriorYear bool   // true when prompting for file path
-	filePathInput    string // text input for file path
+	priorYearLoaded  bool     // true if prior-year data is available
+	priorYearLabel   string   // e.g. "2024 return loaded"
+	priorFormNames   []string // names of loaded forms
+	loadingPriorYear bool     // true when prompting for file path
+	filePathInput    string   // text input for file path
 }
 
 // NewWelcomeModel creates a WelcomeModel with the given tax year and state.
@@ -36,10 +37,21 @@ func NewWelcomeModel(taxYear int, stateCode string) WelcomeModel {
 	}
 }
 
-// SetPriorYearLoaded marks prior-year data as available.
+// SetPriorYearLoaded marks prior-year data as available (single form).
 func (m *WelcomeModel) SetPriorYearLoaded(year int) {
 	m.priorYearLoaded = true
 	m.priorYearLabel = fmt.Sprintf("%d return loaded", year)
+}
+
+// SetPriorYearLoadedMulti marks prior-year data as available with form names.
+func (m *WelcomeModel) SetPriorYearLoadedMulti(year int, formNames []string) {
+	m.priorYearLoaded = true
+	m.priorFormNames = appendUniqueStrings(m.priorFormNames, formNames)
+	if year > 0 {
+		m.priorYearLabel = fmt.Sprintf("%d return loaded (%d forms)", year, len(m.priorFormNames))
+	} else {
+		m.priorYearLabel = fmt.Sprintf("%d forms loaded", len(m.priorFormNames))
+	}
 }
 
 // Init satisfies tea.Model.
@@ -52,13 +64,17 @@ func (m WelcomeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tui.PriorYearImportedMsg:
 		if msg.Err != nil {
-			// Stay on welcome, just ignore the error for now
 			m.loadingPriorYear = false
 			m.filePathInput = ""
 			return m, nil
 		}
 		m.priorYearLoaded = true
-		m.priorYearLabel = fmt.Sprintf("%d return loaded", msg.TaxYear)
+		m.priorFormNames = appendUniqueStrings(m.priorFormNames, msg.FormNames)
+		if msg.TaxYear > 0 {
+			m.priorYearLabel = fmt.Sprintf("%d return loaded (%d forms)", msg.TaxYear, len(m.priorFormNames))
+		} else {
+			m.priorYearLabel = fmt.Sprintf("%d forms loaded", len(m.priorFormNames))
+		}
 		m.loadingPriorYear = false
 		m.filePathInput = ""
 		return m, nil
@@ -75,7 +91,7 @@ func (m WelcomeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				return m, func() tea.Msg {
-					return tui.ImportPriorYearMsg{FilePath: path}
+					return tui.ImportPriorYearMsg{FilePaths: []string{path}}
 				}
 			case tea.KeyEsc:
 				m.loadingPriorYear = false
@@ -157,13 +173,19 @@ func (m WelcomeModel) View() string {
 		menuParts = append(menuParts, "",
 			tui.SuccessStyle.Render("  Prior-year data: "+m.priorYearLabel),
 		)
+		for _, name := range m.priorFormNames {
+			menuParts = append(menuParts, tui.SuccessStyle.Render("    - "+name))
+		}
+		menuParts = append(menuParts, "",
+			"  [L] Load additional prior-year return (PDF)",
+		)
 	}
 
 	menu := lipgloss.JoinVertical(lipgloss.Left, menuParts...)
 
 	var help string
 	if m.loadingPriorYear {
-		help = tui.PromptStyle.Render("Enter path to prior-year PDF:") + "\n" +
+		help = tui.PromptStyle.Render("Enter path to prior-year PDF (file or directory):") + "\n" +
 			tui.HighlightStyle.Render("▸ ") + tui.InputStyle.Render(m.filePathInput) +
 			tui.HighlightStyle.Render("█") + "\n" +
 			tui.HelpStyle.Render("Enter: import  |  Esc: cancel")
@@ -181,4 +203,19 @@ func (m WelcomeModel) View() string {
 	)
 
 	return tui.BorderStyle.Render(content) + "\n"
+}
+
+// appendUniqueStrings appends items from add to base, skipping duplicates.
+func appendUniqueStrings(base, add []string) []string {
+	seen := make(map[string]bool, len(base))
+	for _, s := range base {
+		seen[s] = true
+	}
+	for _, s := range add {
+		if !seen[s] {
+			base = append(base, s)
+			seen[s] = true
+		}
+	}
+	return base
 }

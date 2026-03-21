@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"taxpilot/internal/efile"
@@ -13,10 +14,20 @@ import (
 	"taxpilot/internal/tui/views"
 )
 
+// stringSlice is a flag.Value that collects repeated -import flags.
+type stringSlice []string
+
+func (s *stringSlice) String() string { return strings.Join(*s, ",") }
+func (s *stringSlice) Set(v string) error {
+	*s = append(*s, v)
+	return nil
+}
+
 func main() {
 	taxYear := flag.Int("tax-year", 2025, "Tax year")
 	stateCode := flag.String("state", "CA", "State code")
-	importPath := flag.String("import", "", "Prior-year PDF path to import")
+	var importPaths stringSlice
+	flag.Var(&importPaths, "import", "Prior-year PDF file or directory (repeatable)")
 	continueSession := flag.Bool("continue", false, "Resume saved session")
 	exportDir := flag.String("export", "", "Output directory for PDF export")
 	efileMode := flag.Bool("efile", false, "Start in e-file mode")
@@ -42,13 +53,15 @@ func main() {
 
 	welcome := views.NewWelcomeModel(*taxYear, *stateCode)
 
-	// If --import was given, pre-parse and mark prior year loaded
-	if *importPath != "" {
-		parsed := importPriorYear(*importPath)
-		if parsed != nil {
-			welcome.SetPriorYearLoaded(parsed.TaxYear)
-			factory.priorNumeric = parsed.Fields
-			factory.priorString = parsed.StrFields
+	// If --import was given, parse all files and merge
+	if len(importPaths) > 0 {
+		merged, formNames, err := pdf.ParseMultipleFiles(importPaths)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not import prior-year PDFs: %v\n", err)
+		} else {
+			welcome.SetPriorYearLoadedMulti(merged.TaxYear, formNames)
+			factory.priorNumeric = merged.Fields
+			factory.priorString = merged.StrFields
 		}
 	}
 
@@ -157,13 +170,3 @@ func runExport(outputDir string, taxYear int) {
 	}
 }
 
-// importPriorYear parses a prior-year PDF and returns the parsed data.
-func importPriorYear(path string) *pdf.ParsedReturn {
-	parser := pdf.NewParser()
-	parsed, err := parser.ParseFile(path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: could not import prior-year PDF: %v\n", err)
-		return nil
-	}
-	return parsed
-}
