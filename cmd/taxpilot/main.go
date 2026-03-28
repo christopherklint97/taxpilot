@@ -35,6 +35,7 @@ func main() {
 	federalOnly := flag.Bool("federal-only", false, "Federal only")
 	stateOnly := flag.Bool("state-only", false, "State only")
 	modelOverride := flag.String("model", "", "OpenRouter model (overrides TAXPILOT_MODEL and default)")
+	rollforward := flag.Bool("rollforward", false, "Rollforward prior year return to new year")
 	flag.Parse()
 
 	// Non-TUI: --validate
@@ -56,21 +57,43 @@ func main() {
 
 	// If --import was given, parse all files and merge
 	if len(importPaths) > 0 {
+		debugLog("--import: parsing %d paths: %v", len(importPaths), []string(importPaths))
 		merged, formNames, err := pdf.ParseMultipleFiles(importPaths)
 		if err != nil {
+			debugLog("--import: parse error: %v", err)
 			fmt.Fprintf(os.Stderr, "Warning: could not import prior-year PDFs: %v\n", err)
 		} else {
+			debugLog("--import: parsed OK — TaxYear=%d, Fields=%d, StrFields=%d, forms=%v",
+				merged.TaxYear, len(merged.Fields), len(merged.StrFields), formNames)
 			welcome.SetPriorYearLoadedMulti(merged.TaxYear, formNames)
 			factory.priorNumeric = merged.Fields
 			factory.priorString = merged.StrFields
+
+			// Persist so --continue can find it later
+			if merged.TaxYear > 0 {
+				priorRet := state.NewTaxReturn(merged.TaxYear, *stateCode)
+				priorRet.Inputs = merged.Fields
+				priorRet.StrInputs = merged.StrFields
+				priorRet.Complete = true
+				_ = state.Save(state.YearStorePath(merged.TaxYear), priorRet)
+			}
 		}
+	} else {
+		debugLog("no --import flag")
 	}
 
 	app := tui.NewApp(&welcome, factory.ViewFactory())
 
 	// Auto-dispatch based on flags
 	var initCmd tea.Cmd
-	if *continueSession {
+	if *rollforward {
+		initCmd = func() tea.Msg {
+			return tui.StartRollforwardMsg{
+				TaxYear:   *taxYear,
+				StateCode: *stateCode,
+			}
+		}
+	} else if *continueSession {
 		initCmd = func() tea.Msg {
 			return tui.StartInterviewMsg{
 				TaxYear:   *taxYear,
@@ -170,4 +193,3 @@ func runExport(outputDir string, taxYear int) {
 		fmt.Printf("  %s\n", p)
 	}
 }
-

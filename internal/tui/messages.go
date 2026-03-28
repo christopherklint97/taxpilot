@@ -157,3 +157,9 @@ type ExportPDFResultMsg struct {
 	Paths []string
 	Err   error
 }
+
+// StartRollforwardMsg tells the App to switch to rollforward mode.
+type StartRollforwardMsg struct {
+	TaxYear   int
+	StateCode string
+}

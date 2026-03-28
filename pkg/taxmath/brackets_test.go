@@ -252,20 +252,46 @@ func TestRoundDown(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUnsupportedYear(t *testing.T) {
-	brackets := GetBrackets(2024, Federal, Single)
+	brackets := GetBrackets(2023, Federal, Single)
 	if brackets != nil {
-		t.Error("Expected nil brackets for unsupported year 2024")
+		t.Error("Expected nil brackets for unsupported year 2023")
 	}
-	tax := ComputeTax(75000, Single, 2024, Federal)
+	tax := ComputeTax(75000, Single, 2023, Federal)
 	if tax != 0 {
 		t.Errorf("Expected 0 tax for unsupported year, got %.2f", tax)
 	}
-	deduction := GetStandardDeduction(2024, Federal, Single)
+	deduction := GetStandardDeduction(2023, Federal, Single)
 	if deduction != 0 {
 		t.Errorf("Expected 0 deduction for unsupported year, got %.0f", deduction)
 	}
-	credit := GetCAExemptionCredit(2024, Single, 0)
+	credit := GetCAExemptionCredit(2023, Single, 0)
 	if credit != 0 {
 		t.Errorf("Expected 0 credit for unsupported year, got %.2f", credit)
+	}
+}
+
+func TestYear2024Brackets(t *testing.T) {
+	// Federal 2024 single: $14,600 standard deduction (IRS Rev. Proc. 2023-34)
+	deduction := GetStandardDeduction(2024, Federal, Single)
+	if deduction != 14600 {
+		t.Errorf("2024 federal single deduction = %.0f, want 14600", deduction)
+	}
+
+	// CA 2024 single: $5,540 standard deduction
+	caDeduction := GetStandardDeduction(2024, StateCA, Single)
+	if caDeduction != 5540 {
+		t.Errorf("2024 CA single deduction = %.0f, want 5540", caDeduction)
+	}
+
+	// Federal tax on $75K single should be reasonable (~$11,553)
+	tax := ComputeTax(75000, Single, 2024, Federal)
+	if tax < 11000 || tax > 12000 {
+		t.Errorf("2024 federal tax on $75K single = %.2f, expected ~$11,553", tax)
+	}
+
+	// CA exemption credit
+	credit := GetCAExemptionCredit(2024, Single, 0)
+	if credit != 140 {
+		t.Errorf("2024 CA single exemption credit = %.0f, want 140", credit)
 	}
 }

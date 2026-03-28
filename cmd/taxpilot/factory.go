@@ -65,6 +65,7 @@ func (f *factory) ViewFactory() tui.ViewFactory {
 		MakeReview:      f.makeReview,
 		ExportPDF:       f.exportPDF,
 		SubmitEFile:     f.submitEFile,
+		MakeRollforward: f.makeRollforward,
 	}
 
 	if f.llmClient != nil {
@@ -129,18 +130,27 @@ func (f *factory) makeInterview(msg tui.StartInterviewMsg) (tea.Model, error) {
 // 2. Imported PDF data (--import flag)
 func (f *factory) resolvePriorYear(taxYear int) (map[string]float64, map[string]string) {
 	// First priority: saved TaxPilot state from prior year
-	if priorRet, err := state.LoadPriorYear(taxYear); err == nil {
+	priorRet, err := state.LoadPriorYear(taxYear)
+	if err == nil {
 		ctx := state.ExtractPriorYearContext(priorRet)
+		debugLog("resolvePriorYear: loaded state_%d.json — AllValues=%d, AllStrValues=%d, Inputs=%d, StrInputs=%d, Computed=%d",
+			taxYear-1, len(ctx.AllValues), len(ctx.AllStrValues),
+			len(priorRet.Inputs), len(priorRet.StrInputs), len(priorRet.Computed))
 		if len(ctx.AllValues) > 0 || len(ctx.AllStrValues) > 0 {
 			return ctx.AllValues, ctx.AllStrValues
 		}
+		debugLog("resolvePriorYear: state file found but AllValues and AllStrValues are empty")
+	} else {
+		debugLog("resolvePriorYear: LoadPriorYear(%d) error: %v", taxYear, err)
 	}
 
 	// Second priority: imported PDF data
 	if f.priorNumeric != nil {
+		debugLog("resolvePriorYear: using f.priorNumeric (%d values)", len(f.priorNumeric))
 		return f.priorNumeric, f.priorString
 	}
 
+	debugLog("resolvePriorYear: no prior-year data found")
 	return nil, nil
 }
 
@@ -170,11 +180,30 @@ func (f *factory) importPriorYear(msg tui.ImportPriorYearMsg) tea.Msg {
 	if f.priorString == nil {
 		f.priorString = make(map[string]string)
 	}
+	debugLog("importPriorYear: merged.Fields=%d, merged.StrFields=%d, merged.TaxYear=%d",
+		len(merged.Fields), len(merged.StrFields), merged.TaxYear)
 	for k, v := range merged.Fields {
 		f.priorNumeric[k] = v
 	}
 	for k, v := range merged.StrFields {
 		f.priorString[k] = v
+	}
+	debugLog("importPriorYear: after merge f.priorNumeric=%d, f.priorString=%d",
+		len(f.priorNumeric), len(f.priorString))
+
+	// Persist imported prior-year data so it survives across sessions.
+	// This lets resolvePriorYear → LoadPriorYear find it on --continue.
+	if merged.TaxYear > 0 {
+		priorRet := state.NewTaxReturn(merged.TaxYear, f.stateCode)
+		priorRet.Inputs = f.priorNumeric
+		priorRet.StrInputs = f.priorString
+		priorRet.Complete = true
+		savePath := state.YearStorePath(merged.TaxYear)
+		debugLog("importPriorYear: persisting to %s (inputs=%d, str_inputs=%d)",
+			savePath, len(priorRet.Inputs), len(priorRet.StrInputs))
+		if err := state.Save(savePath, priorRet); err != nil {
+			debugLog("importPriorYear: save error: %v", err)
+		}
 	}
 
 	return tui.PriorYearImportedMsg{
@@ -183,6 +212,43 @@ func (f *factory) importPriorYear(msg tui.ImportPriorYearMsg) tea.Msg {
 		TaxYear:       merged.TaxYear,
 		FormNames:     formNames,
 	}
+}
+
+func (f *factory) makeRollforward(msg tui.StartRollforwardMsg) (tea.Model, error) {
+	// Load prior-year return: try saved state first, fall back to --import data
+	priorRet, err := state.LoadPriorYear(msg.TaxYear)
+	if err != nil && f.priorNumeric != nil {
+		// Build a TaxReturn from imported PDF data
+		debugLog("makeRollforward: LoadPriorYear failed, using --import data (%d numeric, %d string)",
+			len(f.priorNumeric), len(f.priorString))
+		priorRet = state.NewTaxReturn(msg.TaxYear-1, msg.StateCode)
+		priorRet.Inputs = f.priorNumeric
+		priorRet.StrInputs = f.priorString
+		priorRet.Complete = true
+		err = nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("no prior year return found for %d — use --import to load PDFs: %w",
+			msg.TaxYear, err)
+	}
+
+	// If state code not set on prior return, use the one from the flag
+	if priorRet.State == "" {
+		priorRet.State = msg.StateCode
+	}
+
+	registry := interview.SetupRegistry()
+
+	rf, err := interview.NewRollforward(registry, msg.TaxYear, priorRet)
+	if err != nil {
+		return nil, fmt.Errorf("rollforward: %w", err)
+	}
+
+	debugLog("makeRollforward: %d -> %d, %d fields, %d flagged, %d changes",
+		rf.PriorYear, rf.TaxYear, len(rf.Fields), rf.CountFlagged(), len(rf.Changes))
+
+	view := views.NewRollforwardView(rf)
+	return view, nil
 }
 
 func (f *factory) makeEFile(msg tui.StartEFileMsg) tea.Model {

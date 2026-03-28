@@ -12,6 +12,7 @@ const (
 	ViewExport
 	ViewEFile
 	ViewReview
+	ViewRollforward
 )
 
 // ViewFactory creates tea.Model instances for view transitions.
@@ -60,6 +61,10 @@ type ViewFactory struct {
 	// SubmitEFile handles e-file submission.
 	// Called when EFileSubmitMsg is received. May be nil.
 	SubmitEFile func(msg EFileSubmitMsg) tea.Msg
+
+	// MakeRollforward creates the rollforward view.
+	// Called when StartRollforwardMsg is received.
+	MakeRollforward func(msg StartRollforwardMsg) (tea.Model, error)
 }
 
 // App is the top-level Bubble Tea model that routes between views.
@@ -229,6 +234,23 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, func() tea.Msg {
 				return fn(msg)
 			}
+		}
+
+	case StartRollforwardMsg:
+		if a.factory.MakeRollforward != nil {
+			view, err := a.factory.MakeRollforward(msg)
+			if err != nil {
+				a.err = err.Error()
+				return a, nil
+			}
+			if a.width > 0 {
+				view, _ = view.Update(tea.WindowSizeMsg{
+					Width: a.width, Height: a.height,
+				})
+			}
+			a.active = view
+			a.currentView = ViewRollforward
+			return a, a.active.Init()
 		}
 	}
 
