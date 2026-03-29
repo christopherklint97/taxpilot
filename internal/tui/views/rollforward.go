@@ -436,9 +436,9 @@ func (m RollforwardView) View() string {
 	}
 
 	// Column header
-	colHeader := fmt.Sprintf("  %-30s %-7s %14s %14s %10s", "Field", "Type", "Value", "Prior Year", "Delta")
+	colHeader := fmt.Sprintf("  %-42s %-7s %14s %14s %10s", "Field", "Type", "Value", "Prior Year", "Delta")
 	sections = append(sections, rfHeaderStyle.Render(colHeader))
-	sections = append(sections, "  "+strings.Repeat("\u2500", 79))
+	sections = append(sections, "  "+strings.Repeat("\u2500", 91))
 
 	// Build all display rows and slice the visible window
 	displayRows, _ := m.buildDisplayRows()
@@ -516,12 +516,13 @@ func (m RollforwardView) renderFieldRow(idx int, field interview.RollforwardFiel
 
 	// Label (truncate if needed)
 	label := field.Label
-	if len(label) > 28 {
-		label = label[:25] + "..."
+	if len(label) > 40 {
+		label = label[:37] + "..."
 	}
 
-	// Values
+	// Values — format based on field type
 	var valueStr, priorStr, deltaStr string
+	isCurrency := !field.IsString && !field.IsInteger && !isNonCurrencyField(field)
 	if field.IsString {
 		valueStr = field.StrValue
 		priorStr = field.PriorStr
@@ -532,7 +533,18 @@ func (m RollforwardView) renderFieldRow(idx int, field interview.RollforwardFiel
 			priorStr = priorStr[:11] + "..."
 		}
 		deltaStr = "-"
+	} else if !isCurrency {
+		// Integer/count/factor/boolean fields — no dollar sign
+		valueStr = formatPlainNumber(field.Value)
+		priorStr = formatPlainNumber(field.PriorValue)
+		delta := field.Value - field.PriorValue
+		if delta == 0 {
+			deltaStr = "-"
+		} else {
+			deltaStr = fmt.Sprintf("%+.0f", delta)
+		}
 	} else {
+		// Currency fields
 		valueStr = formatDollar(field.Value)
 		priorStr = formatDollar(field.PriorValue)
 		delta := field.Value - field.PriorValue
@@ -558,7 +570,7 @@ func (m RollforwardView) renderFieldRow(idx int, field interview.RollforwardFiel
 		}
 	}
 
-	row := fmt.Sprintf("%s%-28s %-7s %14s %14s %10s",
+	row := fmt.Sprintf("%s%-42s %-7s %14s %14s %10s",
 		cursor, label, typeTag, valueStr, priorStr, deltaStr)
 
 	// Flag indicator
@@ -588,4 +600,38 @@ func (m RollforwardView) renderFieldRow(idx int, field interview.RollforwardFiel
 		return rfInputStyle.Render(row)
 	}
 	return rfComputedStyle.Render(row)
+}
+
+// isNonCurrencyField detects fields that are counts, factors, booleans, or
+// other non-dollar numeric values based on label keywords.
+func isNonCurrencyField(field interview.RollforwardField) bool {
+	lower := strings.ToLower(field.Label)
+	keywords := []string{
+		"number of", "factor", "check", "qualifying child",
+		"full year", "self employ", "foreign accounts",
+		"foreign interest", "accrued or paid",
+		"basis reported", "lives abroad",
+	}
+	for _, kw := range keywords {
+		if strings.Contains(lower, kw) {
+			return true
+		}
+	}
+	// Small whole numbers (0 or 1) that look like booleans/counts
+	if field.Value == 0 && field.PriorValue == 0 {
+		return false // can't tell, default to currency
+	}
+	if (field.Value == 0 || field.Value == 1) &&
+		(field.PriorValue == 0 || field.PriorValue == 1) {
+		return true
+	}
+	return false
+}
+
+// formatPlainNumber formats a number without dollar sign.
+func formatPlainNumber(v float64) string {
+	if v == float64(int64(v)) {
+		return fmt.Sprintf("%d", int64(v))
+	}
+	return fmt.Sprintf("%.2f", v)
 }

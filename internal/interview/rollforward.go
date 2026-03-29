@@ -35,6 +35,7 @@ type RollforwardField struct {
 	Value      float64
 	StrValue   string
 	IsString   bool
+	IsInteger  bool // whole numbers (counts), not currency
 	Options    []string
 	PriorValue float64
 	PriorStr   string
@@ -225,6 +226,7 @@ func (rf *Rollforward) buildFields() {
 				Label:     field.Label,
 				FieldType: field.Type,
 				IsString:  isStr,
+				IsInteger: field.ValueType == forms.IntegerValue,
 				Options:   field.Options,
 			}
 
