@@ -1,17 +1,11 @@
 # PDF Templates
 
-PDF templates are not stored in git (they're large binaries). Download them with:
+PDF templates are not stored in git (they're large binaries). Download all forms with:
 
 ```bash
-# Federal Form 1040
-mkdir -p internal/pdf/templates/federal/2025
-curl -sL -o internal/pdf/templates/federal/2025/f1040.pdf \
-  "https://www.irs.gov/pub/irs-pdf/f1040.pdf"
-
-# California Form 540
-mkdir -p internal/pdf/templates/state/ca/2025
-curl -sL -o internal/pdf/templates/state/ca/2025/f540.pdf \
-  "https://www.ftb.ca.gov/forms/2025/2025-540.pdf"
+./scripts/download-templates.sh
 ```
 
-The filler automatically falls back to text export when PDF templates are missing.
+This downloads 20 blank PDF forms (16 federal from IRS, 4 CA from FTB) used as templates for filling. The export (`[e]` in rollforward or `--export`) uses pdfcpu to fill these AcroForm PDFs with computed values.
+
+If templates are missing, the filler falls back to text export (`.txt` files).

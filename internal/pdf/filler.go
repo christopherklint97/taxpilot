@@ -160,13 +160,17 @@ func (f *Filler) FillFormText(formID forms.FormID, values map[string]float64, st
 }
 
 // FillAll fills all registered forms.
-// Returns list of output file paths.
+// Returns list of output file paths. Forms that fail PDF filling fall back to text.
 func (f *Filler) FillAll(values map[string]float64, strValues map[string]string) ([]string, error) {
 	var paths []string
 	for formID := range f.configs {
 		path, err := f.FillForm(formID, values, strValues)
 		if err != nil {
-			return paths, fmt.Errorf("fill %s: %w", formID, err)
+			// Fall back to text export if PDF filling fails
+			path, err = f.FillFormText(formID, values, strValues)
+			if err != nil {
+				return paths, fmt.Errorf("fill %s: %w", formID, err)
+			}
 		}
 		paths = append(paths, path)
 	}
@@ -181,7 +185,7 @@ func FormatCurrency(amount float64) string {
 	}
 
 	whole := int64(amount)
-	cents := int64((amount - float64(whole)) * 100 + 0.5)
+	cents := int64((amount-float64(whole))*100 + 0.5)
 	if cents >= 100 {
 		whole++
 		cents -= 100
