@@ -231,24 +231,81 @@ func (rf *Rollforward) buildFields() {
 		return string(allForms[i].ID) < string(allForms[j].ID)
 	})
 
-	for _, form := range allForms {
-		for _, field := range form.Fields {
-			key := forms.FieldKey(form.ID, field.Line)
-			isStr := field.ValueType == forms.StringValue || len(field.Options) > 0
+	// Detect which input forms have instance keys (e.g., w2:1:wages, w2:2:wages)
+	inputFormSet := make(map[forms.FormID]bool)
+	for _, id := range forms.InputFormIDs() {
+		inputFormSet[id] = true
+	}
 
-			rff := RollforwardField{
-				Key:       key,
-				Line:      field.Line,
-				FormID:    form.ID,
-				FormName:  form.Name,
-				Label:     field.Label,
-				FieldType: field.Type,
-				IsString:  isStr,
-				IsInteger: field.ValueType == forms.IntegerValue,
-				Options:   field.Options,
+	// Collect instance prefixes per input form from actual Inputs keys
+	// e.g., from "w2:1:wages" extract prefix "1" for form "w2"
+	instancePrefixes := make(map[forms.FormID][]string) // formID -> sorted list of prefixes
+	prefixSeen := make(map[string]bool)
+	for k := range rf.Inputs {
+		for formID := range inputFormSet {
+			prefix := string(formID) + ":"
+			if strings.HasPrefix(k, prefix) {
+				rest := k[len(prefix):]
+				// rest is "1:wages" — extract the instance prefix "1"
+				if idx := strings.Index(rest, ":"); idx > 0 {
+					inst := rest[:idx]
+					mapKey := string(formID) + ":" + inst
+					if !prefixSeen[mapKey] {
+						prefixSeen[mapKey] = true
+						instancePrefixes[formID] = append(instancePrefixes[formID], inst)
+					}
+				}
 			}
+		}
+	}
+	for _, prefixes := range instancePrefixes {
+		sort.Strings(prefixes)
+	}
 
-			rf.Fields = append(rf.Fields, rff)
+	for _, form := range allForms {
+		isInputForm := inputFormSet[form.ID]
+		instances := instancePrefixes[form.ID]
+
+		// For input forms with instance keys, emit one field per instance
+		// For other forms, emit the template field as-is
+		if isInputForm && len(instances) > 0 {
+			for _, inst := range instances {
+				for _, field := range form.Fields {
+					instanceKey := forms.FieldKey(form.ID, inst+":"+field.Line)
+					isStr := field.ValueType == forms.StringValue || len(field.Options) > 0
+
+					rff := RollforwardField{
+						Key:       instanceKey,
+						Line:      inst + ":" + field.Line,
+						FormID:    form.ID,
+						FormName:  form.Name,
+						Label:     field.Label,
+						FieldType: field.Type,
+						IsString:  isStr,
+						IsInteger: field.ValueType == forms.IntegerValue,
+						Options:   field.Options,
+					}
+					rf.Fields = append(rf.Fields, rff)
+				}
+			}
+		} else {
+			for _, field := range form.Fields {
+				key := forms.FieldKey(form.ID, field.Line)
+				isStr := field.ValueType == forms.StringValue || len(field.Options) > 0
+
+				rff := RollforwardField{
+					Key:       key,
+					Line:      field.Line,
+					FormID:    form.ID,
+					FormName:  form.Name,
+					Label:     field.Label,
+					FieldType: field.Type,
+					IsString:  isStr,
+					IsInteger: field.ValueType == forms.IntegerValue,
+					Options:   field.Options,
+				}
+				rf.Fields = append(rf.Fields, rff)
+			}
 		}
 	}
 
