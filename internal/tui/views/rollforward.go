@@ -339,17 +339,58 @@ func (m RollforwardView) flashChanged(changed []string) (tea.Model, tea.Cmd) {
 	})
 }
 
+// displayRow is a single line in the rendered field table.
+type displayRow struct {
+	text     string // rendered line
+	fieldIdx int    // index into visible fields, or -1 for headers/separators
+}
+
+// buildDisplayRows pre-computes all rows including form headers and separators.
+func (m RollforwardView) buildDisplayRows() ([]displayRow, int) {
+	visible := m.visibleFields()
+	var rows []displayRow
+	cursorRow := 0
+	currentForm := forms.FormID("")
+
+	for idx, field := range visible {
+		// Form separator
+		if field.FormID != currentForm {
+			currentForm = field.FormID
+			if len(rows) > 0 {
+				rows = append(rows, displayRow{text: "", fieldIdx: -1})
+			}
+			rows = append(rows, displayRow{
+				text:     tui.HighlightStyle.Render(fmt.Sprintf("  %s", field.FormName)),
+				fieldIdx: -1,
+			})
+		}
+
+		if idx == m.cursor {
+			cursorRow = len(rows)
+		}
+		rows = append(rows, displayRow{
+			text:     m.renderFieldRow(idx, field),
+			fieldIdx: idx,
+		})
+	}
+
+	return rows, cursorRow
+}
+
 func (m *RollforwardView) ensureVisible() {
+	_, cursorRow := m.buildDisplayRows()
 	maxLines := m.viewableLines()
-	if m.cursor < m.scrollOffset {
-		m.scrollOffset = m.cursor
-	} else if m.cursor >= m.scrollOffset+maxLines {
-		m.scrollOffset = m.cursor - maxLines + 1
+	if cursorRow < m.scrollOffset {
+		m.scrollOffset = cursorRow
+	} else if cursorRow >= m.scrollOffset+maxLines {
+		m.scrollOffset = cursorRow - maxLines + 1
 	}
 }
 
 func (m RollforwardView) viewableLines() int {
-	lines := m.height - 10 // header, tab bar, footer, etc.
+	// Reserve: border (2) + padding (2) + header (1) + blank (1) + column header (1)
+	// + separator (1) + footer blank (1) + footer (1) + status (1) = ~11
+	lines := m.height - 11
 	if lines < 5 {
 		lines = 20
 	}
@@ -365,7 +406,7 @@ func (m RollforwardView) View() string {
 	flagCount := m.rf.CountFlagged()
 	header := tui.TitleStyle.Render(fmt.Sprintf(
 		"Rollforward: %d \u2192 %d  |  %d flagged  |  %d total fields",
-		m.rf.PriorYear, m.rf.TaxYear, flagCount, len(m.rf.Fields),
+		m.rf.PriorYear, m.rf.TaxYear, flagCount, len(visible),
 	))
 	sections = append(sections, header)
 
@@ -397,48 +438,39 @@ func (m RollforwardView) View() string {
 	sections = append(sections, rfHeaderStyle.Render(colHeader))
 	sections = append(sections, "  "+strings.Repeat("\u2500", 79))
 
-	// Fields
+	// Build all display rows and slice the visible window
+	displayRows, _ := m.buildDisplayRows()
 	maxLines := m.viewableLines()
-	currentForm := forms.FormID("")
-	linesRendered := 0
 
-	for idx, field := range visible {
-		if idx < m.scrollOffset {
-			continue
-		}
-		if linesRendered >= maxLines {
-			break
-		}
+	endOffset := m.scrollOffset + maxLines
+	if endOffset > len(displayRows) {
+		endOffset = len(displayRows)
+	}
+	startOffset := m.scrollOffset
+	if startOffset > len(displayRows) {
+		startOffset = len(displayRows)
+	}
 
-		// Form separator
-		if field.FormID != currentForm {
-			currentForm = field.FormID
-			if linesRendered > 0 {
-				sections = append(sections, "")
-				linesRendered++
-				if linesRendered >= maxLines {
-					break
-				}
-			}
-			sections = append(sections, tui.HighlightStyle.Render(fmt.Sprintf("  %s", field.FormName)))
-			linesRendered++
-			if linesRendered >= maxLines {
-				break
-			}
-		}
+	for _, row := range displayRows[startOffset:endOffset] {
+		sections = append(sections, row.text)
+	}
 
-		row := m.renderFieldRow(idx, field)
-		sections = append(sections, row)
-		linesRendered++
+	// Scroll position indicator
+	if len(displayRows) > maxLines {
+		pct := 0
+		if len(displayRows)-maxLines > 0 {
+			pct = m.scrollOffset * 100 / (len(displayRows) - maxLines)
+		}
+		sections = append(sections, tui.HelpStyle.Render(
+			fmt.Sprintf("  (%d/%d rows, %d%% scrolled)", endOffset, len(displayRows), pct),
+		))
 	}
 
 	// Error / status
 	if m.editErr != "" {
-		sections = append(sections, "")
 		sections = append(sections, tui.ErrorStyle.Render("  "+m.editErr))
 	}
 	if m.statusMsg != "" {
-		sections = append(sections, "")
 		sections = append(sections, tui.SuccessStyle.Render("  "+m.statusMsg))
 	}
 
