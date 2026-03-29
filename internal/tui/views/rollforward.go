@@ -526,6 +526,11 @@ func (m RollforwardView) renderFieldRow(idx int, field interview.RollforwardFiel
 	if field.IsString {
 		valueStr = field.StrValue
 		priorStr = field.PriorStr
+		// Show human-readable label for enum/option fields
+		if len(field.Options) > 0 {
+			valueStr = formatOptionLabel(valueStr)
+			priorStr = formatOptionLabel(priorStr)
+		}
 		if len(valueStr) > 14 {
 			valueStr = valueStr[:11] + "..."
 		}
