@@ -149,16 +149,18 @@ func (m RollforwardView) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case "pgup":
-		m.cursor -= 10
+	case "pgup", "ctrl+u":
+		half := m.viewableLines() / 2
+		m.cursor -= half
 		if m.cursor < 0 {
 			m.cursor = 0
 		}
 		m.ensureVisible()
 		return m, nil
 
-	case "pgdown":
-		m.cursor += 10
+	case "pgdown", "ctrl+d":
+		half := m.viewableLines() / 2
+		m.cursor += half
 		if m.cursor > maxIdx {
 			m.cursor = maxIdx
 		}
@@ -482,7 +484,7 @@ func (m RollforwardView) View() string {
 		))
 	} else {
 		sections = append(sections, tui.HelpStyle.Render(
-			"[\u2191\u2193] navigate  [Enter] edit  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
+			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
 		))
 	}
 
