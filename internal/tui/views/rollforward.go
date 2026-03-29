@@ -76,6 +76,10 @@ type RollforwardView struct {
 	calcRatesErr  string
 	calcLoading   bool
 
+	// Dependency info overlay
+	showDeps    bool
+	depInfoText string
+
 	// Status message
 	statusMsg string
 }
@@ -106,6 +110,16 @@ func (m RollforwardView) visibleFields() []interview.RollforwardField {
 		result = append(result, f)
 	}
 	return result
+}
+
+// findVisibleIndex returns the index of a field key in the visible fields list.
+func (m RollforwardView) findVisibleIndex(visible []interview.RollforwardField, key string) int {
+	for i, f := range visible {
+		if f.Key == key {
+			return i
+		}
+	}
+	return -1
 }
 
 // Update satisfies tea.Model.
@@ -159,6 +173,11 @@ func (m RollforwardView) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		_ = m.rf.SaveState()
 		return m, tea.Quit
 
+	case "esc":
+		m.showDeps = false
+		m.statusMsg = ""
+		return m, nil
+
 	case "up", "k":
 		if m.cursor > 0 {
 			m.cursor--
@@ -205,9 +224,11 @@ func (m RollforwardView) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case "enter":
+		m.showDeps = false
 		if len(visible) > 0 && m.cursor <= maxIdx {
 			field := visible[m.cursor]
 			if field.FieldType == forms.UserInput {
+				// Edit the input field
 				m.editing = true
 				m.editErr = ""
 				if field.IsString {
@@ -218,7 +239,67 @@ func (m RollforwardView) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					m.editBuffer = ""
 				}
 				m.editCursor = len(m.editBuffer)
+			} else {
+				// Computed field: jump to first input source
+				sources := m.rf.GetDepInfo(field.Key).InputSources
+				if len(sources) > 0 {
+					// Find in visible fields; try each source until one is visible
+					for _, src := range sources {
+						idx := m.findVisibleIndex(visible, src)
+						if idx >= 0 {
+							m.cursor = idx
+							m.ensureVisible()
+							m.statusMsg = fmt.Sprintf("Jumped to input: %s", m.rf.FieldLabel(src))
+							break
+						}
+					}
+				} else {
+					m.statusMsg = "No editable input sources for this field"
+				}
 			}
+		}
+		return m, nil
+
+	case "d":
+		// Show dependency info for current field
+		m.showDeps = false
+		if len(visible) > 0 && m.cursor <= maxIdx {
+			field := visible[m.cursor]
+			info := m.rf.GetDepInfo(field.Key)
+
+			var lines []string
+			lines = append(lines, fmt.Sprintf("Dependencies for: %s [%s]", field.Label, field.Key))
+			lines = append(lines, "")
+
+			if len(info.DirectDeps) > 0 {
+				lines = append(lines, "Direct dependencies:")
+				for _, dep := range info.DirectDeps {
+					label := m.rf.FieldLabel(dep)
+					lines = append(lines, fmt.Sprintf("  %s  (%s)", label, dep))
+				}
+			} else {
+				lines = append(lines, "No dependencies (standalone field)")
+			}
+
+			if len(info.InputSources) > 0 {
+				lines = append(lines, "")
+				lines = append(lines, "Input sources (editable):")
+				for _, src := range info.InputSources {
+					label := m.rf.FieldLabel(src)
+					val := m.rf.Computed[src]
+					strVal := m.rf.StrInputs[src]
+					if strVal != "" {
+						lines = append(lines, fmt.Sprintf("  %s = %s  (%s)", label, strVal, src))
+					} else {
+						lines = append(lines, fmt.Sprintf("  %s = %s  (%s)", label, formatDollar(val), src))
+					}
+				}
+				lines = append(lines, "")
+				lines = append(lines, "Press Enter to jump to first input source")
+			}
+
+			m.depInfoText = strings.Join(lines, "\n")
+			m.showDeps = true
 		}
 		return m, nil
 
@@ -585,6 +666,18 @@ func (m RollforwardView) View() string {
 		))
 	}
 
+	// Dependency info overlay
+	if m.showDeps && m.depInfoText != "" {
+		depBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#61AFEF")).
+			Padding(0, 1).
+			Width(tui.ContentWidth(m.width) - 4)
+
+		sections = append(sections, "")
+		sections = append(sections, depBox.Render(m.depInfoText))
+	}
+
 	// Edit popup overlay
 	if m.editing {
 		visible := m.visibleFields()
@@ -648,7 +741,7 @@ func (m RollforwardView) View() string {
 		// footer already in popup
 	} else {
 		sections = append(sections, tui.HelpStyle.Render(
-			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit  [c] calc  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
+			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit/jump  [d] deps  [c] calc  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
 		))
 	}
 

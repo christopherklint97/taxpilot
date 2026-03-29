@@ -360,6 +360,39 @@ func (rf *Rollforward) CountFlagged() int {
 	return count
 }
 
+// DepInfo holds dependency information for a computed field.
+type DepInfo struct {
+	DirectDeps   []string // immediate dependencies
+	InputSources []string // all UserInput fields that feed into this (transitive)
+}
+
+// GetDepInfo returns dependency information for a field.
+func (rf *Rollforward) GetDepInfo(key string) DepInfo {
+	return DepInfo{
+		DirectDeps:   rf.Graph.DepsOf(key),
+		InputSources: rf.Graph.InputSources(key, rf.Registry),
+	}
+}
+
+// FindFieldIndex returns the index of a field key in the Fields slice, or -1.
+func (rf *Rollforward) FindFieldIndex(key string) int {
+	for i, f := range rf.Fields {
+		if f.Key == key {
+			return i
+		}
+	}
+	return -1
+}
+
+// FieldLabel returns the human-readable label for a field key.
+func (rf *Rollforward) FieldLabel(key string) string {
+	_, field, err := rf.Registry.GetField(key)
+	if err != nil {
+		return key
+	}
+	return field.Label
+}
+
 // SaveState persists the current rollforward state.
 func (rf *Rollforward) SaveState() error {
 	ret := state.NewTaxReturn(rf.TaxYear, rf.StateCode)

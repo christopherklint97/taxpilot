@@ -142,6 +142,38 @@ func (g *DependencyGraph) TopologicalSort() ([]string, error) {
 	return sorted, nil
 }
 
+// DepsOf returns the direct dependency keys for the given field key.
+func (g *DependencyGraph) DepsOf(key string) []string {
+	return g.edges[key]
+}
+
+// InputSources traces the dependency chain from a computed field back to
+// all UserInput fields that feed into it (transitively). Returns the keys
+// of those input fields in dependency order.
+func (g *DependencyGraph) InputSources(key string, registry *Registry) []string {
+	visited := make(map[string]bool)
+	var inputs []string
+	g.traceInputs(key, registry, visited, &inputs)
+	return inputs
+}
+
+func (g *DependencyGraph) traceInputs(key string, registry *Registry, visited map[string]bool, inputs *[]string) {
+	if visited[key] {
+		return
+	}
+	visited[key] = true
+
+	_, field, err := registry.GetField(key)
+	if err == nil && field.Type == UserInput {
+		*inputs = append(*inputs, key)
+		return
+	}
+
+	for _, dep := range g.edges[key] {
+		g.traceInputs(dep, registry, visited, inputs)
+	}
+}
+
 // MissingInputs returns all UserInput field keys that don't have values in the
 // provided map.
 func (g *DependencyGraph) MissingInputs(provided map[string]float64) []string {
@@ -214,4 +246,3 @@ func (g *DependencyGraph) Solve(inputs map[string]float64, strInputs map[string]
 
 	return result, nil
 }
-
