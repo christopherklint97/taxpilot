@@ -143,21 +143,44 @@ func (g *DependencyGraph) TopologicalSort() ([]string, error) {
 }
 
 // DepsOf returns the direct dependency keys for the given field key.
-func (g *DependencyGraph) DepsOf(key string) []string {
-	return g.edges[key]
+// It includes both graph-registered deps and wildcard-matched runtime keys.
+func (g *DependencyGraph) DepsOf(key string, inputKeys map[string]float64) []string {
+	deps := append([]string{}, g.edges[key]...)
+
+	// Also resolve wildcards from the original DependsOn against runtime keys
+	_, field, err := g.registry.GetField(key)
+	if err == nil {
+		seen := make(map[string]bool, len(deps))
+		for _, d := range deps {
+			seen[d] = true
+		}
+		for _, dep := range field.DependsOn {
+			if !strings.Contains(dep, "*") {
+				continue
+			}
+			for inputKey := range inputKeys {
+				if !seen[inputKey] && matchWildcard(dep, inputKey) {
+					deps = append(deps, inputKey)
+					seen[inputKey] = true
+				}
+			}
+		}
+	}
+	return deps
 }
 
 // InputSources traces the dependency chain from a computed field back to
-// all UserInput fields that feed into it (transitively). Returns the keys
-// of those input fields in dependency order.
-func (g *DependencyGraph) InputSources(key string, registry *Registry) []string {
+// all UserInput fields that feed into it (transitively). The inputKeys map
+// provides the actual runtime input keys (including instance keys like
+// "w2:1:wages" that don't exist as graph nodes but are matched by wildcards).
+func (g *DependencyGraph) InputSources(key string, registry *Registry, inputKeys map[string]float64) []string {
 	visited := make(map[string]bool)
 	var inputs []string
-	g.traceInputs(key, registry, visited, &inputs)
+	g.traceInputs(key, registry, inputKeys, visited, &inputs)
 	return inputs
 }
 
-func (g *DependencyGraph) traceInputs(key string, registry *Registry, visited map[string]bool, inputs *[]string) {
+func (g *DependencyGraph) traceInputs(key string, registry *Registry, inputKeys map[string]float64, visited map[string]bool, inputs *[]string) {
 	if visited[key] {
 		return
 	}
@@ -169,8 +192,28 @@ func (g *DependencyGraph) traceInputs(key string, registry *Registry, visited ma
 		return
 	}
 
+	// Follow graph edges (registered nodes)
 	for _, dep := range g.edges[key] {
-		g.traceInputs(dep, registry, visited, inputs)
+		g.traceInputs(dep, registry, inputKeys, visited, inputs)
+	}
+
+	// Also check for wildcard dependencies that match runtime instance keys
+	// (e.g., "w2:*:wages" matches "w2:1:wages" which is only in the inputs map)
+	if field != nil {
+		for _, dep := range field.DependsOn {
+			if !strings.Contains(dep, "*") {
+				continue
+			}
+			for inputKey := range inputKeys {
+				if visited[inputKey] {
+					continue
+				}
+				if matchWildcard(dep, inputKey) {
+					visited[inputKey] = true
+					*inputs = append(*inputs, inputKey)
+				}
+			}
+		}
 	}
 }
 

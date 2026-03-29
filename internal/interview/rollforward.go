@@ -369,8 +369,8 @@ type DepInfo struct {
 // GetDepInfo returns dependency information for a field.
 func (rf *Rollforward) GetDepInfo(key string) DepInfo {
 	return DepInfo{
-		DirectDeps:   rf.Graph.DepsOf(key),
-		InputSources: rf.Graph.InputSources(key, rf.Registry),
+		DirectDeps:   rf.Graph.DepsOf(key, rf.Inputs),
+		InputSources: rf.Graph.InputSources(key, rf.Registry, rf.Inputs),
 	}
 }
 
