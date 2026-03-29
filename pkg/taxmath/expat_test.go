@@ -17,9 +17,10 @@ func TestFEIELimit(t *testing.T) {
 		year int
 		want float64
 	}{
+		{2024, 126500},
 		{2025, 130000},
-		{2024, 0}, // not defined
-		{2026, 0}, // not defined
+		{2026, 133600},
+		{2023, 0}, // not defined
 	}
 	for _, tt := range tests {
 		got := FEIELimit(tt.year)
@@ -30,9 +31,9 @@ func TestFEIELimit(t *testing.T) {
 }
 
 func TestHousingBaseAmount(t *testing.T) {
-	// 16% of $130,000 = $20,800
+	// 16% of $130,000 = $20,800; 16% of $126,500 = $20,240
 	assertNear(t, HousingBaseAmount(2025), 20800, "HousingBaseAmount(2025)")
-	assertNear(t, HousingBaseAmount(2024), 0, "HousingBaseAmount(2024)")
+	assertNear(t, HousingBaseAmount(2024), 20240, "HousingBaseAmount(2024)")
 }
 
 func TestHousingMaxAmount(t *testing.T) {

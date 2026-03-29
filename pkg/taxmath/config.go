@@ -21,7 +21,7 @@ type TaxYearConfig struct {
 	SALTCapMFS float64
 
 	// FEIE
-	FEIEExclusionLimit     float64
+	FEIEExclusionLimit      float64
 	PhysicalPresenceMinDays int
 
 	// FBAR
@@ -38,13 +38,45 @@ type TaxYearConfig struct {
 	FATCAUSMFJAnyTime        float64
 
 	// CA-specific
-	CAMaxMarginalRate      float64
-	CAMentalHealthRate     float64
+	CAMaxMarginalRate       float64
+	CAMentalHealthRate      float64
 	CAMentalHealthThreshold float64
 }
 
 // configs stores all known tax year configurations.
 var configs = map[int]*TaxYearConfig{
+	2024: {
+		Year: 2024,
+
+		HSALimitSelfOnly: 4150,
+		HSALimitFamily:   8300,
+
+		CapitalLossLimit:    -3000,
+		CapitalLossLimitMFS: -1500,
+
+		MaxEffectiveTaxRate: 0.37,
+
+		SALTCap:    10000,
+		SALTCapMFS: 5000,
+
+		FEIEExclusionLimit:      126500,
+		PhysicalPresenceMinDays: 330,
+
+		FBARThreshold: 10000,
+
+		FATCAAbroadSingleYearEnd: 200000,
+		FATCAAbroadSingleAnyTime: 300000,
+		FATCAAbroadMFJYearEnd:    400000,
+		FATCAAbroadMFJAnyTime:    600000,
+		FATCAUSSingleYearEnd:     50000,
+		FATCAUSSingleAnyTime:     75000,
+		FATCAUSMFJYearEnd:        100000,
+		FATCAUSMFJAnyTime:        150000,
+
+		CAMaxMarginalRate:       0.133,
+		CAMentalHealthRate:      0.01,
+		CAMentalHealthThreshold: 1_000_000,
+	},
 	2025: {
 		Year: 2025,
 
@@ -77,6 +109,38 @@ var configs = map[int]*TaxYearConfig{
 		CAMentalHealthRate:      0.01,
 		CAMentalHealthThreshold: 1_000_000,
 	},
+	2026: {
+		Year: 2026,
+
+		HSALimitSelfOnly: 4400,
+		HSALimitFamily:   8750,
+
+		CapitalLossLimit:    -3000,
+		CapitalLossLimitMFS: -1500,
+
+		MaxEffectiveTaxRate: 0.37,
+
+		SALTCap:    10000,
+		SALTCapMFS: 5000,
+
+		FEIEExclusionLimit:      133600,
+		PhysicalPresenceMinDays: 330,
+
+		FBARThreshold: 10000,
+
+		FATCAAbroadSingleYearEnd: 200000,
+		FATCAAbroadSingleAnyTime: 300000,
+		FATCAAbroadMFJYearEnd:    400000,
+		FATCAAbroadMFJAnyTime:    600000,
+		FATCAUSSingleYearEnd:     50000,
+		FATCAUSSingleAnyTime:     75000,
+		FATCAUSMFJYearEnd:        100000,
+		FATCAUSMFJAnyTime:        150000,
+
+		CAMaxMarginalRate:       0.133,
+		CAMentalHealthRate:      0.01,
+		CAMentalHealthThreshold: 1_000_000,
+	},
 }
 
 // GetConfig returns the TaxYearConfig for the given year, or nil if not found.
@@ -90,6 +154,19 @@ func GetConfigOrDefault(year int) *TaxYearConfig {
 	if c := configs[year]; c != nil {
 		return c
 	}
-	// Fall back to 2025
-	return configs[2025]
+	// Fall back to the closest known year
+	best := configs[2025]
+	for y, c := range configs {
+		if best == nil || abs(y-year) < abs(best.Year-year) {
+			best = c
+		}
+	}
+	return best
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
