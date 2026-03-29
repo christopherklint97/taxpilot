@@ -87,6 +87,12 @@ func NewRollforward(registry *forms.Registry, taxYear int, prior *state.TaxRetur
 		rf.StrInputs[k] = v
 	}
 
+	// Reverse-map: if the prior data has computed-field keys (from PDF import),
+	// create synthetic input keys so the solver can recompute correctly.
+	// e.g., if "1040:1a" = 85000 is in Inputs but is a Computed field,
+	// create "w2:1:wages" = 85000 so SumAll("w2:*:wages") finds it.
+	rf.reverseMapComputedToInputs(registry)
+
 	// Ensure ALL UserInput fields have entries in the inputs maps.
 	// The solver's MissingInputs checks the numeric map for ALL UserInput fields,
 	// so even string-valued fields need a 0 entry in the numeric map.
@@ -391,6 +397,63 @@ func (rf *Rollforward) FieldLabel(key string) string {
 		return key
 	}
 	return field.Label
+}
+
+// reverseMap defines how to map a computed field's value back to a synthetic
+// input key when the prior data came from PDF import (which captures form-level
+// values, not individual input entries).
+var reverseMap = map[string]string{
+	// Form 1040 wages (1a) → W-2 wages instance
+	"1040:1a": "w2:1:wages",
+	// Form 1040 withholding
+	"1040:25a": "w2:1:fed_withholding",
+	// Interest income
+	"1040:2b": "1099_int:1:interest",
+	// Ordinary dividends
+	"1040:3b": "1099_div:1:ordinary_div",
+	// Qualified dividends
+	"1040:3a": "1099_div:1:qualified_div",
+}
+
+// reverseMapComputedToInputs detects computed-field keys in the Inputs map
+// (from PDF import) and creates corresponding UserInput keys, then removes
+// the computed keys so the solver recomputes them with current-year tables.
+func (rf *Rollforward) reverseMapComputedToInputs(registry *forms.Registry) {
+	// Step 1: Create synthetic input keys from known reverse mappings
+	for computedKey, inputKey := range reverseMap {
+		val, hasVal := rf.Inputs[computedKey]
+		if !hasVal || val == 0 {
+			continue
+		}
+
+		// Verify this is actually a Computed field (not UserInput)
+		_, field, err := registry.GetField(computedKey)
+		if err != nil || field.Type == forms.UserInput {
+			continue
+		}
+
+		// Only create the synthetic input if it doesn't already exist
+		if _, exists := rf.Inputs[inputKey]; !exists {
+			rf.Inputs[inputKey] = val
+		}
+	}
+
+	// Step 2: Remove computed-field keys from Inputs so the solver
+	// recomputes them (PDF import puts everything in Inputs, but Computed
+	// fields should be recalculated with current-year tax tables)
+	var toDelete []string
+	for k := range rf.Inputs {
+		_, field, err := registry.GetField(k)
+		if err != nil {
+			continue // unknown key, keep it (might be instance key like w2:1:wages)
+		}
+		if field.Type != forms.UserInput {
+			toDelete = append(toDelete, k)
+		}
+	}
+	for _, k := range toDelete {
+		delete(rf.Inputs, k)
+	}
 }
 
 // SaveState persists the current rollforward state.
