@@ -121,6 +121,8 @@ func Federal1040Mappings() *FormPDFConfig {
 }
 
 // ScheduleAMappings returns the PDF field mappings for Schedule A.
+// Field IDs extracted from actual 2025 IRS Schedule A PDF via pdfcpu.
+// All fields use prefix "358.357.".
 func ScheduleAMappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormScheduleA,
@@ -128,74 +130,82 @@ func ScheduleAMappings() *FormPDFConfig {
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_a.pdf",
 		Mappings: []FieldMapping{
 			// Medical
-			{FieldKey: "schedule_a:1", PDFField: "topmostSubform[0].Page1[0].f1_01[0]", Format: "currency"},
-			{FieldKey: "schedule_a:4", PDFField: "topmostSubform[0].Page1[0].f1_04[0]", Format: "currency"},
+			{FieldKey: "schedule_a:1", PDFField: "358.357.363", Format: "currency"},
+			{FieldKey: "schedule_a:4", PDFField: "358.357.366", Format: "currency"},
 			// Taxes
-			{FieldKey: "schedule_a:5a", PDFField: "topmostSubform[0].Page1[0].f1_05a[0]", Format: "currency"},
-			{FieldKey: "schedule_a:5b", PDFField: "topmostSubform[0].Page1[0].f1_05b[0]", Format: "currency"},
-			{FieldKey: "schedule_a:5c", PDFField: "topmostSubform[0].Page1[0].f1_05c[0]", Format: "currency"},
-			{FieldKey: "schedule_a:5d", PDFField: "topmostSubform[0].Page1[0].f1_05d[0]", Format: "currency"},
-			{FieldKey: "schedule_a:5e", PDFField: "topmostSubform[0].Page1[0].f1_05e[0]", Format: "currency"},
+			{FieldKey: "schedule_a:5a", PDFField: "358.357.367", Format: "currency"},
+			{FieldKey: "schedule_a:5b", PDFField: "358.357.368", Format: "currency"},
+			{FieldKey: "schedule_a:5c", PDFField: "358.357.369", Format: "currency"},
+			{FieldKey: "schedule_a:5d", PDFField: "358.357.370", Format: "currency"},
+			{FieldKey: "schedule_a:5e", PDFField: "358.357.371", Format: "currency"},
 			// Interest
-			{FieldKey: "schedule_a:8a", PDFField: "topmostSubform[0].Page1[0].f1_08a[0]", Format: "currency"},
-			{FieldKey: "schedule_a:11", PDFField: "topmostSubform[0].Page1[0].f1_11[0]", Format: "currency"},
+			{FieldKey: "schedule_a:8a", PDFField: "358.357.375", Format: "currency"},
+			{FieldKey: "schedule_a:11", PDFField: "358.357.378", Format: "currency"},
 			// Charitable
-			{FieldKey: "schedule_a:12", PDFField: "topmostSubform[0].Page1[0].f1_12[0]", Format: "currency"},
-			{FieldKey: "schedule_a:13", PDFField: "topmostSubform[0].Page1[0].f1_13[0]", Format: "currency"},
-			{FieldKey: "schedule_a:14", PDFField: "topmostSubform[0].Page1[0].f1_14[0]", Format: "currency"},
-			{FieldKey: "schedule_a:15", PDFField: "topmostSubform[0].Page1[0].f1_15[0]", Format: "currency"},
+			{FieldKey: "schedule_a:12", PDFField: "358.357.379", Format: "currency"},
+			{FieldKey: "schedule_a:13", PDFField: "358.357.380", Format: "currency"},
+			{FieldKey: "schedule_a:14", PDFField: "358.357.381", Format: "currency"},
+			{FieldKey: "schedule_a:15", PDFField: "358.357.382", Format: "currency"},
 			// Total
-			{FieldKey: "schedule_a:17", PDFField: "topmostSubform[0].Page1[0].f1_17[0]", Format: "currency"},
+			{FieldKey: "schedule_a:17", PDFField: "358.357.390", Format: "currency"},
 		},
 	}
 }
 
 // ScheduleBMappings returns the PDF field mappings for Schedule B.
+// Field IDs extracted from actual 2025 IRS Schedule B PDF via pdfcpu.
+// All fields use prefix "288.287.".
 func ScheduleBMappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormScheduleB,
 		FormName:     "Schedule B — Interest and Ordinary Dividends",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_b.pdf",
 		Mappings: []FieldMapping{
-			// Part I: Interest
-			{FieldKey: "schedule_b:1", PDFField: "topmostSubform[0].Page1[0].f1_01[0]", Format: "currency"},
-			{FieldKey: "schedule_b:4", PDFField: "topmostSubform[0].Page1[0].f1_04[0]", Format: "currency"},
-			// Part II: Ordinary Dividends
-			{FieldKey: "schedule_b:5", PDFField: "topmostSubform[0].Page1[0].f1_05[0]", Format: "currency"},
-			{FieldKey: "schedule_b:6", PDFField: "topmostSubform[0].Page1[0].f1_06[0]", Format: "currency"},
+			// Part I: Interest — first entry amount field
+			{FieldKey: "schedule_b:1", PDFField: "288.287.291.362", Format: "currency"},
+			// Part I: Line 4 total interest
+			{FieldKey: "schedule_b:4", PDFField: "288.287.321.361", Format: "currency"},
+			// Part II: Ordinary Dividends — first entry amount field
+			{FieldKey: "schedule_b:5", PDFField: "288.287.323", Format: "currency"},
+			// Part II: Line 6 total ordinary dividends
+			{FieldKey: "schedule_b:6", PDFField: "288.287.351", Format: "currency"},
 		},
 	}
 }
 
 // ScheduleCMappings returns the PDF field mappings for Schedule C.
+// Field IDs extracted from actual 2025 IRS Schedule C PDF via pdfcpu.
+// Page 1 fields have prefix "373.372.", page 2 fields have prefix "373.374.".
 func ScheduleCMappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormScheduleC,
 		FormName:     "Schedule C — Profit or Loss From Business",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_c.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "schedule_c:business_name", PDFField: "topmostSubform[0].Page1[0].f1_01[0]", Format: "string"},
-			{FieldKey: "schedule_c:business_code", PDFField: "topmostSubform[0].Page1[0].f1_02[0]", Format: "string"},
-			{FieldKey: "schedule_c:1", PDFField: "topmostSubform[0].Page1[0].f1_03[0]", Format: "currency"},
-			{FieldKey: "schedule_c:5", PDFField: "topmostSubform[0].Page1[0].f1_05[0]", Format: "currency"},
-			{FieldKey: "schedule_c:7", PDFField: "topmostSubform[0].Page1[0].f1_07[0]", Format: "currency"},
-			{FieldKey: "schedule_c:28", PDFField: "topmostSubform[0].Page1[0].f1_28[0]", Format: "currency"},
-			{FieldKey: "schedule_c:31", PDFField: "topmostSubform[0].Page1[0].f1_31[0]", Format: "currency"},
+			{FieldKey: "schedule_c:business_name", PDFField: "373.372.446", Format: "string"},
+			{FieldKey: "schedule_c:business_code", PDFField: "373.372.445", Format: "string"},
+			{FieldKey: "schedule_c:1", PDFField: "373.372.448", Format: "currency"},
+			{FieldKey: "schedule_c:5", PDFField: "373.372.452", Format: "currency"},
+			{FieldKey: "schedule_c:7", PDFField: "373.372.454", Format: "currency"},
+			{FieldKey: "schedule_c:28", PDFField: "373.374.404", Format: "currency"},
+			{FieldKey: "schedule_c:31", PDFField: "373.374.407", Format: "currency"},
 		},
 	}
 }
 
 // ScheduleSEMappings returns the PDF field mappings for Schedule SE.
+// Field IDs extracted from actual 2025 IRS Schedule SE PDF via pdfcpu.
+// Page 1 header: "128.127.", Part I (Short SE): "128.129.".
 func ScheduleSEMappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormScheduleSE,
 		FormName:     "Schedule SE — Self-Employment Tax",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_se.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "schedule_se:2", PDFField: "topmostSubform[0].Page1[0].f1_02[0]", Format: "currency"},
-			{FieldKey: "schedule_se:3", PDFField: "topmostSubform[0].Page1[0].f1_03[0]", Format: "currency"},
-			{FieldKey: "schedule_se:6", PDFField: "topmostSubform[0].Page1[0].f1_06[0]", Format: "currency"},
-			{FieldKey: "schedule_se:7", PDFField: "topmostSubform[0].Page1[0].f1_07[0]", Format: "currency"},
+			{FieldKey: "schedule_se:2", PDFField: "128.129.134", Format: "currency"},
+			{FieldKey: "schedule_se:3", PDFField: "128.129.135", Format: "currency"},
+			{FieldKey: "schedule_se:6", PDFField: "128.129.141", Format: "currency"},
+			{FieldKey: "schedule_se:7", PDFField: "128.129.142", Format: "currency"},
 		},
 	}
 }
@@ -246,6 +256,8 @@ func Schedule1Mappings() *FormPDFConfig {
 }
 
 // ScheduleDMappings returns the PDF field mappings for Schedule D.
+// Field IDs extracted from actual 2025 IRS Schedule D PDF via pdfcpu.
+// Page 1 fields: "226.225.", page 2 fields: "226.227.".
 func ScheduleDMappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormScheduleD,
@@ -253,107 +265,117 @@ func ScheduleDMappings() *FormPDFConfig {
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_d.pdf",
 		Mappings: []FieldMapping{
 			// Part I: Short-Term
-			{FieldKey: "schedule_d:1", PDFField: "topmostSubform[0].Page1[0].f1_01[0]", Format: "currency"},
-			{FieldKey: "schedule_d:7", PDFField: "topmostSubform[0].Page1[0].f1_07[0]", Format: "currency"},
+			{FieldKey: "schedule_d:1", PDFField: "226.225.286", Format: "currency"},
+			{FieldKey: "schedule_d:7", PDFField: "226.225.290", Format: "currency"},
 			// Part II: Long-Term
-			{FieldKey: "schedule_d:8", PDFField: "topmostSubform[0].Page1[0].f1_08[0]", Format: "currency"},
-			{FieldKey: "schedule_d:13", PDFField: "topmostSubform[0].Page1[0].f1_13[0]", Format: "currency"},
-			{FieldKey: "schedule_d:15", PDFField: "topmostSubform[0].Page1[0].f1_15[0]", Format: "currency"},
+			{FieldKey: "schedule_d:8", PDFField: "226.227.233", Format: "currency"},
+			{FieldKey: "schedule_d:13", PDFField: "226.227.234", Format: "currency"},
+			{FieldKey: "schedule_d:15", PDFField: "226.227.236", Format: "currency"},
 			// Part III: Summary
-			{FieldKey: "schedule_d:16", PDFField: "topmostSubform[0].Page2[0].f2_16[0]", Format: "currency"},
+			{FieldKey: "schedule_d:16", PDFField: "226.227.238", Format: "currency"},
 		},
 	}
 }
 
 // Form8949Mappings returns the PDF field mappings for Form 8949.
+// Field IDs extracted from actual 2025 IRS Form 8949 PDF via pdfcpu.
+// Page 1 (Part I Short-Term): "266.265.", Page 2 (Part II Long-Term): "266.267.".
 func Form8949Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormF8949,
 		FormName:     "Form 8949 — Sales and Other Dispositions of Capital Assets",
 		TemplatePath: "internal/pdf/templates/federal/2025/form_8949.pdf",
 		Mappings: []FieldMapping{
-			// Part I: Short-Term
-			{FieldKey: "form_8949:st_proceeds", PDFField: "topmostSubform[0].Page1[0].f1_st_proceeds[0]", Format: "currency"},
-			{FieldKey: "form_8949:st_basis", PDFField: "topmostSubform[0].Page1[0].f1_st_basis[0]", Format: "currency"},
-			{FieldKey: "form_8949:st_wash", PDFField: "topmostSubform[0].Page1[0].f1_st_wash[0]", Format: "currency"},
-			{FieldKey: "form_8949:st_gain_loss", PDFField: "topmostSubform[0].Page1[0].f1_st_gain[0]", Format: "currency"},
-			// Part II: Long-Term
-			{FieldKey: "form_8949:lt_proceeds", PDFField: "topmostSubform[0].Page2[0].f2_lt_proceeds[0]", Format: "currency"},
-			{FieldKey: "form_8949:lt_basis", PDFField: "topmostSubform[0].Page2[0].f2_lt_basis[0]", Format: "currency"},
-			{FieldKey: "form_8949:lt_wash", PDFField: "topmostSubform[0].Page2[0].f2_lt_wash[0]", Format: "currency"},
-			{FieldKey: "form_8949:lt_gain_loss", PDFField: "topmostSubform[0].Page2[0].f2_lt_gain[0]", Format: "currency"},
+			// Part I: Short-Term totals
+			{FieldKey: "form_8949:st_proceeds", PDFField: "266.265.389", Format: "currency"},
+			{FieldKey: "form_8949:st_basis", PDFField: "266.265.390", Format: "currency"},
+			{FieldKey: "form_8949:st_wash", PDFField: "266.265.392", Format: "currency"},
+			{FieldKey: "form_8949:st_gain_loss", PDFField: "266.265.393", Format: "currency"},
+			// Part II: Long-Term totals
+			{FieldKey: "form_8949:lt_proceeds", PDFField: "266.267.277", Format: "currency"},
+			{FieldKey: "form_8949:lt_basis", PDFField: "266.267.278", Format: "currency"},
+			{FieldKey: "form_8949:lt_wash", PDFField: "266.267.280", Format: "currency"},
+			{FieldKey: "form_8949:lt_gain_loss", PDFField: "266.267.281", Format: "currency"},
 		},
 	}
 }
 
 // Schedule2Mappings returns the PDF field mappings for Schedule 2.
+// Field IDs extracted from actual 2025 IRS Schedule 2 PDF via pdfcpu.
+// Page 1 (Part I): "310.309.", Page 2 (Part II): "310.311.".
 func Schedule2Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormSchedule2,
 		FormName:     "Schedule 2 — Additional Taxes",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_2.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "schedule_2:1", PDFField: "topmostSubform[0].Page1[0].f1_01[0]", Format: "currency"},
-			{FieldKey: "schedule_2:3", PDFField: "topmostSubform[0].Page1[0].f1_03[0]", Format: "currency"},
-			{FieldKey: "schedule_2:6", PDFField: "topmostSubform[0].Page1[0].f1_06[0]", Format: "currency"},
-			{FieldKey: "schedule_2:12", PDFField: "topmostSubform[0].Page1[0].f1_12[0]", Format: "currency"},
-			{FieldKey: "schedule_2:18", PDFField: "topmostSubform[0].Page1[0].f1_18[0]", Format: "currency"},
-			{FieldKey: "schedule_2:21", PDFField: "topmostSubform[0].Page1[0].f1_21[0]", Format: "currency"},
+			{FieldKey: "schedule_2:1", PDFField: "310.309.357", Format: "currency"},
+			{FieldKey: "schedule_2:3", PDFField: "310.309.359", Format: "currency"},
+			{FieldKey: "schedule_2:6", PDFField: "310.311.315", Format: "currency"},
+			{FieldKey: "schedule_2:12", PDFField: "310.311.325", Format: "currency"},
+			{FieldKey: "schedule_2:18", PDFField: "310.311.337", Format: "currency"},
+			{FieldKey: "schedule_2:21", PDFField: "310.311.341", Format: "currency"},
 		},
 	}
 }
 
 // Schedule3Mappings returns the PDF field mappings for Schedule 3.
+// Field IDs extracted from actual 2025 IRS Schedule 3 PDF via pdfcpu.
+// All fields use prefix "388.387.".
 func Schedule3Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormSchedule3,
 		FormName:     "Schedule 3 — Additional Credits and Payments",
 		TemplatePath: "internal/pdf/templates/federal/2025/schedule_3.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "schedule_3:8", PDFField: "topmostSubform[0].Page1[0].f1_08[0]", Format: "currency"},
-			{FieldKey: "schedule_3:10", PDFField: "topmostSubform[0].Page1[0].f1_10[0]", Format: "currency"},
-			{FieldKey: "schedule_3:15", PDFField: "topmostSubform[0].Page1[0].f1_15[0]", Format: "currency"},
+			{FieldKey: "schedule_3:8", PDFField: "388.387.399", Format: "currency"},
+			{FieldKey: "schedule_3:10", PDFField: "388.387.401", Format: "currency"},
+			{FieldKey: "schedule_3:15", PDFField: "388.387.424", Format: "currency"},
 		},
 	}
 }
 
 // Form8889Mappings returns the PDF field mappings for Form 8889.
+// Field IDs extracted from actual 2025 IRS Form 8889 PDF via pdfcpu.
+// All fields use prefix "307.306.".
 func Form8889Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormF8889,
 		FormName:     "Form 8889 — Health Savings Accounts",
 		TemplatePath: "internal/pdf/templates/federal/2025/f8889.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "form_8889:1", PDFField: "f8889_01", Format: "string"},
-			{FieldKey: "form_8889:2", PDFField: "f8889_02", Format: "currency"},
-			{FieldKey: "form_8889:3", PDFField: "f8889_03", Format: "currency"},
-			{FieldKey: "form_8889:5", PDFField: "f8889_05", Format: "currency"},
-			{FieldKey: "form_8889:6", PDFField: "f8889_06", Format: "currency"},
-			{FieldKey: "form_8889:9", PDFField: "f8889_09", Format: "currency"},
-			{FieldKey: "form_8889:14a", PDFField: "f8889_14a", Format: "currency"},
-			{FieldKey: "form_8889:14c", PDFField: "f8889_14c", Format: "currency"},
-			{FieldKey: "form_8889:15", PDFField: "f8889_15", Format: "currency"},
-			{FieldKey: "form_8889:17b", PDFField: "f8889_17b", Format: "currency"},
+			{FieldKey: "form_8889:1", PDFField: "307.306.309", Format: "string"},
+			{FieldKey: "form_8889:2", PDFField: "307.306.312", Format: "currency"},
+			{FieldKey: "form_8889:3", PDFField: "307.306.313", Format: "currency"},
+			{FieldKey: "form_8889:5", PDFField: "307.306.315", Format: "currency"},
+			{FieldKey: "form_8889:6", PDFField: "307.306.316", Format: "currency"},
+			{FieldKey: "form_8889:9", PDFField: "307.306.319", Format: "currency"},
+			{FieldKey: "form_8889:14a", PDFField: "307.306.324", Format: "currency"},
+			{FieldKey: "form_8889:14c", PDFField: "307.306.326", Format: "currency"},
+			{FieldKey: "form_8889:15", PDFField: "307.306.327", Format: "currency"},
+			{FieldKey: "form_8889:17b", PDFField: "307.306.331", Format: "currency"},
 		},
 	}
 }
 
 // Form8995Mappings returns the PDF field mappings for Form 8995.
+// Field IDs extracted from actual 2025 IRS Form 8995 PDF via pdfcpu.
+// All fields use prefix "298.297.".
 func Form8995Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormF8995,
 		FormName:     "Form 8995 — Qualified Business Income Deduction (Simplified)",
 		TemplatePath: "internal/pdf/templates/federal/2025/f8995.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "form_8995:1", PDFField: "f8995_01", Format: "currency"},
-			{FieldKey: "form_8995:2", PDFField: "f8995_02", Format: "currency"},
-			{FieldKey: "form_8995:3", PDFField: "f8995_03", Format: "currency"},
-			{FieldKey: "form_8995:4", PDFField: "f8995_04", Format: "currency"},
-			{FieldKey: "form_8995:5", PDFField: "f8995_05", Format: "currency"},
-			{FieldKey: "form_8995:6", PDFField: "f8995_06", Format: "currency"},
-			{FieldKey: "form_8995:7", PDFField: "f8995_07", Format: "currency"},
-			{FieldKey: "form_8995:8", PDFField: "f8995_08", Format: "currency"},
-			{FieldKey: "form_8995:10", PDFField: "f8995_10", Format: "currency"},
+			{FieldKey: "form_8995:1", PDFField: "298.297.302.318", Format: "currency"},
+			{FieldKey: "form_8995:2", PDFField: "298.297.303", Format: "currency"},
+			{FieldKey: "form_8995:3", PDFField: "298.297.304", Format: "currency"},
+			{FieldKey: "form_8995:4", PDFField: "298.297.305", Format: "currency"},
+			{FieldKey: "form_8995:5", PDFField: "298.297.306.317", Format: "currency"},
+			{FieldKey: "form_8995:6", PDFField: "298.297.307", Format: "currency"},
+			{FieldKey: "form_8995:7", PDFField: "298.297.308", Format: "currency"},
+			{FieldKey: "form_8995:8", PDFField: "298.297.309", Format: "currency"},
+			{FieldKey: "form_8995:10", PDFField: "298.297.311", Format: "currency"},
 		},
 	}
 }
@@ -433,46 +455,51 @@ func Form2555Mappings() *FormPDFConfig {
 }
 
 // ScheduleCAMappings returns the PDF field mappings for Schedule CA (540).
+// Field IDs extracted from actual 2025 FTB Schedule CA PDF via pdfcpu.
+// The PDF uses simple numeric field IDs with 3-column layout (A=federal, B=subtractions, C=additions).
+// Page 1: 1056-1210 (id, lines 1a-2b), Page 2: 1351-1625 (lines 3-10),
+// Page 3: 174-310 (Section B adjustments), Page 4+: 395+ (totals/Part II).
 func ScheduleCAMappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormScheduleCA,
 		FormName:     "Schedule CA (540) — California Adjustments",
 		TemplatePath: "internal/pdf/templates/state/ca/2025/schedule_ca.pdf",
 		Mappings: []FieldMapping{
-			// Line 2: Interest
-			{FieldKey: "ca_schedule_ca:2_col_a", PDFField: "Line_2_ColA", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:2_col_b", PDFField: "Line_2_ColB", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:2_col_c", PDFField: "Line_2_ColC", Format: "currency"},
+			// Line 2: Interest (after line 1a-1z sublines on page 1)
+			{FieldKey: "ca_schedule_ca:2_col_a", PDFField: "1190", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:2_col_b", PDFField: "1194", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:2_col_c", PDFField: "1198", Format: "currency"},
 			// Line 3: Dividends
-			{FieldKey: "ca_schedule_ca:3_col_a", PDFField: "Line_3_ColA", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:3_col_b", PDFField: "Line_3_ColB", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:3_col_c", PDFField: "Line_3_ColC", Format: "currency"},
-			// Line 7: Capital gains
-			{FieldKey: "ca_schedule_ca:7_col_a", PDFField: "Line_7_ColA", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:7_col_b", PDFField: "Line_7_ColB", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:7_col_c", PDFField: "Line_7_ColC", Format: "currency"},
-			// Line 12: Business income
-			{FieldKey: "ca_schedule_ca:12_col_b", PDFField: "Line_12_ColB", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:12_col_c", PDFField: "Line_12_ColC", Format: "currency"},
-			// Line 15: HSA add-back
-			{FieldKey: "ca_schedule_ca:15_col_c", PDFField: "Line_15_ColC", Format: "currency"},
-			// Line 16: SE tax deduction
-			{FieldKey: "ca_schedule_ca:16_col_b", PDFField: "Line_16_ColB", Format: "currency"},
-			// Part II: Itemized deduction adjustments
-			{FieldKey: "ca_schedule_ca:5a_col_b", PDFField: "Line_5a_ColB_P2", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:5e_col_b", PDFField: "Line_5e_ColB_P2", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:5e_col_c", PDFField: "Line_5e_ColC_P2", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:ca_itemized", PDFField: "CA_Itemized_Total", Format: "currency"},
-			// Line 37: Totals
-			{FieldKey: "ca_schedule_ca:37_col_a", PDFField: "Line_37_ColA", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:37_col_b", PDFField: "Line_37_ColB", Format: "currency"},
-			{FieldKey: "ca_schedule_ca:37_col_c", PDFField: "Line_37_ColC", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:3_col_a", PDFField: "1202", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:3_col_b", PDFField: "1206", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:3_col_c", PDFField: "1210", Format: "currency"},
+			// Line 7: Capital gains (page 2)
+			{FieldKey: "ca_schedule_ca:7_col_a", PDFField: "1399", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:7_col_b", PDFField: "1403", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:7_col_c", PDFField: "1407", Format: "currency"},
+			// Line 12: Business income (page 2)
+			{FieldKey: "ca_schedule_ca:12_col_b", PDFField: "1483", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:12_col_c", PDFField: "1487", Format: "currency"},
+			// Line 15: HSA add-back (Section B, page 3)
+			{FieldKey: "ca_schedule_ca:15_col_c", PDFField: "204", Format: "currency"},
+			// Line 16: SE tax deduction (Section B, page 3)
+			{FieldKey: "ca_schedule_ca:16_col_b", PDFField: "208", Format: "currency"},
+			// Part II: Itemized deduction adjustments (page 4+)
+			{FieldKey: "ca_schedule_ca:5a_col_b", PDFField: "489", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:5e_col_b", PDFField: "497", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:5e_col_c", PDFField: "501", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:ca_itemized", PDFField: "505", Format: "currency"},
+			// Line 37: Totals (end of form)
+			{FieldKey: "ca_schedule_ca:37_col_a", PDFField: "940", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:37_col_b", PDFField: "944", Format: "currency"},
+			{FieldKey: "ca_schedule_ca:37_col_c", PDFField: "948", Format: "currency"},
 		},
 	}
 }
 
 // CA540Mappings returns the PDF field mappings for CA Form 540.
-// Field names verified against actual 2025 FTB Form 540 PDF AcroForm fields.
+// Field IDs extracted from actual 2025 FTB Form 540 PDF via pdfcpu.
+// The PDF uses simple numeric field IDs.
 func CA540Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormCA540,
@@ -480,70 +507,154 @@ func CA540Mappings() *FormPDFConfig {
 		TemplatePath: "internal/pdf/templates/state/ca/2025/f540.pdf",
 		Mappings: []FieldMapping{
 			// Identification
-			{FieldKey: "ca_540:filing_status", PDFField: "540_form_1036 RB", Format: "checkbox"},
-			{FieldKey: "1040:first_name", PDFField: "540_form_1003", Format: "string"},
-			{FieldKey: "1040:last_name", PDFField: "540_form_1005", Format: "string"},
-			{FieldKey: "1040:ssn", PDFField: "540_form_1007", Format: "ssn"},
+			{FieldKey: "ca_540:filing_status", PDFField: "1010", Format: "checkbox"},
+			{FieldKey: "1040:first_name", PDFField: "1002", Format: "string"},
+			{FieldKey: "1040:last_name", PDFField: "1006", Format: "string"},
+			{FieldKey: "1040:ssn", PDFField: "1017", Format: "ssn"},
 
-			// Income (Line 12-19)
-			{FieldKey: "ca_540:7", PDFField: "540_form_2018", Format: "currency"},  // Line 12: state wages
-			{FieldKey: "ca_540:13", PDFField: "540_form_2019", Format: "currency"}, // Line 13: federal AGI
-			{FieldKey: "ca_540:14", PDFField: "540_form_2020", Format: "currency"}, // Line 14: CA subtractions
-			{FieldKey: "ca_540:15", PDFField: "540_form_2021", Format: "currency"}, // Line 15: subtract
-			{FieldKey: "ca_540:17", PDFField: "540_form_2023", Format: "currency"}, // Line 17: CA AGI
-			{FieldKey: "ca_540:18", PDFField: "540_form_2024", Format: "currency"}, // Line 18: deductions
-			{FieldKey: "ca_540:19", PDFField: "540_form_2025", Format: "currency"}, // Line 19: taxable income
+			// Income (Line 7-19)
+			{FieldKey: "ca_540:7", PDFField: "302", Format: "currency"},  // Line 7: state wages
+			{FieldKey: "ca_540:13", PDFField: "318", Format: "currency"}, // Line 13: federal AGI
+			{FieldKey: "ca_540:14", PDFField: "322", Format: "currency"}, // Line 14: CA subtractions
+			{FieldKey: "ca_540:15", PDFField: "326", Format: "currency"}, // Line 15: subtract
+			{FieldKey: "ca_540:17", PDFField: "332", Format: "currency"}, // Line 17: CA AGI
+			{FieldKey: "ca_540:18", PDFField: "336", Format: "currency"}, // Line 18: deductions
+			{FieldKey: "ca_540:19", PDFField: "340", Format: "currency"}, // Line 19: taxable income
 
 			// Tax (Line 31-35)
-			{FieldKey: "ca_540:31", PDFField: "540_form_2030", Format: "currency"}, // Line 31: tax amount
-			{FieldKey: "ca_540:32", PDFField: "540_form_2031", Format: "currency"}, // Line 32: exemption credits
-			{FieldKey: "ca_540:35", PDFField: "540_form_2036", Format: "currency"}, // Line 35: subtotal
+			{FieldKey: "ca_540:31", PDFField: "380", Format: "currency"}, // Line 31: tax amount
+			{FieldKey: "ca_540:32", PDFField: "382", Format: "currency"}, // Line 32: exemption credits
+			{FieldKey: "ca_540:35", PDFField: "390", Format: "currency"}, // Line 35: subtotal
 
-			// Other Taxes (Line 61-64)
-			{FieldKey: "ca_540:36", PDFField: "540_form_3008", Format: "currency"}, // Line 62: Behavioral Health Services Tax
-			{FieldKey: "ca_540:40", PDFField: "540_form_3010", Format: "currency"}, // Line 64: total tax
+			// Other Taxes (Line 36, 40)
+			{FieldKey: "ca_540:36", PDFField: "392", Format: "currency"}, // Line 36: Behavioral Health Services Tax
+			{FieldKey: "ca_540:40", PDFField: "402", Format: "currency"}, // Line 40: total tax
 
-			// Payments (Line 71-78)
-			{FieldKey: "ca_540:71", PDFField: "540_form_3011", Format: "currency"}, // Line 71: CA withheld
-			{FieldKey: "ca_540:74", PDFField: "540_form_3018", Format: "currency"}, // Line 78: total payments
+			// Payments (Line 71-74)
+			{FieldKey: "ca_540:71", PDFField: "552", Format: "currency"}, // Line 71: CA withheld
+			{FieldKey: "ca_540:74", PDFField: "568", Format: "currency"}, // Line 74: total payments
 
 			// Refund / Amount owed
-			{FieldKey: "ca_540:91", PDFField: "540_form_3027", Format: "currency"}, // Line 97: overpaid
-			{FieldKey: "ca_540:93", PDFField: "540_form_4005", Format: "currency"}, // Line 100: tax due
+			{FieldKey: "ca_540:91", PDFField: "612", Format: "currency"}, // Line 91: overpaid
+			{FieldKey: "ca_540:93", PDFField: "636", Format: "currency"}, // Line 93: tax due
 		},
 	}
 }
 
 // Form3514Mappings returns the PDF field mappings for CA Form 3514 (CalEITC).
+// Field IDs extracted from actual 2025 FTB Form 3514 PDF via pdfcpu.
 func Form3514Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormF3514,
 		FormName:     "Form 3514 — California Earned Income Tax Credit",
 		TemplatePath: "internal/pdf/templates/state/ca/2025/form_3514.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "form_3514:1", PDFField: "F3514_Line1", Format: "currency"},
-			{FieldKey: "form_3514:2", PDFField: "F3514_Line2", Format: "currency"},
-			{FieldKey: "form_3514:3", PDFField: "F3514_Line3", Format: "currency"},
-			{FieldKey: "form_3514:5", PDFField: "F3514_Line5", Format: "currency"},
-			{FieldKey: "form_3514:6", PDFField: "F3514_Line6", Format: "currency"},
-			{FieldKey: "form_3514:7", PDFField: "F3514_Line7", Format: "currency"},
+			{FieldKey: "form_3514:1", PDFField: "231", Format: "currency"},
+			{FieldKey: "form_3514:2", PDFField: "235", Format: "currency"},
+			{FieldKey: "form_3514:3", PDFField: "238", Format: "currency"},
+			{FieldKey: "form_3514:5", PDFField: "245", Format: "currency"},
+			{FieldKey: "form_3514:6", PDFField: "248", Format: "currency"},
+			{FieldKey: "form_3514:7", PDFField: "252", Format: "currency"},
+		},
+	}
+}
+
+// Form1116Mappings returns the PDF field mappings for Form 1116 (FTC).
+// Field IDs extracted from actual 2025 IRS Form 1116 PDF via pdfcpu.
+// Page 1: "388.387." (Part I/II), Page 2: "388.389." (Part III/IV).
+func Form1116Mappings() *FormPDFConfig {
+	return &FormPDFConfig{
+		FormID:       forms.FormF1116,
+		FormName:     "Form 1116 — Foreign Tax Credit",
+		TemplatePath: "internal/pdf/templates/federal/2025/form_1116.pdf",
+		Mappings: []FieldMapping{
+			// Part I: Taxable Income from Sources Outside the US
+			{FieldKey: "form_1116:foreign_country", PDFField: "388.387.512", Format: "string"},
+			{FieldKey: "form_1116:category", PDFField: "388.387.513", Format: "string"},
+			{FieldKey: "form_1116:foreign_source_income", PDFField: "388.387.516", Format: "currency"},
+			{FieldKey: "form_1116:foreign_source_deductions", PDFField: "388.387.520", Format: "currency"},
+			{FieldKey: "form_1116:7", PDFField: "388.387.524", Format: "currency"},
+
+			// Part II: Foreign Taxes Paid or Accrued
+			{FieldKey: "form_1116:accrued_or_paid", PDFField: "388.387.528", Format: "string"},
+			{FieldKey: "form_1116:foreign_tax_paid_income", PDFField: "388.387.530", Format: "currency"},
+			{FieldKey: "form_1116:foreign_tax_paid_other", PDFField: "388.387.532", Format: "currency"},
+			{FieldKey: "form_1116:15", PDFField: "388.387.536", Format: "currency"},
+
+			// Part III/IV: Credit Computation (Page 2)
+			{FieldKey: "form_1116:20", PDFField: "388.389.401", Format: "currency"},
+			{FieldKey: "form_1116:21", PDFField: "388.389.402", Format: "currency"},
+			{FieldKey: "form_1116:22", PDFField: "388.389.405", Format: "currency"},
+		},
+	}
+}
+
+// Form8938Mappings returns the PDF field mappings for Form 8938 (FATCA).
+// Field IDs extracted from actual 2025 IRS Form 8938 PDF via pdfcpu.
+// Page 1: "173.174." (Part I/II), Page 2: "173.175." (Part III/IV/V).
+func Form8938Mappings() *FormPDFConfig {
+	return &FormPDFConfig{
+		FormID:       forms.FormF8938,
+		FormName:     "Form 8938 — Statement of Specified Foreign Financial Assets",
+		TemplatePath: "internal/pdf/templates/federal/2025/form_8938.pdf",
+		Mappings: []FieldMapping{
+			// Part I: Summary
+			{FieldKey: "form_8938:num_accounts", PDFField: "173.174.1061", Format: "integer"},
+			{FieldKey: "form_8938:max_value_accounts", PDFField: "173.174.1062", Format: "currency"},
+			{FieldKey: "form_8938:yearend_value_accounts", PDFField: "173.174.1063", Format: "currency"},
+			{FieldKey: "form_8938:num_other_assets", PDFField: "173.174.1064", Format: "integer"},
+			{FieldKey: "form_8938:max_value_other", PDFField: "173.174.1065", Format: "currency"},
+			{FieldKey: "form_8938:yearend_value_other", PDFField: "173.174.1066", Format: "currency"},
+			{FieldKey: "form_8938:total_max_value", PDFField: "173.174.1069", Format: "currency"},
+			{FieldKey: "form_8938:total_yearend_value", PDFField: "173.174.1070", Format: "currency"},
+
+			// Part II: Account details
+			{FieldKey: "form_8938:account_country", PDFField: "173.174.1115", Format: "string"},
+			{FieldKey: "form_8938:account_institution", PDFField: "173.174.1116", Format: "string"},
+			{FieldKey: "form_8938:income_from_accounts", PDFField: "173.174.1117", Format: "currency"},
+			{FieldKey: "form_8938:gain_from_accounts", PDFField: "173.174.1118", Format: "currency"},
+
+			// Part V: Excepted Specified Foreign Financial Assets (Page 2)
+			{FieldKey: "form_8938:filing_required", PDFField: "173.175.142", Format: "currency"},
+		},
+	}
+}
+
+// Form8833Mappings returns the PDF field mappings for Form 8833 (Treaty Disclosure).
+// Field IDs extracted from actual 2025 IRS Form 8833 PDF via pdfcpu.
+// All fields use prefix "31.32.".
+func Form8833Mappings() *FormPDFConfig {
+	return &FormPDFConfig{
+		FormID:       forms.FormF8833,
+		FormName:     "Form 8833 — Treaty-Based Return Position Disclosure",
+		TemplatePath: "internal/pdf/templates/federal/2025/form_8833.pdf",
+		Mappings: []FieldMapping{
+			// Treaty identification
+			{FieldKey: "form_8833:treaty_country", PDFField: "31.32.516", Format: "string"},
+			{FieldKey: "form_8833:treaty_article", PDFField: "31.32.517", Format: "string"},
+			{FieldKey: "form_8833:irc_provision", PDFField: "31.32.518", Format: "string"},
+			{FieldKey: "form_8833:treaty_position_explanation", PDFField: "31.32.527", Format: "string"},
+			{FieldKey: "form_8833:treaty_amount", PDFField: "31.32.532", Format: "currency"},
+			{FieldKey: "form_8833:num_positions", PDFField: "31.32.533", Format: "integer"},
+			{FieldKey: "form_8833:treaty_claimed", PDFField: "31.32.534", Format: "currency"},
 		},
 	}
 }
 
 // Form3853Mappings returns the PDF field mappings for CA Form 3853 (Health Coverage).
+// Field IDs extracted from actual 2025 FTB Form 3853 PDF via pdfcpu.
 func Form3853Mappings() *FormPDFConfig {
 	return &FormPDFConfig{
 		FormID:       forms.FormF3853,
 		FormName:     "Form 3853 — Health Coverage Exemptions and Individual Shared Responsibility Penalty",
 		TemplatePath: "internal/pdf/templates/state/ca/2025/form_3853.pdf",
 		Mappings: []FieldMapping{
-			{FieldKey: "form_3853:1", PDFField: "F3853_Line1", Format: "string"},
-			{FieldKey: "form_3853:2", PDFField: "F3853_Line2", Format: "currency"},
-			{FieldKey: "form_3853:4", PDFField: "F3853_Line4", Format: "currency"},
-			{FieldKey: "form_3853:5", PDFField: "F3853_Line5", Format: "currency"},
-			{FieldKey: "form_3853:6", PDFField: "F3853_Line6", Format: "currency"},
-			{FieldKey: "form_3853:7", PDFField: "F3853_Line7", Format: "currency"},
+			{FieldKey: "form_3853:1", PDFField: "1004", Format: "string"},
+			{FieldKey: "form_3853:2", PDFField: "1006", Format: "currency"},
+			{FieldKey: "form_3853:4", PDFField: "1010", Format: "currency"},
+			{FieldKey: "form_3853:5", PDFField: "1012", Format: "currency"},
+			{FieldKey: "form_3853:6", PDFField: "1014", Format: "currency"},
+			{FieldKey: "form_3853:7", PDFField: "1016", Format: "currency"},
 		},
 	}
 }

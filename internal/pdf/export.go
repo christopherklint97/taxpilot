@@ -32,6 +32,10 @@ func ExportReturn(outputDir string, values map[string]float64, strValues map[str
 	filler.RegisterForm(ScheduleCAMappings())
 	filler.RegisterForm(Form3514Mappings())
 	filler.RegisterForm(Form3853Mappings())
+	filler.RegisterForm(Form2555Mappings())
+	filler.RegisterForm(Form1116Mappings())
+	filler.RegisterForm(Form8938Mappings())
+	filler.RegisterForm(Form8833Mappings())
 
 	// Fill all registered forms
 	paths, err := filler.FillAll(values, strValues)
