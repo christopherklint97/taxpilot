@@ -77,8 +77,12 @@ type RollforwardView struct {
 	calcLoading   bool
 
 	// Dependency info overlay
-	showDeps    bool
-	depInfoText string
+	showDeps      bool
+	depFieldKey   string // the field being inspected
+	depFieldLabel string
+	depDirect     []string // direct dep keys
+	depSources    []string // input source keys
+	depCursor     int      // cursor within depSources
 
 	// Status message
 	statusMsg string
@@ -155,6 +159,9 @@ func (m RollforwardView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if m.calcMode {
 			return m.updateCalcMode(msg)
+		}
+		if m.showDeps {
+			return m.updateDepsMode(msg)
 		}
 		if m.editing {
 			return m.updateEditing(msg)
@@ -261,44 +268,16 @@ func (m RollforwardView) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case "d":
-		// Show dependency info for current field
+		// Show interactive dependency overlay for current field
 		m.showDeps = false
 		if len(visible) > 0 && m.cursor <= maxIdx {
 			field := visible[m.cursor]
 			info := m.rf.GetDepInfo(field.Key)
-
-			var lines []string
-			lines = append(lines, fmt.Sprintf("Dependencies for: %s [%s]", field.Label, field.Key))
-			lines = append(lines, "")
-
-			if len(info.DirectDeps) > 0 {
-				lines = append(lines, "Direct dependencies:")
-				for _, dep := range info.DirectDeps {
-					label := m.rf.FieldLabel(dep)
-					lines = append(lines, fmt.Sprintf("  %s  (%s)", label, dep))
-				}
-			} else {
-				lines = append(lines, "No dependencies (standalone field)")
-			}
-
-			if len(info.InputSources) > 0 {
-				lines = append(lines, "")
-				lines = append(lines, "Input sources (editable):")
-				for _, src := range info.InputSources {
-					label := m.rf.FieldLabel(src)
-					val := m.rf.Computed[src]
-					strVal := m.rf.StrInputs[src]
-					if strVal != "" {
-						lines = append(lines, fmt.Sprintf("  %s = %s  (%s)", label, strVal, src))
-					} else {
-						lines = append(lines, fmt.Sprintf("  %s = %s  (%s)", label, formatDollar(val), src))
-					}
-				}
-				lines = append(lines, "")
-				lines = append(lines, "Press Enter to jump to first input source")
-			}
-
-			m.depInfoText = strings.Join(lines, "\n")
+			m.depFieldKey = field.Key
+			m.depFieldLabel = field.Label
+			m.depDirect = info.DirectDeps
+			m.depSources = info.InputSources
+			m.depCursor = 0
 			m.showDeps = true
 		}
 		return m, nil
@@ -448,6 +427,57 @@ func (m RollforwardView) updateEditing(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+}
+
+// updateDepsMode handles key events in the dependency overlay.
+func (m RollforwardView) updateDepsMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	maxIdx := len(m.depSources) - 1
+
+	switch msg.String() {
+	case "esc", "d", "q":
+		m.showDeps = false
+		return m, nil
+
+	case "up", "k":
+		if m.depCursor > 0 {
+			m.depCursor--
+		}
+		return m, nil
+
+	case "down", "j":
+		if m.depCursor < maxIdx {
+			m.depCursor++
+		}
+		return m, nil
+
+	case "enter":
+		// Jump to selected input source
+		if len(m.depSources) > 0 && m.depCursor <= maxIdx {
+			targetKey := m.depSources[m.depCursor]
+			visible := m.visibleFields()
+			idx := m.findVisibleIndex(visible, targetKey)
+			if idx >= 0 {
+				m.cursor = idx
+				m.ensureVisible()
+				m.statusMsg = fmt.Sprintf("Jumped to: %s", m.rf.FieldLabel(targetKey))
+			} else {
+				// Field exists but is hidden by filter — clear filters and retry
+				m.showOnlyFlagged = false
+				m.showOnlyInputs = false
+				visible = m.visibleFields()
+				idx = m.findVisibleIndex(visible, targetKey)
+				if idx >= 0 {
+					m.cursor = idx
+					m.ensureVisible()
+					m.statusMsg = fmt.Sprintf("Jumped to: %s (filters cleared)", m.rf.FieldLabel(targetKey))
+				}
+			}
+			m.showDeps = false
+		}
+		return m, nil
+	}
+
+	return m, nil
 }
 
 // updateCalcMode handles key events in calculator sub-mode.
@@ -666,16 +696,62 @@ func (m RollforwardView) View() string {
 		))
 	}
 
-	// Dependency info overlay
-	if m.showDeps && m.depInfoText != "" {
+	// Dependency info overlay (interactive)
+	if m.showDeps {
 		depBox := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#61AFEF")).
 			Padding(0, 1).
 			Width(tui.ContentWidth(m.width) - 4)
 
+		var depLines []string
+		depLines = append(depLines, tui.TitleStyle.Render(
+			fmt.Sprintf("Dependencies for: %s", m.depFieldLabel)))
+		depLines = append(depLines, tui.HelpStyle.Render(m.depFieldKey))
+		depLines = append(depLines, "")
+
+		if len(m.depDirect) > 0 {
+			depLines = append(depLines, rfHeaderStyle.Render("Direct dependencies:"))
+			for _, dep := range m.depDirect {
+				depLines = append(depLines, fmt.Sprintf("  %s  (%s)", m.rf.FieldLabel(dep), dep))
+			}
+			depLines = append(depLines, "")
+		}
+
+		if len(m.depSources) > 0 {
+			depLines = append(depLines, rfHeaderStyle.Render("Input sources (select and Enter to jump):"))
+			for i, src := range m.depSources {
+				label := m.rf.FieldLabel(src)
+				val := m.rf.Computed[src]
+				strVal := m.rf.StrInputs[src]
+				var valDisplay string
+				if strVal != "" {
+					valDisplay = strVal
+				} else {
+					valDisplay = formatDollar(val)
+				}
+
+				prefix := "  "
+				if i == m.depCursor {
+					prefix = "\u25b8 "
+				}
+				line := fmt.Sprintf("%s%-40s %s  (%s)", prefix, label, valDisplay, src)
+				if i == m.depCursor {
+					depLines = append(depLines, rfCursorStyle.Render(line))
+				} else {
+					depLines = append(depLines, line)
+				}
+			}
+		} else {
+			depLines = append(depLines, tui.HelpStyle.Render("No editable input sources"))
+		}
+
+		depLines = append(depLines, "")
+		depLines = append(depLines, tui.HelpStyle.Render("[j/k] select  [Enter] jump  [Esc] close"))
+
 		sections = append(sections, "")
-		sections = append(sections, depBox.Render(m.depInfoText))
+		sections = append(sections, depBox.Render(
+			lipgloss.JoinVertical(lipgloss.Left, depLines...)))
 	}
 
 	// Edit popup overlay
