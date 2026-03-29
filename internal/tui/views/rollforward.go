@@ -303,11 +303,37 @@ func (m RollforwardView) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case "e":
+		_ = m.rf.SaveState()
 		return m, func() tea.Msg {
 			return tui.ExportPDFMsg{
 				Results:   m.rf.Computed,
 				StrInputs: m.rf.StrInputs,
 				TaxYear:   m.rf.TaxYear,
+			}
+		}
+
+	case "r":
+		// Review: save and switch to detailed review view
+		_ = m.rf.SaveState()
+		return m, func() tea.Msg {
+			return tui.ShowReviewMsg{
+				Results:      m.rf.Computed,
+				StrInputs:    m.rf.StrInputs,
+				PriorResults: m.rf.PriorComputed,
+				TaxYear:      m.rf.TaxYear,
+				State:        m.rf.StateCode,
+			}
+		}
+
+	case "x":
+		// E-file: save and switch to e-file flow
+		_ = m.rf.SaveState()
+		return m, func() tea.Msg {
+			return tui.StartEFileMsg{
+				Results:   m.rf.Computed,
+				StrInputs: m.rf.StrInputs,
+				TaxYear:   m.rf.TaxYear,
+				State:     m.rf.StateCode,
 			}
 		}
 
@@ -817,7 +843,10 @@ func (m RollforwardView) View() string {
 		// footer already in popup
 	} else {
 		sections = append(sections, tui.HelpStyle.Render(
-			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit/jump  [d] deps  [c] calc  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
+			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit/jump  [d] deps  [c] calc  [Tab] next form",
+		))
+		sections = append(sections, tui.HelpStyle.Render(
+			"[f] flagged  [i] inputs  [s] save  [e] export  [r] review  [x] e-file  [q] quit",
 		))
 	}
 
