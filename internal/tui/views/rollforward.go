@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"taxpilot/internal/calc"
 	"taxpilot/internal/forms"
 	"taxpilot/internal/interview"
 	"taxpilot/internal/tui"
@@ -65,6 +66,16 @@ type RollforwardView struct {
 	// Flash: keys that just changed from an edit
 	flashKeys map[string]bool
 
+	// Calculator sub-mode
+	calcMode      bool
+	calcInput     string
+	calcResult    string
+	calcResultVal float64
+	calcHasResult bool
+	calcRates     map[string]float64
+	calcRatesErr  string
+	calcLoading   bool
+
 	// Status message
 	statusMsg string
 }
@@ -117,7 +128,20 @@ func (m RollforwardView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tui.ExchangeRatesMsg:
+		m.calcLoading = false
+		if msg.Err != nil {
+			m.calcRatesErr = msg.Err.Error()
+		} else {
+			m.calcRates = msg.Rates
+			m.calcRatesErr = ""
+		}
+		return m, nil
+
 	case tea.KeyMsg:
+		if m.calcMode {
+			return m.updateCalcMode(msg)
+		}
 		if m.editing {
 			return m.updateEditing(msg)
 		}
@@ -227,6 +251,20 @@ func (m RollforwardView) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case "c":
+		m.calcMode = true
+		m.calcInput = ""
+		m.calcResult = ""
+		m.calcHasResult = false
+		if m.calcRates == nil && !m.calcLoading {
+			m.calcLoading = true
+			return m, func() tea.Msg {
+				rates, err := calc.FetchRates()
+				return tui.ExchangeRatesMsg{Rates: rates, Err: err}
+			}
+		}
+		return m, nil
+
 	case "tab":
 		// Jump to next form
 		if len(visible) == 0 {
@@ -331,6 +369,81 @@ func (m RollforwardView) updateEditing(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
+// updateCalcMode handles key events in calculator sub-mode.
+func (m RollforwardView) updateCalcMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEsc:
+		m.calcMode = false
+		m.calcInput = ""
+		m.calcResult = ""
+		m.calcHasResult = false
+		return m, nil
+
+	case tea.KeyEnter:
+		if m.calcInput == "" && m.calcHasResult {
+			// Use the result: apply to currently selected field if it's an editable input
+			visible := m.visibleFields()
+			if m.cursor < len(visible) {
+				field := visible[m.cursor]
+				if field.FieldType == forms.UserInput && !field.IsString {
+					changed, err := m.rf.UpdateInput(field.Key, m.calcResultVal)
+					if err != nil {
+						m.editErr = err.Error()
+					} else {
+						m.calcMode = false
+						m.calcInput = ""
+						m.calcResult = ""
+						m.calcHasResult = false
+						return m.flashChanged(changed)
+					}
+				}
+			}
+			m.calcMode = false
+			m.calcInput = ""
+			m.calcResult = ""
+			m.calcHasResult = false
+			return m, nil
+		}
+		if m.calcInput != "" {
+			result, breakdown, err := calc.Eval(m.calcInput, m.calcRates)
+			if err != nil {
+				m.calcResult = "Error: " + err.Error()
+				m.calcHasResult = false
+			} else {
+				m.calcResultVal = result
+				m.calcHasResult = true
+				m.calcInput = ""
+				if breakdown != "" {
+					m.calcResult = breakdown
+				} else {
+					m.calcResult = fmt.Sprintf("= %.2f", result)
+				}
+			}
+		}
+		return m, nil
+
+	case tea.KeyBackspace, tea.KeyDelete:
+		if len(m.calcInput) > 0 {
+			m.calcInput = m.calcInput[:len(m.calcInput)-1]
+			m.calcHasResult = false
+			m.calcResult = ""
+		}
+		return m, nil
+
+	case tea.KeyRunes:
+		m.calcInput += msg.String()
+		m.calcHasResult = false
+		m.calcResult = ""
+		return m, nil
+
+	case tea.KeySpace:
+		m.calcInput += " "
+		return m, nil
+	}
+
+	return m, nil
+}
+
 func (m RollforwardView) flashChanged(changed []string) (tea.Model, tea.Cmd) {
 	m.flashKeys = make(map[string]bool, len(changed))
 	for _, k := range changed {
@@ -401,6 +514,10 @@ func (m RollforwardView) viewableLines() int {
 
 // View satisfies tea.Model.
 func (m RollforwardView) View() string {
+	if m.calcMode {
+		return m.viewCalc()
+	}
+
 	var sections []string
 	visible := m.visibleFields()
 
@@ -484,13 +601,83 @@ func (m RollforwardView) View() string {
 		))
 	} else {
 		sections = append(sections, tui.HelpStyle.Render(
-			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
+			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit  [c] calc  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
 		))
 	}
 
 	body := lipgloss.JoinVertical(lipgloss.Left, sections...)
 	contentW := tui.ContentWidth(m.width)
 	return tui.BorderStyle.Width(contentW).Render(body) + "\n"
+}
+
+// viewCalc renders the calculator overlay.
+func (m RollforwardView) viewCalc() string {
+	contentW := tui.ContentWidth(m.width)
+
+	// Target field info
+	var targetInfo string
+	visible := m.visibleFields()
+	if m.cursor < len(visible) {
+		field := visible[m.cursor]
+		if field.FieldType == forms.UserInput && !field.IsString {
+			targetInfo = tui.PromptStyle.Render(fmt.Sprintf("Result will be applied to: %s", field.Label))
+		} else {
+			targetInfo = tui.HelpStyle.Render("Result will not be applied (select an editable input field first)")
+		}
+	}
+
+	title := tui.TitleStyle.Width(contentW).Render("Calculator")
+
+	instructions := tui.HelpStyle.Width(contentW).Render(
+		"Type an expression and press Enter to evaluate.\n" +
+			"Supports: +, -, *, /  and currency codes (e.g., 1000 EUR, 500 GBP + 200 SEK)")
+
+	var rateStatus string
+	if m.calcLoading {
+		rateStatus = tui.HelpStyle.Render("Loading exchange rates...")
+	} else if m.calcRatesErr != "" {
+		rateStatus = tui.ErrorStyle.Render("Rates: " + m.calcRatesErr)
+	} else if m.calcRates != nil {
+		rateStatus = tui.SuccessStyle.Render("Exchange rates loaded")
+	}
+
+	cursor := tui.HighlightStyle.Render("\u25b8 ")
+	inputLine := cursor + tui.InputStyle.Render(m.calcInput) +
+		tui.HighlightStyle.Render("\u2588")
+
+	var resultBlock string
+	if m.calcResult != "" {
+		resultStyle := lipgloss.NewStyle().Bold(true).Width(contentW)
+		if m.calcHasResult {
+			resultStyle = resultStyle.Foreground(lipgloss.Color("#98C379"))
+		} else {
+			resultStyle = resultStyle.Foreground(lipgloss.Color("#E06C75"))
+		}
+		resultBlock = resultStyle.Render(m.calcResult)
+	}
+
+	var helpText string
+	if m.calcHasResult {
+		helpText = tui.HelpStyle.Render("Enter: use result  |  Esc: cancel  |  Type: new expression")
+	} else {
+		helpText = tui.HelpStyle.Render("Enter: calculate  |  Esc: cancel")
+	}
+
+	parts := []string{title, "", instructions}
+	if rateStatus != "" {
+		parts = append(parts, rateStatus)
+	}
+	if targetInfo != "" {
+		parts = append(parts, targetInfo)
+	}
+	parts = append(parts, "", inputLine)
+	if resultBlock != "" {
+		parts = append(parts, resultBlock)
+	}
+	parts = append(parts, "", helpText)
+
+	content := lipgloss.JoinVertical(lipgloss.Left, parts...)
+	return tui.BorderStyle.Width(contentW).Render(content) + "\n"
 }
 
 func (m RollforwardView) renderFieldRow(idx int, field interview.RollforwardField) string {
