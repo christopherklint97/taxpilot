@@ -52,6 +52,8 @@ type Rollforward struct {
 	StrInputs     map[string]string
 	Computed      map[string]float64 // current solve result (new year)
 	PriorComputed map[string]float64 // same inputs solved under old year
+	PriorInputs   map[string]float64 // original prior-year input values (frozen)
+	PriorStrIn    map[string]string  // original prior-year string inputs (frozen)
 	Fields        []RollforwardField // ordered field list
 	Changes       []FieldChange
 	ParamChanges  []taxmath.ParameterChange
@@ -111,6 +113,16 @@ func NewRollforward(registry *forms.Registry, taxYear int, prior *state.TaxRetur
 				}
 			}
 		}
+	}
+
+	// Freeze a snapshot of the original prior-year input values
+	rf.PriorInputs = make(map[string]float64, len(rf.Inputs))
+	for k, v := range rf.Inputs {
+		rf.PriorInputs[k] = v
+	}
+	rf.PriorStrIn = make(map[string]string, len(rf.StrInputs))
+	for k, v := range rf.StrInputs {
+		rf.PriorStrIn[k] = v
 	}
 
 	// Solve with new year tables
@@ -243,7 +255,7 @@ func (rf *Rollforward) refreshFieldValues() {
 		f := &rf.Fields[i]
 		if f.IsString {
 			f.StrValue = rf.StrInputs[f.Key]
-			f.PriorStr = rf.StrInputs[f.Key] // prior str same since copied
+			f.PriorStr = rf.PriorStrIn[f.Key] // frozen prior-year value
 		} else {
 			f.Value = rf.Computed[f.Key]
 			f.PriorValue = rf.PriorComputed[f.Key]

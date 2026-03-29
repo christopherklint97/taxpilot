@@ -585,8 +585,57 @@ func (m RollforwardView) View() string {
 		))
 	}
 
-	// Error / status
-	if m.editErr != "" {
+	// Edit popup overlay
+	if m.editing {
+		visible := m.visibleFields()
+		if m.cursor < len(visible) {
+			field := visible[m.cursor]
+
+			editBox := lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("#4A90D9")).
+				Padding(0, 1).
+				Width(tui.ContentWidth(m.width) - 4)
+
+			// Build the edit buffer display with cursor
+			editDisplay := m.editBuffer
+			if m.editCursor < len(editDisplay) {
+				editDisplay = editDisplay[:m.editCursor] + "\u2588" + editDisplay[m.editCursor:]
+			} else {
+				editDisplay += "\u2588"
+			}
+
+			var priorDisplay string
+			if field.IsString {
+				if len(field.Options) > 0 {
+					priorDisplay = formatOptionLabel(field.PriorStr)
+				} else {
+					priorDisplay = field.PriorStr
+				}
+			} else {
+				priorDisplay = formatDollar(field.PriorValue)
+			}
+
+			popupLines := []string{
+				tui.TitleStyle.Render("Editing: " + field.Label),
+				tui.HelpStyle.Render("Prior year: " + priorDisplay),
+				"",
+				tui.HighlightStyle.Render("\u25b8 ") + tui.InputStyle.Render(editDisplay),
+			}
+			if m.editErr != "" {
+				popupLines = append(popupLines, tui.ErrorStyle.Render(m.editErr))
+			}
+			popupLines = append(popupLines, tui.HelpStyle.Render("[Enter] confirm  [Esc] cancel"))
+
+			sections = append(sections, "")
+			sections = append(sections, editBox.Render(
+				lipgloss.JoinVertical(lipgloss.Left, popupLines...),
+			))
+		}
+	}
+
+	// Error / status (non-edit)
+	if !m.editing && m.editErr != "" {
 		sections = append(sections, tui.ErrorStyle.Render("  "+m.editErr))
 	}
 	if m.statusMsg != "" {
@@ -596,9 +645,7 @@ func (m RollforwardView) View() string {
 	// Footer
 	sections = append(sections, "")
 	if m.editing {
-		sections = append(sections, tui.HelpStyle.Render(
-			"[Enter] confirm  [Esc] cancel  [Backspace] delete",
-		))
+		// footer already in popup
 	} else {
 		sections = append(sections, tui.HelpStyle.Render(
 			"[j/k] navigate  [ctrl+d/u] half-page  [Enter] edit  [c] calc  [Tab] next form  [f] flagged  [i] inputs  [s] save  [e] export  [q] quit",
@@ -744,21 +791,6 @@ func (m RollforwardView) renderFieldRow(idx int, field interview.RollforwardFiel
 			deltaStr = "-"
 		} else {
 			deltaStr = fmt.Sprintf("%+.0f", delta)
-		}
-	}
-
-	// Handle edit mode
-	if m.editing && idx == m.cursor {
-		// Show edit buffer with cursor
-		editDisplay := m.editBuffer
-		if m.editCursor < len(editDisplay) {
-			editDisplay = editDisplay[:m.editCursor] + "\u2588" + editDisplay[m.editCursor:]
-		} else {
-			editDisplay += "\u2588"
-		}
-		valueStr = editDisplay
-		if len(valueStr) > 14 {
-			valueStr = valueStr[:14]
 		}
 	}
 
