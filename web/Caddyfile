@@ -1,0 +1,11 @@
+:{$PORT:4101}
+
+handle /api/* {
+	reverse_proxy {$API_URL:http://api:4100}
+}
+
+handle {
+	root * /app/dist
+	try_files {path} /index.html
+	file_server
+}

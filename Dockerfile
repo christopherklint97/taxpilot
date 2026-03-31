@@ -33,10 +33,10 @@ COPY data ./data
 EXPOSE 4100
 CMD ["./taxpilot-api"]
 
-# ─── Web runtime (static files served by lightweight server) ──
-FROM node:24-slim AS web
-RUN npm install -g serve@latest
+# ─── Web runtime (static files + API reverse proxy via Caddy) ──
+FROM caddy:2-alpine AS web
 WORKDIR /app
 COPY --from=web-build /app/web/dist ./dist
+COPY web/Caddyfile /etc/caddy/Caddyfile
 EXPOSE 4101
-CMD ["serve", "-s", "dist", "-l", "4101"]
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]

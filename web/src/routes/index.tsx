@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useReturnStore } from "@/stores/return-store"
 import { rollforward } from "@/api/hooks"
-import { FileText, Plus, Trash2, ArrowRight } from "lucide-react"
+import { FileText, Plus, Trash2, ArrowRight, Upload } from "lucide-react"
 
 export function DashboardPage() {
   const { returns, loading, fetchReturns, createReturn, deleteReturn } =
     useReturnStore()
   const navigate = useNavigate()
   const [creating, setCreating] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [rollingForward, setRollingForward] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchReturns()
@@ -17,11 +20,43 @@ export function DashboardPage() {
 
   const handleCreate = async () => {
     setCreating(true)
+    setError(null)
     try {
       const ret = await createReturn(2025)
       navigate({ to: "/returns/$returnId", params: { returnId: ret.id } })
+    } catch (e) {
+      setError((e as Error).message || "Failed to create return")
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleImport = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setImporting(true)
+    setError(null)
+    try {
+      // Create a new 2024 return first, then upload PDF to it
+      const ret = await createReturn(2024)
+      for (const file of Array.from(files)) {
+        const formData = new FormData()
+        formData.append("file", file)
+        const res = await fetch(`/api/returns/${ret.id}/pdf/upload`, {
+          method: "POST",
+          body: formData,
+        })
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(`Upload failed: ${res.status} ${text}`)
+        }
+      }
+      await fetchReturns()
+      navigate({ to: "/returns/$returnId", params: { returnId: ret.id } })
+    } catch (e) {
+      setError((e as Error).message || "Failed to import PDF")
+    } finally {
+      setImporting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }
 
@@ -34,15 +69,39 @@ export function DashboardPage() {
             Manage your federal and state tax returns
           </p>
         </div>
-        <button
-          onClick={handleCreate}
-          disabled={creating}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" />
-          New Return
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            multiple
+            className="hidden"
+            onChange={(e) => handleImport(e.target.files)}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4" />
+            {importing ? "Importing..." : "Import 2024 PDF"}
+          </button>
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            {creating ? "Creating..." : "New Return"}
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">
@@ -53,16 +112,26 @@ export function DashboardPage() {
           <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h3 className="mb-2 text-lg font-medium">No tax returns yet</h3>
           <p className="mb-4 text-sm text-muted-foreground">
-            Create a new return or import a prior-year PDF to get started.
+            Create a new 2025 return or import your 2024 PDF to get started.
           </p>
-          <button
-            onClick={handleCreate}
-            disabled={creating}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            Create 2025 Return
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
+            >
+              <Upload className="h-4 w-4" />
+              {importing ? "Importing..." : "Import 2024 PDF"}
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              {creating ? "Creating..." : "Create 2025 Return"}
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
