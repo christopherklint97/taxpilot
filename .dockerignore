@@ -1,0 +1,13 @@
+api/target
+web/node_modules
+web/dist
+.git
+*.md
+testdata
+docs
+.env
+.env.local
+*.pem
+*.key
+*.cert
+*.db

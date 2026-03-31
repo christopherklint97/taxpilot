@@ -1,35 +1,30 @@
 # TaxPilot — Claude Code Instructions
 
 ## Project Overview
-TaxPilot is a Go CLI that helps US taxpayers fill out and e-file federal and
-California state income tax forms through an AI-assisted interview process.
-It ingests prior-year returns for context, asks smart questions, and can
-e-file directly to the IRS (MeF) and CA FTB, or export filled PDFs.
+TaxPilot is a full-stack web application that helps US taxpayers fill out and
+e-file federal and California state income tax forms. Users upload prior-year
+PDFs, view forms with a side-by-side PDF editor, edit fields with automatic
+dependency recalculation, and export filled PDFs or e-file to IRS/FTB.
 
 ## Tech Stack
-- **Language:** Go 1.26+
-- **CLI framework:** Cobra
-- **TUI framework:** Bubble Tea + Lip Gloss
-- **PDF handling:** pdfcpu (reading/writing IRS + FTB forms)
-- **LLM integration:** OpenRouter API (default: `anthropic/claude-sonnet-4.6`, configurable via `--model` flag or `TAXPILOT_MODEL` env var; ZDR enabled)
-- **XML generation:** encoding/xml (for MeF and CA e-file submissions)
-- **SOAP client:** Custom (for IRS MeF A2A interface)
-- **Embedding/search:** SQLite + vec extension (or Qdrant if needed later)
-- **Config/state:** JSON files in ~/.taxpilot/
-- **Testing:** Go standard testing + table-driven tests
+- **Backend:** Rust (Axum + rusqlite + SQLite)
+- **Frontend:** React 19, TypeScript, TanStack Router, TanStack Query, Zustand, shadcn/ui, TailwindCSS 4
+- **PDF handling:** lopdf/pdf-form (Rust) + pdf.js (browser rendering)
+- **LLM integration:** OpenRouter API via reqwest
+- **XML generation:** quick-xml (for MeF and CA e-file submissions)
+- **Deployment:** Docker Compose (api + web + Tailscale sidecar)
+- **Ports:** API on 4100, Web on 4101
 
 ## Key Principles
 
 ### 1. AI Does UX, Not Math
 The LLM is used for:
 - Generating plain-English explanations of tax questions
-- Determining which follow-up questions to ask based on context
 - Searching/explaining relevant tax code sections (federal & CA)
-- Summarizing prior-year context
 - Explaining CA <-> federal differences in plain English
 
 The LLM is NEVER used for:
-- Tax calculations (use deterministic Go code)
+- Tax calculations (use deterministic Rust code)
 - Deciding tax amounts or deductions
 - Anything that affects the numbers on the final forms
 - Generating XML for e-file submissions
@@ -42,43 +37,33 @@ Each form field is either:
 - `PriorYear` — carried from last year's return
 - `FederalRef` — (state forms only) references a federal form field
 
-The solver walks the dependency graph across BOTH federal and state forms
-and only asks for UserInput fields that are actually needed. Federal forms
-are always solved first, then state forms that depend on them.
+The solver walks the dependency graph across BOTH federal and state forms.
+When a field changes, all dependent fields are recomputed automatically.
 
 ### 3. Federal and State Are Separate but Connected
-- Federal forms live in `internal/forms/federal/`
-- State forms live in `internal/forms/state/<state_code>/`
+- Federal forms live in `api/src/forms/federal/`
+- State forms live in `api/src/forms/state/ca/`
 - State forms can reference federal fields via `FederalRef` dependencies
-- The `conformity.go` module maps which federal values CA accepts as-is
+- Conformity module maps which federal values CA accepts as-is
   vs. which require California adjustments (Schedule CA)
-- Input forms (W-2, 1099s) capture BOTH federal and state boxes
 
 ### 4. Expat/Foreign Income Is Fully Supported
-TaxPilot handles Americans living abroad with:
-- Form 2555 (FEIE) with tax stacking via `ComputeTaxWithStacking`
+- Form 2555 (FEIE) with tax stacking
 - Form 1116 (FTC) with credit limitation and carryforward
-- Form 8938 (FATCA) with dual thresholds (abroad vs US)
+- Form 8938 (FATCA) with dual thresholds
 - Form 8833 (treaty disclosure)
-- FBAR guidance (detection + instructions, filed separately with FinCEN)
 - CA FEIE non-conformity (automatic add-back on Schedule CA)
-- No double-dipping: FTC only on income NOT excluded by FEIE
 
 ### 5. Test Against Known-Good Returns
 Every form module must have table-driven tests using scenarios from
 testdata/scenarios/. Each scenario has inputs and expected outputs.
-CA scenarios must test conformity edge cases (SS benefits, SALT, QBI, etc.)
-When adding or modifying form logic, always run the full test suite.
 
 ### 6. Year-Agnostic Form Definitions
-Tax years change brackets and limits, but form structure changes less often.
 Keep year-specific data in data/tax_years/YYYY/{federal,ca}/ YAML files.
-Form logic in Go references these via the `taxmath` package.
+Form logic in Rust references these via the taxmath module.
 
 ### 7. E-File XML Must Be Deterministic
-The MeF XML generation and CA e-file XML generation must be completely
-deterministic — same inputs always produce identical XML. This makes
-testing and ATS/PATS certification reliable. Never use the LLM for
+Same inputs always produce identical XML. Never use the LLM for
 anything in the e-file pipeline.
 
 ## Supported Forms
@@ -91,94 +76,80 @@ Form 2555 (FEIE), Form 1116 (FTC), Form 8938 (FATCA), Form 8833 (Treaty)
 W-2, 1099-INT, 1099-DIV, 1099-NEC, 1099-B
 
 ### California
-Form 540, Schedule CA (with FEIE/HSA/SALT/QBI add-backs), Form 3514 (CalEITC), Form 3853 (Health Coverage)
-
-## Release
-- **GoReleaser** builds cross-platform binaries (linux/darwin, amd64/arm64)
-- **Homebrew tap:** `christopherklint97/homebrew-tap`
-- GitHub Actions workflow: `.github/workflows/release.yml`
+Form 540, Schedule CA, Form 3514 (CalEITC), Form 3853 (Health Coverage)
 
 ## Directory Guide
-- `cmd/taxpilot/` — CLI entrypoint (Cobra), minimal logic
-- `internal/interview/` — The interactive Q&A engine, situation detection, FBAR guidance
-- `internal/forms/` — Deterministic form logic (THE CORE)
-- `internal/forms/federal/` — One file per IRS form (16 forms)
-- `internal/forms/state/ca/` — One file per CA FTB form (4 forms + conformity)
-- `internal/forms/state/interface.go` — State form interface (for future states)
-- `internal/forms/inputs/` — Employer/institution provided forms (W-2, 1099s)
-- `internal/knowledge/` — RAG over federal + CA tax code (100+ documents including expat)
-- `internal/pdf/` — PDF parsing and filling
-- `internal/efile/` — Pre-submission validation and reasonableness checks
-- `internal/efile/mef/` — IRS MeF XML serialization and SOAP transmission
-- `internal/efile/ca/` — CA FTB XML serialization and REST transmission
-- `internal/errors/` — Typed errors (UnsupportedError, IncompleteError, CPAReferralError, ConformityError)
-- `internal/security/` — AES-256-GCM encryption, Argon2id KDF, audit trail
-- `internal/state/` — JSON state persistence between sessions
-- `internal/tui/` — Bubble Tea views
-- `pkg/taxmath/` — Pure math utilities (brackets, rounding, tables, expat tax stacking)
-- `data/` — Year-specific tax data, knowledge base, MeF/CA schemas
-- `testdata/` — Test scenarios with known-good inputs/outputs (20 scenarios)
+- `api/` — Rust backend
+  - `api/src/main.rs` — Axum app setup, routes, middleware
+  - `api/src/db/` — SQLite connection, schema, migrations
+  - `api/src/domain/` — Core types: field.rs, form.rs, solver.rs, taxmath.rs, registry.rs
+  - `api/src/forms/` — Form definitions (federal/, inputs/, state/ca/)
+  - `api/src/pdf/` — PDF parsing and filling
+  - `api/src/efile/` — E-file XML generation (mef/, ca/) and validation
+  - `api/src/routes/` — REST API endpoint handlers
+  - `api/src/llm/` — OpenRouter LLM client
+- `web/` — React frontend
+  - `web/src/router.tsx` — TanStack Router setup
+  - `web/src/stores/` — Zustand stores (return-store, field-store, ui-store)
+  - `web/src/routes/` — Page components
+  - `web/src/components/` — Layout, forms, PDF viewer, UI components
+  - `web/src/api/` — Typed API client and types
+  - `web/src/lib/` — Utility functions
+- `data/` — Year-specific tax data, PDF templates, prompts
+- `testdata/` — Test scenarios with known-good inputs/outputs
+
+## API Endpoints
+```
+GET    /api/health                          Health check
+GET    /api/returns                         List returns
+POST   /api/returns                         Create return
+GET    /api/returns/:id                     Get return + fields
+DELETE /api/returns/:id                     Delete return
+PUT    /api/returns/:id/fields/:key         Update field, recompute dependents
+PUT    /api/returns/:id/fields              Batch update fields
+GET    /api/forms                           List form metadata
+GET    /api/forms/:formId                   Get form definition
+POST   /api/returns/:id/pdf/upload          Upload prior-year PDF
+GET    /api/returns/:id/pdf/filled/:formId  Generate filled PDF
+POST   /api/returns/:id/rollforward         Rollforward from prior year
+GET    /api/returns/:id/validate            Run validation checks
+POST   /api/returns/:id/efile/mef           Generate MeF XML
+POST   /api/returns/:id/efile/ca            Generate CA FTB XML
+```
 
 ## Common Tasks
 
 ### Adding a new federal form
-1. Create `internal/forms/federal/new_form.go`
+1. Create `api/src/forms/federal/new_form.rs`
 2. Define all fields with their types (UserInput/Computed/Lookup/PriorYear)
-3. Implement the Compute() method for all Computed fields
-4. Register the form in `internal/forms/registry.go`
-5. Add PDF field mappings in `data/tax_years/YYYY/federal/forms.yaml`
-6. Add MeF XML element mappings in `internal/efile/mef/xml.go`
-7. Add at least one test scenario in `testdata/scenarios/federal/`
-8. Run `go test ./internal/forms/...`
+3. Implement Compute closures for all Computed fields
+4. Register in `api/src/forms/mod.rs` via `register_all_forms()`
+5. Add PDF field mappings
+6. Add MeF XML element mappings in `api/src/efile/mef/xml.rs`
+7. Add test scenario in `testdata/scenarios/federal/`
+8. Run `cd api && cargo test`
 
 ### Adding a new CA state form
-1. Create `internal/forms/state/ca/new_form.go`
+1. Create `api/src/forms/state/ca/new_form.rs`
 2. Define fields — use `FederalRef` type for fields that pull from federal forms
-3. Check `data/tax_years/YYYY/ca/conformity.yaml` for CA <-> federal differences
-4. Implement CA-specific Compute() logic (especially Schedule CA adjustments)
-5. Register the form in `internal/forms/registry.go`
-6. Add PDF field mappings in `data/tax_years/YYYY/ca/forms.yaml`
-7. Add CA e-file XML element mappings in `internal/efile/ca/xml.go`
-8. Add test scenarios in `testdata/scenarios/ca/` — MUST include conformity edge cases
-9. Run `go test ./internal/forms/...`
-
-### Adding a new state (future)
-1. Create `internal/forms/state/<code>/` directory
-2. Implement the `StateFormSet` interface from `internal/forms/state/interface.go`
-3. Create `conformity.go` for that state's IRC conformity rules
-4. Add year-specific data in `data/tax_years/YYYY/<code>/`
-5. Register in the state form registry
-
-### Adding a new tax year
-1. Copy `data/tax_years/PREV_YEAR/` to `data/tax_years/NEW_YEAR/`
-2. Update federal brackets, limits, and standard deductions from IRS publications
-3. Update CA brackets, standard deduction, exemption credit amounts from FTB
-4. Update `conformity.yaml` if CA changed its IRC conformity date
-5. Check for form structure changes and update Go form definitions if needed
-6. Update MeF schema version references in `internal/efile/mef/schemas.go`
-7. Run full test suite against prior-year scenarios (should still pass)
-8. Add new-year-specific test scenarios
+3. Check conformity rules for CA <-> federal differences
+4. Register in `api/src/forms/mod.rs`
+5. Add CA e-file XML mappings in `api/src/efile/ca/xml.rs`
+6. Add test scenarios — MUST include conformity edge cases
+7. Run `cd api && cargo test`
 
 ## Running
 ```bash
-go run ./cmd/taxpilot                        # Start interactive interview
-go run ./cmd/taxpilot --import prior.pdf     # Import prior year return(s)
-go run ./cmd/taxpilot --continue             # Resume from saved state
-go run ./cmd/taxpilot --export out/          # Export filled PDFs (federal + CA)
-go run ./cmd/taxpilot --efile                # E-file to IRS + CA FTB
-go run ./cmd/taxpilot --efile --federal-only # E-file federal only
-go run ./cmd/taxpilot --efile --state-only   # E-file CA only
-go run ./cmd/taxpilot --validate             # Validate against MeF business rules
-go run ./cmd/taxpilot --state CA             # Set state (default from config)
-go run ./cmd/taxpilot --model deepseek/deepseek-v3.2  # Override LLM model
-```
+# Development
+cd api && cargo run                    # Start API on :4100
+cd web && pnpm dev                     # Start frontend on :4101 (proxies /api to :4100)
 
-## Testing
-```bash
-go test ./...                                       # Full suite
-go test ./internal/forms/... -v                     # All form logic
-go test ./internal/forms/federal/... -v             # Federal forms only
-go test ./internal/forms/state/ca/... -v            # CA forms only
-go test ./internal/forms/... -run TestScenario/ca_  # CA scenarios
-go test ./internal/efile/... -v                     # E-file XML generation
+# Docker
+docker compose up -d api web           # Start API + web
+docker compose up -d                   # Start all (including Tailscale)
+docker compose down                    # Stop all
+
+# Testing
+cd api && cargo test                   # All Rust tests
+cd web && pnpm build                   # TypeScript check + build
 ```

@@ -1,20 +1,10 @@
-# Binaries
-/taxpilot
-*.exe
-*.dll
-*.so
-*.dylib
+# Rust
+api/target/
+*.rs.bk
 
-# Test binary
-*.test
-
-# Output
-*.out
-/out/
-
-# Go workspace
-go.work
-go.work.sum
+# Node
+web/node_modules/
+web/dist/
 
 # IDE
 .idea/
@@ -33,8 +23,7 @@ Thumbs.db
 # Prior-year returns (sensitive tax documents)
 returns/
 
-# PDF templates (downloaded separately — see internal/pdf/templates/README.md)
-internal/pdf/templates/**/*.pdf
+# PDF templates (downloaded separately)
 data/tax_years/*/federal/*.pdf
 data/tax_years/*/ca/*.pdf
 
@@ -47,3 +36,8 @@ data/knowledge/*.db
 *.pem
 *.key
 *.cert
+
+# SQLite
+*.db
+*.db-wal
+*.db-shm
