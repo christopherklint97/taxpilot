@@ -167,8 +167,13 @@ async fn get_filled_pdf(
         .solve(&inputs, &str_inputs, tax_year)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Try to load template PDF
-    let template_path = format!("data/tax_years/{}/federal/{}.pdf", tax_year, form_id);
+    // Try to load template PDF — pick subdirectory based on jurisdiction
+    let subdir = if form_id.starts_with("ca_") || form_id == "form_3514" || form_id == "form_3853" {
+        "ca"
+    } else {
+        "federal"
+    };
+    let template_path = format!("data/tax_years/{}/{}/{}.pdf", tax_year, subdir, form_id);
     let template_bytes = std::fs::read(&template_path);
 
     match template_bytes {
