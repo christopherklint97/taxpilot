@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Document, Page, pdfjs } from "react-pdf"
 import "react-pdf/dist/Page/AnnotationLayer.css"
 import "react-pdf/dist/Page/TextLayer.css"
@@ -92,6 +92,13 @@ export function PdfViewer({ data, loading, className }: PdfViewerProps) {
     )
   }
 
+  // Copy the buffer so pdf.js can transfer it to the worker without detaching
+  // our source array. Memoize to avoid reloading on unrelated re-renders.
+  const file = useMemo(
+    () => (data instanceof Uint8Array ? { data: new Uint8Array(data) } : data),
+    [data],
+  )
+
   return (
     <div className={cn("flex flex-col", className)}>
       {/* Toolbar */}
@@ -142,7 +149,7 @@ export function PdfViewer({ data, loading, className }: PdfViewerProps) {
       {/* PDF content */}
       <div ref={containerRef} className="flex-1 overflow-auto bg-neutral-200 dark:bg-neutral-800 p-4">
         <Document
-          file={data instanceof Uint8Array ? { data } : data}
+          file={file}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={onDocumentLoadError}
           loading={
