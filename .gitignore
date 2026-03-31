@@ -21,7 +21,7 @@ Thumbs.db
 .taxpilot/
 
 # Prior-year returns (sensitive tax documents)
-returns/
+/returns/
 
 # PDF templates (downloaded separately)
 data/tax_years/*/federal/*.pdf
