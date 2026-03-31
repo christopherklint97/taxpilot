@@ -83,13 +83,16 @@ async fn upload_pdf(
 
     let doc_id: i64 = conn.last_insert_rowid();
 
-    // Store extracted field values
-    for (pdf_field, value) in &extracted {
-        let num_val: Option<f64> = value.parse().ok();
+    // Store extracted field values — these are already TaxPilot field_keys
+    // (the parser reverse-maps PDF field names to our field keys)
+    for (field_key, value) in &extracted {
+        // Try to parse as number; keep string value too
+        let num_val: Option<f64> = value.replace(',', "").replace('$', "").parse().ok();
+        let str_val = if num_val.is_some() { None } else { Some(value.as_str()) };
         conn.execute(
             "INSERT OR REPLACE INTO field_values (return_id, field_key, value_num, value_str, source) \
              VALUES (?1, ?2, ?3, ?4, 'pdf_import')",
-            rusqlite::params![id, pdf_field, num_val, value],
+            rusqlite::params![id, field_key, num_val, str_val],
         )
         .ok();
     }
@@ -116,9 +119,10 @@ async fn get_filled_pdf(
         )
         .map_err(|_| StatusCode::NOT_FOUND)?;
 
-    // Load all field values (user inputs only for solver)
+    // Load all field values — user inputs feed the solver, all values for PDF filling
     let mut inputs = HashMap::new();
     let mut str_inputs = HashMap::new();
+    let mut all_str_values = HashMap::new();
 
     {
         let mut stmt = conn
@@ -138,6 +142,10 @@ async fn get_filled_pdf(
 
         for row in rows.flatten() {
             let (key, num, str_val, source) = row;
+            // All string values are needed for PDF filling (names, SSN, filing status)
+            if let Some(s) = &str_val {
+                all_str_values.insert(key.clone(), s.clone());
+            }
             if source != "computed" {
                 if let Some(n) = num {
                     inputs.insert(key.clone(), n);
@@ -180,7 +188,7 @@ async fn get_filled_pdf(
         Ok(template) => {
             // Fill the template
             let filled =
-                crate::pdf::filler::fill_pdf(&template, &form_id, &results, &str_inputs)
+                crate::pdf::filler::fill_pdf(&template, &form_id, &results, &all_str_values)
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
             Ok((
