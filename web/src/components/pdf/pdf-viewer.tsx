@@ -36,6 +36,13 @@ export function PdfViewer({ data, loading, className }: PdfViewerProps) {
     setPdfError(error.message)
   }, [])
 
+  // Copy the buffer so pdf.js can transfer it to the worker without detaching
+  // our source array. Memoize to avoid reloading on unrelated re-renders.
+  const file = useMemo(
+    () => (data instanceof Uint8Array ? { data: new Uint8Array(data) } : data),
+    [data],
+  )
+
   // Reset page when data changes
   useEffect(() => {
     setCurrentPage(1)
@@ -91,13 +98,6 @@ export function PdfViewer({ data, loading, className }: PdfViewerProps) {
       </div>
     )
   }
-
-  // Copy the buffer so pdf.js can transfer it to the worker without detaching
-  // our source array. Memoize to avoid reloading on unrelated re-renders.
-  const file = useMemo(
-    () => (data instanceof Uint8Array ? { data: new Uint8Array(data) } : data),
-    [data],
-  )
 
   return (
     <div className={cn("flex flex-col", className)}>
